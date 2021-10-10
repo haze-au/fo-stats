@@ -1,5 +1,5 @@
-﻿###
-# 11/5/21 23:00
+###
+# 10/10/2021 22:20
 # PS  COMMAND LINE:- & .\script.ps1 'x:\path\filename.json' [<Rnd1 End Time/Seconds>]
 # WIN COMMAND LINE:- powershell -Command "& .\script.ps1" "x:\path\filename.json" [<Rnd1 End Time/Seconds>]
 # PS  *.JSON:- foreach ($f in (gci 'H:\stats\*.json')) { & .\FO_stats_v1.ps1 ($f.ToString() -replace '\[','`[' -replace '\]','`]') }
@@ -244,8 +244,8 @@ ForEach ($item in $json) {
   $kind    = $item.kind
 
   #Remove any underscores for _ tokens used in Keys 
-  $player  = $item.player -replace '_','.' -replace '\s',''
-  $target  = $item.target -replace '_','.' -replace '\s',''
+  $player  = $item.player -replace '_','.' -replace '\s','' # -replace '\[','\[' -replace '\]','\]S'
+  $target  = $item.target -replace '_','.' -replace '\s','' #-replace '\[','\[' -replace '\]','\]'
   $p_team  = $item.playerTeam
   $t_team  = $item.targetTeam
   $class   = $item.playerClass
@@ -598,30 +598,33 @@ $script:awardDefTKill    = @{}
 $script:awardDefDmgPerKill  = @{}
 $script:awardDefKillsVersus = @{}
 
-function GetArrTimeTotal {
- #p1 = round, p2 = player
- switch ($args[0]) {
-   '0'     { $arrTime = $arrTimeClass     }
-   '1'     { $arrTime = $arrTimeClassRnd1 }
-   default { $arrTime = $arrTimeClassRnd2 }
- }
-
- (($arrTime.keys -match "^$($args[1])_[1-9]$" | foreach { $arrTime.$_ } ) | Measure-Object -Sum).Sum
-}
-
-#Attack - Rnd1=T1 and Rnd2=T2 - Get Player list and get required Data sets
-# Teams sorted in order, i.e. 1&2 = Att 2x, 2&1 = Def 2x.
-$script:playerListAttRnd1 = ($arrTeamRnd1.Keys | foreach { if ($arrTeamRnd1.$_ -match '^(1|1&2)$' -and (GetArrTimeTotal 1 $_) -gt $round1EndTime - 60) { $_ } })
-$script:playerListAttRnd2 = ($arrTeamRnd2.Keys | foreach { if ($arrTeamRnd2.$_ -match '^(2|2&1)$' -and (GetArrTimeTotal 2 $_) -gt $round1EndTime - 60) { $_ } })
-
 function awardScaler {
   if ($arrResult.WinningTeam -eq 2) {
     [math]::Floor($args[0] * (1 / (1 - $arrResult.WinRating)))
   } else { $args[0] }
 }
 
+function GetArrTimeTotal {
+ #p1 = round, p2 = player
+ switch ($args[0]) {
+   '2'     { $arrTime = $arrTimeClassRnd2 }
+   '1'     { $arrTime = $arrTimeClassRnd1 }
+   default { $arrTime = $arrTimeClass }
+ }
+
+ (($arrTime.keys -match "^$($args[1] -replace $regExReplaceFix)_[1-9]$" | foreach { $arrTime.$_ } ) | Measure-Object -Sum).Sum
+}
+
+#Attack - Rnd1=T1 and Rnd2=T2 - Get Player list and get required Data sets
+# Teams sorted in order, i.e. 1&2 = Att 2x, 2&1 = Def 2x.
+$script:playerListAttRnd1 = ($arrTeamRnd1.Keys | foreach { if ($arrTeamRnd1.$_ -match '^(1|1&2)$' -and (GetArrTimeTotal 1 $_) -gt $round1EndTime - 60) { $_ } })
+$script:playerListAttRnd2 = ($arrTeamRnd2.Keys | foreach { if ($arrTeamRnd2.$_ -match '^(2|2&1)$' -and (GetArrTimeTotal 2 $_) -gt (awardScaler 2 ($round1EndTime - 60))) { $_ } })
+
+$playerListAttRnd2
+
 ## Generate Attack/Def Tables, e.g. for att Rnd1 = Team1 attack + Rnd2 = Team2 attack
 $count = 1
+
 foreach ($array in @($playerListAttRnd1, $playerListAttRnd2)) {
   foreach ($p in $array) {
     if ($arrResult.WinningTeam -eq 2) {
@@ -662,7 +665,7 @@ foreach ($array in @($playerListAttRnd1, $playerListAttRnd2)) {
 #defence - Rnd2=T2 and Rnd2=T1 - Get Player list and get required Data sets
 ## Generate Attack/Def Tables, e.g. for att Rnd1 = Team2 def + Rnd2 = Team1 def
 $script:playerListDefRnd1 = ($arrTeamRnd1.Keys | foreach { if ($arrTeamRnd1.$_ -match '^2$' -and (GetArrTimeTotal 1 $_) -gt $round1EndTime - 60) { $_ } })
-$script:playerListDefRnd2 = ($arrTeamRnd2.Keys | foreach { if ($arrTeamRnd2.$_ -match '^1$' -and (GetArrTimeTotal 2 $_) -gt $round1EndTime - 60) { $_ } })
+$script:playerListDefRnd2 = ($arrTeamRnd2.Keys | foreach { if ($arrTeamRnd2.$_ -match '^1$' -and (GetArrTimeTotal 2 $_) -gt (awardScaler 2 ($round1EndTime - 60))) { $_ } })
 
 $count = 1
 foreach ($array in @($playerListDefRnd1, $playerListDefRnd2)) {
@@ -955,7 +958,6 @@ function awardScaleCaveat {
   }
 
   $outNames = ''
-  $count = 1
   foreach ($p in $players) {
     if ($p -in $pl) { $name = "$($p)*" }
     else { $name = $p }
