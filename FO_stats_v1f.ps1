@@ -620,8 +620,6 @@ function GetArrTimeTotal {
 $script:playerListAttRnd1 = ($arrTeamRnd1.Keys | foreach { if ($arrTeamRnd1.$_ -match '^(1|1&2)$' -and (GetArrTimeTotal 1 $_) -gt $round1EndTime - 60) { $_ } })
 $script:playerListAttRnd2 = ($arrTeamRnd2.Keys | foreach { if ($arrTeamRnd2.$_ -match '^(2|2&1)$' -and (GetArrTimeTotal 2 $_) -gt (awardScaler 2 ($round1EndTime - 60))) { $_ } })
 
-$playerListAttRnd2
-
 ## Generate Attack/Def Tables, e.g. for att Rnd1 = Team1 attack + Rnd2 = Team2 attack
 $count = 1
 
