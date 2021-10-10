@@ -244,8 +244,8 @@ ForEach ($item in $json) {
   $kind    = $item.kind
 
   #Remove any underscores for _ tokens used in Keys 
-  $player  = $item.player -replace '_','.' -replace '\s','' # -replace '\[','\[' -replace '\]','\]S'
-  $target  = $item.target -replace '_','.' -replace '\s','' #-replace '\[','\[' -replace '\]','\]'
+  $player  = $item.player -replace '_','.' -replace '\s',''
+  $target  = $item.target -replace '_','.' -replace '\s',''
   $p_team  = $item.playerTeam
   $t_team  = $item.targetTeam
   $class   = $item.playerClass
