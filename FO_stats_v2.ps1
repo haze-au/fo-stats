@@ -113,46 +113,56 @@ function weapSN {
     'normalgrenade' { 'hgren' }
     'grentimer'     { 'hgren' }
     'axe'           { 'axe'   }
-    'spike'         { 'ng'   }
+    'spike'         { 'ng'    }
+    'nailgun'       { 'ng'    }
 
     #scout
     'flashgrenade'  { 'flash' }
     
     #sold
-    'proj_rocket'   { 'rl'    }
-    'shockgrenade'  { 'shock' }
+    'proj_rocket'    { 'rl'    }
+    'rocketlauncher' { 'rl'    }
+    'shockgrenade'   { 'shock' }
 
     #demo 
     'detpack'           { 'detp' }
     'pipebomb'          { 'pipe' }
+    'pipebomblauncher'  { 'pipe' }
     'grenade'           { 'gl'   }
+    'grenadelauncher'   { 'gl'   }
     'mirvsinglegrenade' { 'mirv' }
     'mirvgrenade'       { 'mirv' }
 
     #medic
     'medikit'       { 'bio'  }
     'superspike'    { 'sng'  }
+    'supernailgun'  { 'sng'  }
 
     #hwg
     'proj_bullet'   { 'cann' }
+    'assaultcannon' { 'cann' }
 
     #pyro
     'pyro_rocket'   { 'incen' }
-    'fire'          { 'fire' }
+    'incendiary'    { 'incen' }
+    'flamethrower'  { 'fire'  }
+    'fire'          { 'fire'  }
     'flamerflame'   { 'flame' }
     
     #spy - knife
     'proj_tranq'    { 'tranq' }
+    'tranquilizer'  { 'tranq' }
 
     #eng
-    'spanner'       { 'spann' }
+    'spanner'       { 'spann'}
     'empgrenade'    { 'emp'  }
+    'ammobox'       { 'emp'  }
     'sentrygun'     { 'sent' }
     'railslug'      { 'rail' }
     'railgun'       { 'rail' }
     'building_dispenser' { 'disp' }
     'building_sentrygun' { 'sent' }
-	  'build_timer'        { 'sent' }
+	'build_timer'        { 'sent' }
 
     #remove underscore to avoid token key issues.
     default         { $args[0] -replace '_','-' }
