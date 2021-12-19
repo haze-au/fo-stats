@@ -476,6 +476,46 @@ foreach ($jsonFile in $inputFile) {
 
   $script:arrWinLossDraw  = @{}
 
+  $script:arrAttackDmgTracker = @{}
+  $script:arrWeapCounter      = @()
+  
+  
+  function arrFindPlayer-WeapCounter {
+    param( [string]$Name, $Round, [string]$Weapon, $Class )
+    
+    $count = 0
+    foreach ($p in $script:arrWeapCounter) {
+      if ($p.Name -eq $Name -and $p.Round -eq $Round -and $p.Weapon -eq $Weapon -and $p.Class -eq $Class) {
+        return $count
+      }
+      $count += 1
+    }
+    return -1
+  }
+
+  function arrWeapCounter-UpdateProperty {
+    param( [Parameter(Mandatory=$true)][string]$Name, 
+           [Parameter(Mandatory=$true)]        $Round,
+           [Parameter(Mandatory=$true)][string]$Weapon,
+           [Parameter(Mandatory=$true)]        $Class, 
+           [Parameter(Mandatory=$true)][string]$Property, 
+           $Value, 
+           [switch]$Increment
+         )
+
+    $pos = arrFindPlayer-WeapCounter -Name $Name -Round $Round -Weapon $Weapon -Class $Class
+    if ($pos -lt 0) {
+      $obj = [pscustomobject]@{ Name=$Name; Round=[int]$Round; Weapon=$Weapon; Class=[int]$Class; Dmg=0; AttackCount=0; DmgCount=0 }
+      $script:arrWeapCounter += $obj
+      $pos = $script:arrWeapCounter.Length - 1 
+    }
+    
+    if ($Increment -and !$Value) { $Value = [int]1 }
+    if ($Increment) { $script:arrWeapCounter[$pos].$Property += [int]$Value }
+    else            { $script:arrWeapCounter[$pos].$Property  = $Value }
+  }
+
+
   ###
   # Process the JSON into above arrays (created 'Script' to be readable by all functions)
   # keys: Frags/playername, Versus.player_enemy, Classes/player_class#, Weapons/player_weapon
@@ -538,10 +578,10 @@ foreach ($jsonFile in $inputFile) {
     }
 
     # add -ff to weap for friendly-fire
-    if ($p_team -eq $t_team -and $weap -ne 'laser') { $weap += '-ff' }
+    if ($p_team -and $t_team -and $p_team -eq $t_team -and $weap -ne 'laser') { $weap += '-ff' }
 
     # change weapon to suidcide for self kills
-    if ($player -notin '',$null -and $player -eq $target) { $weap  = 'suicide' }
+    if ($player -and $player -eq $target) { $weap  = 'suicide' }
     
     $key       = "$($player)_$($target)"
     $keyTime   = "$($timeBlock)_$($player)"
@@ -553,6 +593,26 @@ foreach ($jsonFile in $inputFile) {
     $keyWeap   = "$($player)_$($class)_$($weap)"
     $keyWeapT  = "$($target)_$($class)_$($weap)" 
     
+    # 19/12/21 New Attack/DmgDone stats in object/array format for PS Tables.
+    if ($player -and $weap -and $class -gt 0 -and ($type -eq 'attack' -or $p_team -ne $t_team -or $player -ne $target)) { 
+      switch ($type) {
+        'attack'      { if ($arrAttackDmgTracker.$keyWeap -eq -1) {
+                          $arrAttackDmgTracker.Remove($keyWeap)
+                        } elseif ($null -eq $arrAttackDmgTracker.$keyWeap) {
+                          $arrAttackDmgTracker.$keyWeap = $time
+                        }
+                        arrWeapCounter-UpdateProperty -Name $player -Round $round -Weapon $weap -Class $class -Property 'AttackCount' -Increment
+                      }
+        'damageDone'  { arrWeapCounter-UpdateProperty -Name $player -Round $round -Weapon $weap -Class $class -Property 'Dmg' -Value $dmg -Increment
+                        if ($null -eq $arrAttackDmgTracker.$keyWeap) {  $arrAttackDmgTracker.$keyWeap = -1 }
+                        if ($arrAttackDmgTracker.$keyWeap -gt 0) {
+                          arrWeapCounter-UpdateProperty -Name $player -Round $round -Weapon $weap -Class $class -Property 'DmgCount'    -Increment
+                        }
+                      }
+      }
+    }
+
+
     
     #Round tracking
     #if (($class -eq '0' -and $player -eq 'world' -and $p_team -eq '0' -and $weap -eq 'worldspawn' -and $time -ge $round1EndTime) -and $round -le 1) {    #(($kind -eq 'enemy' -and ..)
@@ -1955,3 +2015,17 @@ if ($TextSave) {
     Out-File -InputObject $textOut -FilePath $TextFileStr
     Write-Host "Text stats saved: $TextFileStr"
 }
+
+'WC'
+$arrWeapCounter | Where AttackCount -GT 0 | Sort Round,Name,Class,Weapon | FT   Name,  `
+                                                                                @{L='Team';E={ (Get-Variable "arrTeamRnd$($_.Round)").Value.($_.Name) }}, `
+                                                                                Round, `
+                                                                                Weapon, `
+                                                                                @{L='Shots';E={$_.AttackCount}}, `
+                                                                                @{L='Hit%';E={ '{0:P0}' -f ($_.DmgCount / $_.AttackCount) }}, `
+                                                                                @{L='DmgPerAtt';E={ '{0,5:n1}' -f ($_.Dmg / $_.AttackCount) }}, `
+                                                                                @{L='DmgPerHit';E={ '{0,5:n1}' -f ($_.Dmg / $_.DmgCount) }}
+
+$arrWeapCounter | Where AttackCount -GT 0 | Sort Round,Name,Class,Weapon | FT *
+
+
