@@ -1983,7 +1983,7 @@ foreach ($jsonFile in $inputFile) {
     #Data that are not divded up by round
     switch ($arrResult.winningTeam) {
       { $_ -eq '0' -or 
-        $arrPlayerTable[$pos].Team -match "1&2|2&1"}  { 
+        $arrTeam.$p -match "[1-2]&[1-2]"}  { 
         arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'Draw'
         arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryDefTable) -player $p -property 'Draw'
       }
