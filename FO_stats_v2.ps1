@@ -12,7 +12,7 @@
 param (
   [Parameter(Mandatory=$true)] 
   [string]$StatFile,
-  [int]$RoundTime,
+  [int]   $RoundTime,
   [switch]$TextSave,
   [switch]$TextOnly,
   [switch]$OpenHTML
@@ -626,10 +626,9 @@ foreach ($jsonFile in $inputFile) {
         # If only 1 spy found fix it, else forget it
         if ($potentialSpies.Count -eq 1 -and $potentialSpies -notin '',$null) { 
           $player = ($potentialSpies -split '_')[0]
-          $weap = 'gas'
         } else { continue }
       } 
-    } 
+    }
 
     # add -ff to weap for friendly-fire
     if ($p_team -and $t_team -and $p_team -eq $t_team -and $weap -ne 'laser') { $weap += '-ff' }
@@ -691,8 +690,9 @@ foreach ($jsonFile in $inputFile) {
         $arrTimeTrack."$($p)_lastChange" = $round1EndTime
       }
     } else {
-      if ($type -in 'playerStart','changeClass') { continue }
+      if ($type -in 'playerStart','changeClass' -or $weap -like 'worldspawn*') { continue }
       # Class tracking - Player and Target
+      if ($time -in 250..275 -and $player -eq 'world') { $weap }
       foreach ($pc in @(@($player,$classNoSG),@($target,$t_class -replace '10','9'))) {
         if ($pc[0] -match '^(\s)*$') { continue }	  
         #This is making Rnd1 class bleed to Rnd2...
@@ -772,7 +772,8 @@ foreach ($jsonFile in $inputFile) {
     
 
     #team tracking
-    if ($p_team -notin $null,'' -and $p_team -gt 0 -and $class -gt 0 -and $type -notin 'damageTaken') {     
+    if ($p_team -notin $null,'' -and $p_team -gt 0 -and $class -gt 0 -and $type -notin 'damageTaken' -and $weap -notlike 'worldspawn*') {
+      if ($player -eq 'world') { $weap; $item }
       if ($arrTeam.$player -in '',$null) {
         #Initialise team info when null
         $arrTeam.$player = "$p_team"
@@ -942,10 +943,10 @@ foreach ($jsonFile in $inputFile) {
   }
 
   arrClassTimeTable-Cleanup ([ref]$arrClassTimeTable)
-  #cleanup class times less that 15 seconds
-  #$arrTimeClass     = timeClassCleanup $arrTimeClass
-  #$arrTimeClassRnd1 = timeClassCleanup $arrTimeClassRnd1
-  #$arrTimeClassRnd2 = timeClassCleanup $arrTimeClassRnd2
+  #cleanup class times less that 10 seconds
+  $arrTimeClass     = timeClassCleanup $arrTimeClass
+  $arrTimeClassRnd1 = timeClassCleanup $arrTimeClassRnd1
+  $arrTimeClassRnd2 = timeClassCleanup $arrTimeClassRnd2
 
   ######
   #Create Ordered Player List 
