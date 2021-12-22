@@ -51,20 +51,17 @@ $script:ClassAllowedwithSG = @(1,3,4,5,6,7,8,9,10)
 $script:TeamToColor  = @('Civ','Blue','Red','Yellow','Green')
 
 #array of team keys, playername
+<# wc Old Get Player CLases
 function getPlayerClasses {
-  $class = ''
-  $arrClass = $args[0] -match "^$($args[1] -replace $regExReplaceFix)_[1-9]`$"
+  return ($args[0] -match "^$($args[1] -replace $regExReplaceFix)_[1-9]`$" | `
+            %{ $ClassToStr[($_ -split '_')[1]] } | Sort-Object -Unique) -join ','
+}#>
 
-  foreach ($k in $arrClass) {
-    $c = $ClassToStr[($k -split '_')[1]]
-
-    if ($class -eq '') { 
-      $class  = $c
-    } elseif ($c -notin ($class -split ',')) { 
-      $class += ", $($c)" 
-    }
-  }
-  $class
+function getPlayerClasses {
+  param ($Round,$Player)
+  return ($arrClassTimeTable  |  Where { $_.Name -eq $Player -and ($Round -lt 1 -or $_.Round -eq $Round) } `
+                              | %{ $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 0 } `
+                              | %{ $_.Name } | Sort -Unique) -join ','
 }
 
 function nullValueColorCode {
@@ -255,7 +252,8 @@ function arrSummaryTable-SetPlayerProperty {
     $value
   )
 
-  process {    
+  process {
+    if (!$Value) { $Value = 1}
     $playerpos = (arrFindPlayer -Table $table -Player $player)
     if ($playerpos -gt -1 -and $value -gt 0) { ($table.Value)[$playerpos].$property += $value }
   }
@@ -385,22 +383,6 @@ function arrPlayerTable-UpdatePlayer {
   if ($Increment) { $script:arrPlayerTable[$pos].$Property += $Value }
   else            { $script:arrPlayerTable[$pos].$Property  = $Value }
 }
-
-
-
-
-
-$obj = [pscustomobject]@{ Name=$Name
-  Team=''
-  Round=[int]$Round
-  Kills=0
-  Death=0
-  TKill=0
-  Dmg=0
-  DmgTaken=0
-  DmgTeam=0
-}
-
 #end Summary table functions
 
 function GenerateFragHtmlTable {
@@ -416,10 +398,14 @@ function GenerateFragHtmlTable {
 
   foreach ($p in $playerList) {
     $tableHeader += "<th $($columStyle)>$($count)</th>"
+    $team = (Get-Variable "arrTeam$suffix").Value.$p
+    #$team  = ($arrPlayerTable | Where { $_.Name -eq $p -and (!$Round -or $_.Round -eq $Round) } `
+    #                          | %{ $_.Team} | Sort-Object -Unique) -join '&'
     $kills = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round)} | Measure-Object Kills -Sum).Sum
     $death = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round)} | Measure-Object Death -Sum).Sum
     $tkill = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round)} | Measure-Object TKill -Sum).Sum
-    $table +=  "<tr bgcolor=`"$(teamColorCode (Get-Variable -Name "arrTeam$suffix").Value.$p)`"><td>$($count)</td><td>$($p)</td><td>$((Get-Variable -Name "arrTeam$suffix").Value.$p)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td>"
+    #$table +=  "<tr bgcolor=`"$(teamColorCode (Get-Variable -Name "arrTeam$suffix").Value.$p)`"><td>$($count)</td><td>$($p)</td><td>$((Get-Variable -Name "arrTeam$suffix").Value.$p)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td>"
+    $table +=  "<tr bgcolor=`"$(teamColorCode $team)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td>"
 
     $count2 = 0
     foreach ($o in $playerList) {
@@ -433,7 +419,7 @@ function GenerateFragHtmlTable {
       $count2 +=1
     }
 
-    $table += "<td>$(getPlayerClasses (Get-Variable -Name "arrTimeClass$suffix").Value.Keys $p)</td>"
+    $table += "<td>$(getPlayerClasses -Round $Round -Player $p)</td>"
     $table += "</tr>`n"
     
     $count += 1 
@@ -482,7 +468,7 @@ function GenerateDmgHtmlTable {
       $count2 +=1
     }
 
-    $table += "<td>$(getPlayerClasses (Get-Variable -Name "arrTimeClass$suffix").Value.Keys $p)</td>"
+    $table += "<td>$(getPlayerClasses -Round $Round -Player $p)</td>"
     $table += "</tr>`n"
     
     $count += 1 
@@ -532,28 +518,33 @@ foreach ($jsonFile in $inputFile) {
   if ($RoundTime -is [int] -and $RoundTime -gt 0) { $round1EndTime = $RoundTime }
   else { $script:round1EndTime = 600 }
 
+  # Leaving as HashTable, used for HTML display only 
   $script:arrFragVersus     = @{}
   $script:arrFragVersusRnd1 = @{}
   $script:arrFragVersusRnd2 = @{}
   $script:arrDmgVersus     = @{}
   $script:arrDmgVersusRnd1 = @{}
   $script:arrDmgVersusRnd2 = @{}
-
+  
+  # Used for some HTML->Awards only
   $script:arrKilledClass     = @{}
   $script:arrKilledClassRnd1 = @{}
   $script:arrKilledClassRnd2 = @{}
 
+  # Using Time tracking via below as values are more accurate than new $arrClassTimeTable - Why?
+  $script:arrTimeTrack = @{} #Json parsing helper
   $script:arrTimeClass = @{}
   $script:arrTimeClassRnd1 = @{}
   $script:arrTimeClassRnd2 = @{}
 
-  $script:arrTimeTrack = @{}
+  # Tracking teams via below and then updating arrPlayerTable after JSON parsing -Worth changing?
   $script:arrTeam     = @{}
   $script:arrTeamRnd1 = @{}
   $script:arrTeamRnd2 = @{}
   
   $script:arrResult = @{}
-
+  
+  # Leaving as HashTable, used for HTML display only 
   $script:arrFragMin     = @{}
   $script:arrDmgMin      = @{} 
   $script:arrDeathMin    = @{} 
@@ -563,9 +554,11 @@ foreach ($jsonFile in $inputFile) {
   $script:arrFlagThrowMin = @{}
   $script:arrFlagStopMin  = @{}
 
+
   $script:arrWinLossDraw  = @{}
 
-  $script:arrAttackDmgTracker = @{}
+  # Table Arrays - PS Format-Table friendly
+  $script:arrAttackDmgTracker = @{} #Json parsing helper (AttackCount + Dmg Count)
   $script:arrWeaponTable      = @()
   $script:arrPlayerTable      = @()
   $script:arrClassTimeTable   = @()
@@ -583,8 +576,8 @@ foreach ($jsonFile in $inputFile) {
     $kind    = $item.kind
 
     #Remove any underscores for _ tokens used in Keys 
-    $player  = $item.player -replace '_','.' -replace '\s','' # -replace '\[','\[' -replace '\]','\]S'
-    $target  = $item.target -replace '_','.' -replace '\s','' #-replace '\[','\[' -replace '\]','\]'
+    $player  = $item.player -replace '_','.' -replace '\s$',''
+    $target  = $item.target -replace '_','.' -replace '\s$',''
     $p_team  = $item.playerTeam
     $t_team  = $item.targetTeam
     $class   = $item.playerClass
@@ -1039,6 +1032,9 @@ foreach ($jsonFile in $inputFile) {
 
     foreach ($array in @($playerListAttRnd1, $playerListAttRnd2)) {
       foreach ($p in $array) {
+        #disqualify a player if they were on multiple teams
+        if ($arrTeam.$p -notmatch '^(1|2)$') { continue }
+
         if ($arrResult.WinningTeam -eq 2) {
           $scaler = 1 / $arrResult.winRating
         } else { $scaler = 1 }
@@ -1081,7 +1077,10 @@ foreach ($jsonFile in $inputFile) {
     $count = 1
     foreach ($array in @($playerListDefRnd1, $playerListDefRnd2)) {
       foreach ($p in $array) {
+        #disqualify a player if they were on multiple teams
+        if ($arrTeam.$p -notmatch '^(1|2)$') { continue }
         $pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $p -Round $count
+
         if ($count -eq 1) {
           $awardDefKills.Add($p, $arrPlayerTable[$pos].Kills)
           $awardDefDeath.Add($p, $arrPlayerTable[$pos].Death )
@@ -1142,10 +1141,15 @@ foreach ($jsonFile in $inputFile) {
 
       foreach ($item in $arrKilledClassRnd1.Keys -match $args[1]) { 
         $name = ($item -split '_')[0]
+        # Disqualify player if on multple teams
+        if ($arrTeam.$name -notmatch '^(1|2)$') { continue }
+
         if ($name -in $plRnd1) { $htOut.$name += $arrKilledClassRnd1.$item }
       }
       foreach ($item in $arrKilledClassRnd2.Keys -match $args[1]) { 
         $name = $($item -split '_')[0]
+        # Disqualify player if on multple teams
+        if ($arrTeam.$name -notmatch '^(1|2)$') { continue }
 
         if ($name -in $plRnd2) { $htOut.$name += (awardScaler $arrKilledClassRnd2.$item) }
       }
@@ -1975,7 +1979,25 @@ foreach ($jsonFile in $inputFile) {
         }
       }
     }
-  
+
+    #Data that are not divded up by round
+    switch ($arrResult.winningTeam) {
+      { $_ -eq '0' -or 
+        $arrPlayerTable[$pos].Team -match "1&2|2&1"}  { 
+        arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'Draw'
+        arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryDefTable) -player $p -property 'Draw'
+      }
+      $arrPlayerTable[$pos].Team {
+        arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'Win'
+        arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryDefTable) -player $p -property 'Win'
+      }
+      Default { 
+        arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'Loss'
+        arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryDefTable) -player $p -property 'Loss'
+      }
+    }
+
+    <# wc
     #Data that are not divded up by round    
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'Win' -value ([int]$arrWinLossDraw."$($p)_Win")
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'Draw' -value ([int]$arrWinLossDraw."$($p)_Draw")
@@ -1983,6 +2005,7 @@ foreach ($jsonFile in $inputFile) {
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryDefTable) -player $p -property 'Win' -value ([int]$arrWinLossDraw."$($p)_Win")
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryDefTable) -player $p -property 'Draw' -value ([int]$arrWinLossDraw."$($p)_Draw")
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryDefTable) -player $p -property 'Loss' -value ([int]$arrWinLossDraw."$($p)_Loss")
+    #>
 
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'FlagCap'  -value (($arrPlayerTable | Where Name -EQ $p | Measure FlagCap -Sum).Sum)
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'FlagTake' -value (($arrPlayerTable | Where Name -EQ $p | Measure FlagTake -Sum).Sum)
