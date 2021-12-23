@@ -2183,5 +2183,3 @@ $arrWeaponTable | `  # | Where { ($_.AttackCount + $_.DmgCount) -GT 0 }  `
  $arrClassTimeAttTable | FT *,@{L='Total';E={ $_.Sco + $_.Sold + $_.Demo + $_.Hwg + $_.Med + $_.Pyro + $_.Spy + $_.Eng  }}
  $arrClassTimeDefTable | FT *,@{L='Total';E={ $_.Sco + $_.Sold + $_.Demo + $_.Hwg + $_.Med + $_.Pyro + $_.Spy + $_.Eng  }}
  #>
-
- $arrWeaponTable | FT *
