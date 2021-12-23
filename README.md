@@ -3,7 +3,9 @@
 This takes the json stats object and converts it to a html file. Made by haze.
 
 ```
-PS  COMMAND LINE:- & .\script.ps1 'x:\path\filename.json' [<Rnd1 End Time/Seconds>]
-WIN COMMAND LINE:- powershell -Command "& .\script.ps1" "x:\path\filename.json" [<Rnd1 End Time/Seconds>]
-PS  *.JSON:- foreach ($f in (gci 'H:\stats\*.json')) { & .\FO_stats_v1.ps1 ($f.ToString() -replace '\[','`[' -replace '\]','`]') }
+PS  COMMAND LINE:- & .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RountTime <seconds>] [-TextOnly] [-TextSave]
+WIN COMMAND LINE:- powershell -Command "& .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RountTime <seconds>] [-TextOnly] [-TextSave]"
+NOTE: StatFile parameter now accepts *.json wildcard to generate many HTMLs, Text stats are ALL STATS COMBINED.
+For Text Only stats for many stat files - i.e. not all games combined.
+PS  *.JSON:- foreach ($f in (gci 'x:\stats\*.json')) { & .\FO_stats_v2.ps1 -StatFile ($f.ToString() -replace '\[','`[' -replace '\]','`]') -TextOnly }
 ```
