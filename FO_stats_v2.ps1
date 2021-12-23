@@ -650,15 +650,25 @@ foreach ($jsonFile in $inputFile) {
 
       switch ($type) {
         'attack'      { if ($arrAttackDmgTracker.$keyWeap -eq -1) {
+                          # damageDone registered before attack
                           $arrAttackDmgTracker.Remove($keyWeap)
-                        } elseif ($arrAttackDmgTracker.$keyWeap -in $null,0,'') {
-                          $arrAttackDmgTracker.$keyWeap = $time
+                        } elseif ($arrAttackDmgTracker.$keyWeap -gt 0) {
+                          # attack registered - no dmg done found since
+                          $arrAttackDmgTracker.Remove($keyWeap)
                         }
                         arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'AttackCount' -Increment
                       }
-        'damageDone'  { if ($arrAttackDmgTracker.$keyWeap -in $null,0,'') {  $arrAttackDmgTracker.$keyWeap = -1 }
-                        if ($arrAttackDmgTracker.$keyWeap -gt 0) {
-                          arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'DmgCount'    -Increment
+        'damageDone'  { <# To avoid multi-hits: No item existing = No DmgCount added #>
+                        if ($p_team -ne $t_team) {
+                          if (!$arrAttackDmgTracker.$keyWeap) { 
+                            #Damage not registered, no attack yet found
+                            $arrAttackDmgTracker.$keyWeap = -1
+                            arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'DmgCount'   -Increment
+                          } elseif (!$arrAttackDmgTracker.$keyWeap -gt 0) {
+                            #Attack has been registered prior to damangeDone
+                            arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'DmgCount'   -Increment
+                            $arrAttackDmgTracker.Remove($keyWeap) 
+                          }
                         }
                       }
       }
@@ -1809,11 +1819,11 @@ foreach ($jsonFile in $inputFile) {
       $totDmgTk = @(0,0,0)
       $foundFF  = 0
 
-      $allWeapKeys  = $arrWeaponTable | Where { $_.Name -eq $p -and $_.Weapon -notmatch '(world|suicide|-ff)$'} `
+      $allWeapKeys  = $arrWeaponTable | Where { $_.Name -eq $p -and $_.Weapon -notmatch '^(world|suicide|.*-ff)$'} `
                                       | Group-Object Class,Weapon `
                                       | %{ $_.Group | Select Class,Weapon -First 1 } `
                                       | Sort-Object Class,Weapon
-      $allWeapKeys += $arrWeaponTable | Where { $_.Name -eq $p -and $_.Weapon -match '(world|suicide|-ff)$'} `
+      $allWeapKeys += $arrWeaponTable | Where { $_.Name -eq $p -and $_.Weapon -match '^(world|suicide|.*-ff)$'} `
                                       | Group-Object Class,Weapon `
                                       | %{ $_.Group | Select Class,Weapon -First 1 } `
                                       | Sort-Object Class,Weapon
