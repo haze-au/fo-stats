@@ -118,7 +118,6 @@ function weapSN {
     'supershotgun'  { 'ssg'   }
     'shotgun'       { 'sg'    }
     'normalgrenade' { 'hgren' }
-    'grentimer'     { 'hgren' }
     'axe'           { 'axe'   }
     'spike'         { 'ng'    }
     'nailgun'       { 'ng'    }
@@ -155,6 +154,7 @@ function weapSN {
     'flamethrower'  { 'flame'  }
     'fire'          { 'fire'  }
     'flamerflame'   { 'flame' }
+    'grentimer'     { 'naplm' }
     
     #spy - knife
     'proj_tranq'    { 'tranq' }
@@ -1735,14 +1735,13 @@ foreach ($jsonFile in $inputFile) {
 
     $count = 1
     foreach ($p in $playerList) {
+      $table +=  "<tr bgcolor=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td>"
+        
+      foreach ($r in 1..2) {
         $pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $p -Round $r
         if ($arrPlayerTable[$pos].Death -in 0,'',$null) { $kd = 'n/a' }
         else { $kd = [math]::Round( $arrPlayerTable[$pos].Kills / $arrPlayerTable[$pos].Death ,2) }
-
-
-        $table +=  "<tr bgcolor=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td>"
         
-      foreach ($r in 1..2) {
         $table += "<td>$($kd)</td>"
 
         $count2 = 1
