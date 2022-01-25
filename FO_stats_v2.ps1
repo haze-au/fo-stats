@@ -1012,7 +1012,7 @@ foreach ($jsonFile in $inputFile) {
 
     function awardScaler {
       if ($arrResult.WinningTeam -eq 2) {
-        return [math]::Floor($args[0] / (1 - $arrResult.WinRating))
+        return [math]::Floor($args[0] * (1 + $arrResult.WinRating))
       } else { return $args[0] }
     }
 
