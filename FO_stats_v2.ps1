@@ -2057,7 +2057,7 @@ $textOut = ''
 $textOut += "###############"
 $textOut += "`n   Game Log "
 $textOut += "`n###############"
-$textOut += $arrResultTable | Format-Table Match,Winner,@{L='Rating';E={'{0:P0}' -f $_.Rating}},Score1,Team1,Score2,Team2 | Out-String
+$textOut += $arrResultTable | Format-Table Match,Winner,@{L='Rating';E={'{0:P0}' -f $_.Rating}},Score1,Team1,Score2,Team2 -Wrap | Out-String
 
 $textOut += "`n##############$(if ($jsonFileCount -gt 1) { "##############" })"
 $textOut += "`n FINAL TOTALS $(if ($jsonFileCount -gt 1) { " - $jsonFileCount games" })"
@@ -2074,7 +2074,7 @@ foreach ($i in $arrSummaryAttTable) {
   $i.TimePlayed = Format-MinSec $i.TimePlayed
 }
 
-$textOut += $arrSummaryAttTable | Format-Table Name,KPM,KD,Kills,Death,TKill,Dmg,FlagCap,FlagTake,FlagTime,TimePlayed,Classes | Out-String
+$textOut += $arrSummaryAttTable | Format-Table Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,TimePlayed,Classes | Out-String
                                    <# OLD - See presentation format above
                                    @{Label='KPM';Expression={ Table-CalculateVPM $_.Kills $_.TimePlayed }},@{Label='K/D';Expression={ [math]::Round($_.Kills / $_.Death,2) }}, ` 
                                    Kills,Death,TKill,Dmg, `
