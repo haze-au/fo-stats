@@ -1954,12 +1954,13 @@ foreach ($jsonFile in $inputFile) {
   foreach ($p in $playerList) {
     #Data that is seperated by round - work out whos att and def.
     foreach ($round in 1..2) {
+      $pos = arrFindPlayer ([ref]$arrPlayerTable) $p -Round $round
+      if ($pos -eq -1) { continue } # Did not play this round
+
       $aod = (attOrDef $round (Get-Variable "arrTeamRnd$round").Value.$p)
       if ($aod -ne '') {    
         if (    $aod -eq 'Att') { $refSummary = ([ref]$arrSummaryAttTable); $refClassTime = ([ref]$arrClassTimeAttTable); $refClassFrag = ([ref]$arrClassFragAttTable) }
         elseif ($aod -eq 'Def') { $refSummary = ([ref]$arrSummaryDefTable); $refClassTime = ([ref]$arrClassTimeDefTable); $refClassFrag = ([ref]$arrClassFragDefTable) }
-        
-        $pos = arrFindPlayer ([ref]$arrPlayerTable) $p -Round $round
 
         arrSummaryTable-UpdatePlayer -table $refSummary -player $p  -kills ([int]$arrPlayerTable[$pos].Kills)  `
                                                                     -death ([int]$arrPlayerTable[$pos].Death) `
