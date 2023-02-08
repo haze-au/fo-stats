@@ -113,6 +113,7 @@ function timeRnd-RoundDown {
 function weapSN {
   
   switch ($args[0]) {
+    ''              { 'NULL'  }
     #common
     'info_tfgoal'   { 'laser' }
     'supershotgun'  { 'ssg'   }
@@ -122,6 +123,15 @@ function weapSN {
     'axe'           { 'axe'   }
     'spike'         { 'ng'    }
     'nailgun'       { 'ng'    }
+    
+    #7/2/23 - New inflictor/weaps??
+    'grenade grenadegrenade'   { 'hgren' }
+    'red grenadegrenade'       { 'gl'    }
+    'mirv grenadegrenade'      { 'mirv'  }
+    'mirvlet grenadegrenade'   { 'mirv'  }
+    'napalm grenadegrenade'    { 'napalm'}
+    'shock grenadegrenade'     { 'shock' }
+    'emp grenadegrenade'       { 'emp'   }
 
     #scout
     'flashgrenade'  { 'flash' }
@@ -583,8 +593,8 @@ foreach ($jsonFile in $inputFile) {
     $kind    = $item.kind
 
     #Remove any underscores for _ tokens used in Keys 
-    $player  = $item.player -replace '_','.' -replace '\s$',''
-    $target  = $item.target -replace '_','.' -replace '\s$',''
+    $player  = $item.player -replace '_','.' -replace '\s$','.' -replace '\^','.'  -replace '\$','§'
+    $target  = $item.target -replace '_','.' -replace '\s$','.' -replace '\^','.'  -replace '\$','§'
     $p_team  = $item.playerTeam
     $t_team  = $item.targetTeam
     $class   = $item.playerClass
