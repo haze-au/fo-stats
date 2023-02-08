@@ -1,6 +1,6 @@
 ﻿param (
   [string]$FilterPath, #Stats folder on repo, replicated locally, default='sydney/staging'
-  [String]$FilterFile, #If null search all files in last 48ish hours that are not processed
+  [Switch]$NoLimit,    #Search for full path key - no date filtering
   [string]$OutFolder,  #Path of ouput JSON and HTML
   [switch]$LatestFile, #Last modified file only (from the filtered list)
   [int]   $LimitMins,  #Only access files from last X minutes (sum of days and mins)(sum of days and mins)
@@ -17,9 +17,7 @@ else { $OutFolder = Get-Item -LiteralPath $OutFolder}
 
 $timeUTC = (Get-Date).ToUniversalTime()
 
-if (!$FilterPath) { $FilterPath = 'sydney/staging/' }
-if ($FilterPath -notmatch '.*/$') { $FilterPath = "$FilterPath/" }
-  
+if (!$FilterPath) { $FilterPath = 'sydney/staging/' }  
 
 function New-UrlStatFile { return [PSCustomObject]@{ Name=$args[0]; DateTime=$args[1] } }
 $statFiles = @()
@@ -28,10 +26,10 @@ if ($LimitMins -eq 0 -or $LimitDays -eq 0) {
   $LimitDays = 1
 }
 
-if ($FilterFile) {
-  $xml = [xml](invoke-webrequest -Uri "https://fortressone-stats.s3.amazonaws.com/?prefix=$FilterPath$FilterFile") 
+if ($NoLimit) {
+  $xml = [xml](invoke-webrequest -Uri "https://fortressone-stats.s3.amazonaws.com/?prefix=$FilterPath") 
   if (($xml.ListBucketResult.Contents.Count) -ne 0) {
-    $xml.ListBucketResult.Contents | foreach { $statFiles += (New-UrlStatFile $_.Key $_.LastModified) }
+    $xml.ListBucketResult.Contents | foreach { $statFiles += (New-UrlStatFile $_.Key $_.LastModified) } 
   }
 } else {
   $startDate = $timeUTC.AddMinutes($LimitMins * -1).AddDays($LimitDays * -1)
@@ -50,16 +48,16 @@ if ($LatestFile) { $statFiles = ($statFiles | Sort DateTime -Descending)[0] }
 
 write-host "FO Stats Downloader: `n"`
             "Date Limiter:`t$('{0:yyyy-MM-dd-HH-mm-ss}' -f $startDate)`n"`
+            "-NoLimit:`t`t$NoLimit`n" `
             "-LimitDays:`t$LimitDays`n" `
             "-LimitMins:`t$LimitMins`n" `
-            "-FilterFile:`t$FilterFile`n" `
             "-FilterPath:`t$FilterPath`n" `
             "-OutFolder:`t$OutFolder`n"`
             "-Overwrite:`t$Overwrite`n"`
 
 foreach ($f in $statFiles) {
   if ($LimitMins -gt 0 -or $LimitDays -gt 0)  {
-    if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-2][0-9]-[0-5][0-9]-[0-5][0-9]') {
+    if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') {
       Write-Host "ERROR: Minute/Day limit not possible - file has invalid date/time [$($f.Name)]"
       continue
     } else {
