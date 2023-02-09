@@ -33,7 +33,8 @@ if ($FilterFile) {
   $LimitMins = 0
   if ($FilterFile -notmatch '\*') { $FilterFile = "*$FilterFile*" }
 } elseif ($LimitMins -eq 0 -and $LimitDays -eq 0) {
-  $LimitDays = 1
+  if ($LatestFile) { $LimitDays = 30 }
+  else             { $LimitDays = 1  }
 } 
 
 if ($FilterFile) {
