@@ -1,6 +1,8 @@
-﻿param (
-  [string]$FilterPath, #Stats folder on repo, replicated locally, default='sydney/staging'
-  [string]$FilterFile,    #Search for exactS path key - no date filtering
+﻿
+param (
+  #AWS Result limit is 1000 files, so please filter to target your results
+  [string]$FilterPath, #Stats folder on repo, replicated locally, default='sydney/staging' 
+  [string]$FilterFile, #Filter the filenames from the XML results, use * for wildcards.
   [string]$OutFolder,  #Path of ouput JSON and HTML
   [switch]$LatestFile, #Last modified file only (from the filtered list)
   [int]   $LimitMins,  #Only access files from last X minutes (sum of days and mins)(sum of days and mins)
@@ -28,6 +30,7 @@ $statFiles = @()
 if ($FilterFile) {
   $LimitDays = 0
   $LimitMins = 0
+  if ($FilterFile -notmatch '\*') { $FilterFile = "*$FilterFile*" }
 } elseif ($LimitMins -eq 0 -and $LimitDays -eq 0) {
   $LimitDays = 1
 } 
@@ -35,7 +38,7 @@ if ($FilterFile) {
 if ($FilterFile) {
   $xml = [xml](invoke-webrequest -Uri "https://fortressone-stats.s3.amazonaws.com/?prefix=$FilterPath") 
   if (($xml.ListBucketResult.Contents.Count) -ne 0) {
-    $xml.ListBucketResult.Contents | foreach { if (($_.Key -split '/') -match $FilterFile) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified) } }
+    $xml.ListBucketResult.Contents | foreach { if (($_.Key -split '/')[-1] -like $FilterFile) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified) } }
   } 
 } else {
   $startDate = $timeUTC.AddMinutes($LimitMins * -1).AddDays($LimitDays * -1)
@@ -66,6 +69,21 @@ write-host "FO Stats Downloader: `n"`
 $filesDownloaded = @()
 write-host " Downloading..."
 write-host "===================================================================================================="
+
+if ($statFiles.Count -eq 0) {
+  Write-Host "No stat files found from the $($xml.ListBucketResult.Contents.Count) results found."
+  Write-Host "NOTE: AWS results are capped at 1000 files, limit your results using the -FilePath parameter"
+  Write-Host ""
+  Write-Host "`tFirst file date:`t$($xml.ListBucketResult.Contents[0].LastModified)"
+  Write-Host "`tLast  file date:`t$($xml.ListBucketResult.Contents[-1].LastModified)"
+  Write-Host ""
+  Write-Host "Please check your search filters and try again."
+  write-host "===================================================================================================="
+  return
+}
+
+
+
 foreach ($f in $statFiles) {
   if (!($FileFilter) -and ($LimitMins -gt 0 -or $LimitDays -gt 0))  {
     if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') {
