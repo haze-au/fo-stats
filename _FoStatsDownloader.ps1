@@ -84,8 +84,6 @@ if ($statFiles.Count -eq 0) {
   return
 }
 
-
-
 foreach ($f in $statFiles) {
   if (!($FileFilter) -and ($LimitMins -gt 0 -or $LimitDays -gt 0))  {
     if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') {
@@ -105,7 +103,7 @@ foreach ($f in $statFiles) {
     continue
   } 
 
-  $filesDownloaded += (Get-Item -LiteralPath $fileName)
+  $filesDownloaded += (Get-Item ($fileName -replace '\[','`[' -replace '\]','`]'))
   if (!(Test-Path -LiteralPath $filePath)) { New-Item -Path $filePath -ItemType Directory | Out-Null }
   write-host "Downloading:- $($f.Name)"
   ([string](invoke-webrequest -Uri "https://fortressone-stats.s3.amazonaws.com/$($f.Name)")) | Out-File -LiteralPath  $fileName
