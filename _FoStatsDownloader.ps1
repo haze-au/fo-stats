@@ -11,6 +11,7 @@ param (
   [int]   $RoundTime,  #Passed to FO_Stats
   [switch]$TextSave,   #Passed to FO_Stats
   [switch]$TextOnly    #Passed to FO_Stats
+  [switch]$OpenHTML    #Passed to FO_Stats
 )
 
 if (!$OutFolder) { $OutFolder = "$PSScriptRoot" }
@@ -114,8 +115,9 @@ write-host "====================================================================
 foreach ($fileName in $filesDownloaded) {
   $param = @{ StatFile=$fileName }
   if ($RoundTime) { $param.RoundTime = $RoundTime }
-  if ($TextOnly)  { $param.TextOnly = $true }
-  if ($TextSave)  { $param.TextSave = $true }
+  if ($TextOnly)  { $param.TextOnly = $true  }
+  if ($TextSave)  { $param.TextSave = $true  }
+  if ($OpenHTML)  { $param.$OpenHTML = $true }
 
   write-host "===================================================================================================="
   write-host "FO Stats Start:- `t$($fileName)"
