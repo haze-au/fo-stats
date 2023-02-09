@@ -10,7 +10,7 @@ param (
   [switch]$Overwrite,  #Force re-download do the FO_stats again even when file exists
   [int]   $RoundTime,  #Passed to FO_Stats
   [switch]$TextSave,   #Passed to FO_Stats
-  [switch]$TextOnly    #Passed to FO_Stats
+  [switch]$TextOnly,    #Passed to FO_Stats
   [switch]$OpenHTML    #Passed to FO_Stats
 )
 
