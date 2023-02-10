@@ -43,7 +43,7 @@ param (
   [string]$OutFolder,  #Path of ouput JSON and HTML
   [switch]$LatestFile, #Last modified file only (from the filtered list)
   [int]   $LimitMins,  #Only access files from last X minutes (sum of days and mins)(sum of days and mins)
-  [int]   $LimitDays,  #Only access files from last X days (sum of days and mins)
+  [double]   $LimitDays,  #Only access files from last X days (sum of days and mins)
   [switch]$DownloadOnly,#Download JSON only
   [switch]$Overwrite,  #Force re-download do the FO_stats again even when file exists
   [switch]$ForceStats, #Force running stats on already existing file
@@ -122,6 +122,8 @@ write-host "FO Stats Downloader: `n"`
             "-FilterFile:`t$FilterFile`n" `
             "-OutFolder:`t$OutFolder`n"`
             "-Overwrite:`t$Overwrite`n"`
+            "-DownloadOny:`t$DownloadOny`n"`
+            "-ForceStats:`t$ForceStats`n"
 
 
 $filesDownloaded = @()

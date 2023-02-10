@@ -132,6 +132,7 @@ function weapSN {
     'napalm grenadegrenade'    { 'napalm'}
     'shock grenadegrenade'     { 'shock' }
     'emp grenadegrenade'       { 'emp'   }
+    'flash grenadegrenade'     { 'flash' }
 
     #scout
     'flashgrenade'  { 'flash' }
@@ -182,7 +183,7 @@ function weapSN {
     'build_timer'        { 'sent' }
 
     #remove underscore to avoid token key issues.
-    default         { $args[0] -replace '_','-' }
+    default         { $args[0] -replace '[_ ]','-' }
   }
 }
 

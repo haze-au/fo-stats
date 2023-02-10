@@ -11,7 +11,8 @@
 ## Close the root certificate store.
  $rootStore.Close()
  
-#1bSKIPPED
+#1b
+$authenticode = Get-ChildItem Cert:\LocalMachine\Root | Where-Object {$_.Subject -eq "CN=Haze Authenticode"}
 # Add the self-signed Authenticode certificate to the computer's trusted publishers certificate store.
 ## Create an object to represent the LocalMachine\TrustedPublisher certificate store.
  $publisherStore = [System.Security.Cryptography.X509Certificates.X509Store]::new("TrustedPublisher","LocalMachine")
