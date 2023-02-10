@@ -4,37 +4,38 @@
 # Sample Commands
 #-----------------------------------------------------
 # 1. US Stats from last 24hrs.
-#     & .\FoStatsDownloader.ps1 -Region US
+#     & .\_FoDownloader.ps1 -Region US
 #
-# 2. Euro stats from last 7 days:
-#     & .\FoStatsDownloader.ps1 -Region EU -LimitDays 7
+# 2. Euro demos from last 7 days:
+#     & .\_FoDownloader.ps1 -Region EU -LimitDays 7 -Demos
 #
 # 3. Stats from 1x server in last 24hrs.
-#     & .\FoStatsDownloader.ps1 -FilterPath 'sydney/staging/'
+#     & .\_FoDownloader.ps1 -FilterPath 'sydney/staging/'
 #
 # 4. Last stat file availabe in ALL regions.
-#     & .\FoStatsDownloader.ps1 -Region ALL -LatestFile
+#     & .\_FoDownloader.ps1 -Region ALL -LatestFile
 #
 # 5. Re-download existing stats from last 2hrs.
-#     & .\FoStatsDownloader.ps1 -Region US -LimitMins 120 -Overwrite
+#     & .\_FoDownloader.ps1 -Region US -LimitMins 120 -Overwrite
 #
 # 6. Do not download stats again but run FO Stats again.
-#     & .\FoStatsDownloader.ps1 -Region US -ForceStats
+#     & .\_FoDownloader.ps1 -Region US -ForceStats
 #
-# 7. Results from ALL regions - Staging servers only in last 24hrs.
-#     & .\FoStatsDownloader.ps1 -Region ALL -FilterPath 'staging/'
+# 7. Demos from ALL regions - Staging servers only in last 24hrs.
+#     & .\_FoDownloader.ps1 -Region ALL -FilterPath 'staging/' -Demos
 #
 # 8. Results from in Sydney & Dallas Stagin where map = well6.
-#     & .\FoStatsDownloader.ps1 -FilterPath 'sydney/staging/,dallas/statging/' -FilterFile '*`[well6`]*'
+#     & .\_FoDownloader.ps1 -FilterPath 'sydney/staging/,dallas/statging/' -FilterFile '*`[well6`]*'
 #
 # 9. Stats from ALL regions, save to specific folder and save text-based output.
-#     & .\FoStatsDownloader.ps1 -Region ALL -OutFolder 'C:\FoStats' -TextSave
+#     & .\_FoDownloader.ps1 -Region ALL -OutFolder 'C:\FoStats' -TextSave
 #
 ######################################################
 
 
 param (
   #AWS Result limit is 1000 files, so please filter to target your results
+  [switch]$Demos,      #Demos instead of stats
   [ValidateSet('ALL','US','EU','OCE','INT')]
           $Region,     # All | US | EU | OCE | Int
   [string]$FilterPath, #Stats folder on repo, replicated locally, default='sydney/staging/' 
@@ -52,6 +53,9 @@ param (
   [switch]$OpenHTML    #Passed to FO_Stats
 
 )
+
+if ($Demos) { $AwsUrl = 'https://fortressone-demos.s3.amazonaws.com/' }
+else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
 
 $OCEPaths = @('sydney/','sydney-gz/','snoozer/')
 $USPaths  = @('california/','coach/','dallas/','dallas2/','iowa/','phoenix/','virginia/')
@@ -101,7 +105,8 @@ foreach ($p in ($FilterPath -split ',')) {
   $startDate = $timeUTC.AddMinutes($LimitMins * -1).AddDays($LimitDays * -1)
   $tempDate  = $startDate
   while ($tempDate.Year -le $timeUTC.Year -and $tempDate.Month -le $timeUTC.Month) {
-    $xml = [xml](invoke-webrequest -Uri "https://fortressone-stats.s3.amazonaws.com/?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
+    "$($AwsUrl)`?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)"
+    $xml = [xml](invoke-webrequest -Uri "$($AwsUrl)?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
     $xml.ListBucketResult.Contents | foreach { $statFiles += (New-UrlStatFile $_.Key $_.LastModified) }
     $tempDate = $tempDate.AddMonths(1)
   }
@@ -150,7 +155,7 @@ foreach ($f in $statFiles) {
 
   if (!(Test-Path -LiteralPath $filePath)) { New-Item -Path $filePath -ItemType Directory | Out-Null }
   write-host "Downloading:- $($f.Name)"
-  ([string](invoke-webrequest -Uri "https://fortressone-stats.s3.amazonaws.com/$($f.Name)")) | Out-File -LiteralPath  $fileName
+  ([string](invoke-webrequest -Uri "$($AwsUrl)$($f.Name)")) | Out-File -LiteralPath  $fileName
   $filesDownloaded += (Get-Item ($fileName -replace '\[','`[' -replace '\]','`]'))
 }
 
@@ -166,7 +171,7 @@ if (!$filesSkipped -and $filesDownloaded.Count -eq 0) {
   return
 }
 
-if ($DownloadOnly) { return }
+if ($DownloadOnly -or $Demos) { return }
 
 write-host "====================================================================================================`n"
 foreach ($fileName in $filesDownloaded) {
@@ -181,7 +186,7 @@ foreach ($fileName in $filesDownloaded) {
   write-host "FO Stats ($i of $($filesDownloaded.Length)):- `t$($fileName)"
   if ($param.Count -gt 1) { Write-Host "Parameters: $($param.GetEnumerator() | foreach { if ($_.Name -ne 'StatFile') { " -$($_.Name): $($_.Value)" } })" }
   write-host "----------------------------------------------------------------------------------------------------"
-  & H:\_stats\FO_stats_v2.ps1 @param
+  & .\FO_stats_v2.ps1 @param
   write-host "----------------------------------------------------------------------------------------------------"
   write-host "FO Stats Completed:-`t$($fileName)"
   write-host "----------------------------------------------------------------------------------------------------"

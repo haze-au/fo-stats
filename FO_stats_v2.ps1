@@ -2173,7 +2173,6 @@ Write-Host $textOut
 
 if ($TextSave) {
     if ($jsonFileCount -eq 1) {
-    $outFileStr
       $TextFileStr = "$outFileStr.txt"
     } else {   
       $TextFileStr = "$($inputfile[0].Directory.FullName)\FO_Stats_Summary-$($jsonFileCount)games-$('{0:yyMMdd_HHmmss}' -f (Get-Date)).txt"
