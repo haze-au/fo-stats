@@ -105,13 +105,13 @@ foreach ($p in ($FilterPath -split ',')) {
   $startDate = $timeUTC.AddMinutes($LimitMins * -1).AddDays($LimitDays * -1)
   $tempDate  = $startDate
   while ($tempDate.Year -le $timeUTC.Year -and $tempDate.Month -le $timeUTC.Month) {
-    "$($AwsUrl)`?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)"
     $xml = [xml](invoke-webrequest -Uri "$($AwsUrl)?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
-    $xml.ListBucketResult.Contents | foreach { $statFiles += (New-UrlStatFile $_.Key $_.LastModified) }
+    $xml.ListBucketResult.Contents | foreach { if ($_) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified) } }
     $tempDate = $tempDate.AddMonths(1)
   }
 }
 
+$statFiles
 #LatestFileOnly
 if ($LatestFile) { $statFiles = ($statFiles | Sort DateTime -Descending)[0] }
 
@@ -131,10 +131,11 @@ write-host " Downloading..."
 write-host "===================================================================================================="
 
 foreach ($f in $statFiles) {
-  if ($FilterFile -and $f.Name -notlike $FilterFile) { continue; 'hi' }
+  if ($FilterFile -and $f.Name -notlike $FilterFile) { continue }
   
   if (!($FileFilter) -and ($LimitMins -gt 0 -or $LimitDays -gt 0))  {
     if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') {
+      $f
       Write-Host "ERROR: Minute/Day limit not possible - file has invalid date/time [$($f.Name)]"
       continue
     } else {
