@@ -529,7 +529,7 @@ foreach ($jsonFile in $inputFile) {
   if (!($jsonFile.Exists)) { Write-Host "ERROR: File not found - $($jsonFile.FullName)"; return }
 
   # Out file with same-name.html - remove pesky [] braces.
-  $outFileStr = ($jsonFile.FullName -replace '\.json$','.html'  -replace '`?(\[|\])','')
+  $outFileStr = ($jsonFile.FullName -replace '\.json$',''  -replace '`?(\[|\])','')
   $json = ((Get-Content -Path ($jsonFile.FullName  -replace '\[','`[' -replace '\]','`]') -Raw) | ConvertFrom-Json)
   $jsonFileCount++
   Write-Host "Input File$(if ($inputFile.Length -gt 1) { " ($jsonFileCount/$($inputFile.Length))" } ): $($jsonFile.Name)"
@@ -1944,8 +1944,8 @@ foreach ($jsonFile in $inputFile) {
     $htmlOut += '</div></div>' 
     $htmlOut += "</body></html>"     
 
-    $htmlOut | Out-File -FilePath $outFileStr
-    if ($OpenHTML) { & $outFileStr }
+    $htmlOut | Out-File -FilePath "$outFileStr.html"
+    if ($OpenHTML) { & "$outFileStr.html" }
   }   #end html generation
 
 
@@ -2169,8 +2169,15 @@ $textOut += $arrClassTimeDefTable | Format-Table Name, `
 Write-Host "`n"
 Write-Host $textOut
 
+
+
 if ($TextSave) {
-    $TextFileStr = "$($inputfile[0].Directory.FullName)\FO_Stats_Summary-$($jsonFileCount)games-$('{0:yyMMdd_HHmmss}' -f (Get-Date)).txt"
+    if ($jsonFileCount -eq 1) {
+    $outFileStr
+      $TextFileStr = "$outFileStr.txt"
+    } else {   
+      $TextFileStr = "$($inputfile[0].Directory.FullName)\FO_Stats_Summary-$($jsonFileCount)games-$('{0:yyMMdd_HHmmss}' -f (Get-Date)).txt"
+    }
     Out-File -InputObject $textOut -FilePath $TextFileStr
     Write-Host "Text stats saved: $TextFileStr"
 }
