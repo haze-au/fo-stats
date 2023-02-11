@@ -11,7 +11,7 @@
 
 param (
   [Parameter(Mandatory=$true)] 
-  [string]$StatFile,
+  [string[]]$StatFile,
   [int]   $RoundTime,
   [switch]$TextSave,
   [switch]$TextOnly,
