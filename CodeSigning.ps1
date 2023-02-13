@@ -1,4 +1,6 @@
-﻿$authenticode = New-SelfSignedCertificate -Subject "Haze Authenticode" -CertStoreLocation Cert:\LocalMachine\My -Type CodeSigningCert
+﻿<#
+
+$authenticode = New-SelfSignedCertificate -Subject "Haze Authenticode" -CertStoreLocation Cert:\LocalMachine\My -Type CodeSigningCert
 
 #1a
 # Add the self-signed Authenticode certificate to the computer's root certificate store.
@@ -30,15 +32,20 @@ $authenticode = Get-ChildItem Cert:\LocalMachine\Root | Where-Object {$_.Subject
  Get-ChildItem Cert:\LocalMachine\Root | Where-Object {$_.Subject -eq "CN=Haze Authenticode"}
 # Confirm if the self-signed Authenticode certificate exists in the computer's Trusted Publishers certificate store
  Get-ChildItem Cert:\LocalMachine\TrustedPublisher | Where-Object {$_.Subject -eq "CN=Haze Authenticode"}
+3#>
+
+cd $PSScriptRoot
 
  #3
  # Get the code-signing certificate from the local computer's certificate store with the name *ATA Authenticode* and store it to the $codeCertificate variable.
 $codeCertificate = Get-ChildItem Cert:\LocalMachine\My | Where-Object {$_.Subject -eq "CN=Haze Authenticode"}
+
+
 
 # Sign the PowerShell script
 # PARAMETERS:
 # FilePath - Specifies the file path of the PowerShell script to sign, eg. C:\ATA\myscript.ps1.
 # Certificate - Specifies the certificate to use when signing the script.
 # TimeStampServer - Specifies the trusted timestamp server that adds a timestamp to your script's digital signature. Adding a timestamp ensures that your code will not expire when the signing certificate expires.
-Set-AuthenticodeSignature -FilePath H:\FO_Stats_with_downloader_R2\_FoDownloader.ps1 -Certificate $codeCertificate -TimeStampServer http://timestamp.digicert.com
-Set-AuthenticodeSignature -FilePath H:\FO_Stats_with_downloader_R2\FO_stats_v2.ps1 -Certificate $codeCertificate -TimeStampServer http://timestamp.digicert.com
+Set-AuthenticodeSignature -FilePath H:\src\_GitHub\fo-stats\FO_stats_v2.ps1 -Certificate $codeCertificate -TimeStampServer http://timestamp.digicert.com
+Set-AuthenticodeSignature -FilePath H:\src\_GitHub\fo-stats\_FoDownloader.ps1   -Certificate $codeCertificate -TimeStampServer http://timestamp.digicert.com
