@@ -707,9 +707,8 @@ foreach ($jsonFile in $inputFile) {
         $arrTimeTrack."$($p)_lastChange" = $round1EndTime
       }
     } else {
-      if ($type -in 'playerStart','changeClass' -or $weap -like 'worldspawn*') { continue }
+      if ($type -in 'playerStart','changeClass' <#-or $weap -like 'worldspawn*'#>) { continue }
       # Class tracking - Player and Target
-      if ($time -in 250..275 -and $player -eq 'world') { $weap }
       foreach ($pc in @(@($player,$classNoSG),@($target,$t_class -replace '10','9'))) {
         if ($pc[0] -match '^(\s)*$') { continue }	  
         #This is making Rnd1 class bleed to Rnd2...
