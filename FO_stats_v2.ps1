@@ -1,7 +1,8 @@
 ﻿###
 # 22/12/2021
-# PS  COMMAND LINE:- & .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RoundTime <seconds>] [-TextOnly] [-TextSave]
-# WIN COMMAND LINE:- powershell -Command "& .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RountTime <seconds>] [-TextOnly] [-TextSave]"
+# PS  COMMAND LINE:- & .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RoundTime <seconds>] [-TextOnly] [-TextSave] [-TextJson]
+# WIN COMMAND LINE:- powershell -Command "& .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RountTime <seconds>] [-TextOnly] [-TextSave] [-TextJson]
+"
 #
 # NOTE: StatFile parameter now accepts *.json wildcard to generate many HTMLs, Text stats are ALL STATS COMBINED.
 #
@@ -14,6 +15,7 @@ param (
   [string[]]$StatFile,
   [int]   $RoundTime,
   [switch]$TextSave,
+  [switch]$TextJson,
   [switch]$TextOnly,
   [switch]$OpenHTML
 )
@@ -61,7 +63,7 @@ function getPlayerClasses {
   param ($Round,$Player)
   return ($arrClassTimeTable  |  Where { $_.Name -eq $Player -and ($Round -lt 1 -or $_.Round -eq $Round) } `
                               | %{ $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 0 } `
-                              | %{ $_.Name } | Sort -Unique) -join ','
+                              | %{ $_.Name } | Sort-Object -Unique) -join ','
 }
 
 function nullValueColorCode {
@@ -523,14 +525,14 @@ foreach ($jsonFile in $inputFile) {
   if ($txt[0] -notmatch '^\[.*') {
     $txt[0] = "[$($txt[0])"
     $txt[$txt.count - 1] = "$($txt[$txt.count - 1])]"
-    $txt | Out-File ($jsonFile.FullName  -replace '\[','`[' -replace '\]','`]')
+    $txt | Out-File -LiteralPath ($jsonFile.FullName)
   }
   Remove-Variable txt
 
   if (!($jsonFile.Exists)) { Write-Host "ERROR: File not found - $($jsonFile.FullName)"; return }
 
   # Out file with same-name.html - remove pesky [] braces.
-  $outFileStr = ($jsonFile.FullName -replace '\.json$',''  -replace '`?(\[|\])','')
+  $outFileStr = ($jsonFile.FullName) -replace '\.json$',''  #-replace '`?(\[|\])','')
   $json = ((Get-Content -Path ($jsonFile.FullName  -replace '\[','`[' -replace '\]','`]') -Raw) | ConvertFrom-Json)
   $jsonFileCount++
   Write-Host "Input File$(if ($inputFile.Length -gt 1) { " ($jsonFileCount/$($inputFile.Length))" } ): $($jsonFile.Name)"
@@ -980,7 +982,7 @@ foreach ($jsonFile in $inputFile) {
       default { $i.Team = $arrTeam.($i.Name) }
     }
   }
-  $arrWeaponTable = $arrWeaponTable | Sort Round,Team,Name
+  $arrWeaponTable = $arrWeaponTable | Sort-Object Round,Team,Name
 
   foreach ($i in $arrPlayerTable) {
     switch ($i.Round) { 
@@ -989,7 +991,7 @@ foreach ($jsonFile in $inputFile) {
       default { $i.Team = $arrTeam.($i.Name) }
     }
   }
-  $arrPlayerTable = $arrPlayerTable | Sort Round,Team,Name                                   
+  $arrPlayerTable = $arrPlayerTable | Sort-Object Round,Team,Name                                   
   
   if (!$TextOnly) {
     ###
@@ -1124,7 +1126,7 @@ foreach ($jsonFile in $inputFile) {
     function awardTallyTables {
       $htOut = @{}
       $keyList = $args[0].Keys
-      $keyList += ($args[1].Keys -notmatch $args[0].Keys)
+      $keyList += ($args[1].Keys -notmatch ($args[0].Keys -replace $regExReplaceFix))
 
       foreach ($item in $keyList) {
         $htOut.$item = $args[0].$item + $args[1].$item
@@ -1727,7 +1729,7 @@ foreach ($jsonFile in $inputFile) {
     foreach ($st in $subtotalFrg) { $table += "<td>$(if (0 -ne $subtotalFrg[$count] + $subtotalDth[$count]) { "$($subtotalFrg[$count])/$($subtotalDth[$count])" })</td>"; $count++ }
 
 
-    #'<div class="row"><div class="column">' | Out-File -FilePath $$htmlOut +=  -Append
+    #'<div class="row"><div class="column">' | Out-File -LiteralPath $$htmlOut +=  -Append
     $htmlOut += '<hr><div class="row">'             
     $htmlOut += '<div class="column" style="width:550px;display:inline-table">' 
     $htmlOut += "<h2>Kills/Deaths By Class</h2>`n"  
@@ -1945,7 +1947,7 @@ foreach ($jsonFile in $inputFile) {
     $htmlOut += '</div></div>' 
     $htmlOut += "</body></html>"     
 
-    $htmlOut | Out-File -FilePath "$outFileStr.html"
+    $htmlOut | Out-File -LiteralPath "$outFileStr.html"
     if ($OpenHTML) { & "$outFileStr.html" }
   }   #end html generation
 
@@ -2140,6 +2142,21 @@ $textOut += $arrClassFragDefTable  | Format-Table Name,Sco,@{L='KPM';E={ Table-C
                                       Eng,  @{L='KPM';E={ Table-CalculateVPM $_.Eng  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng  }}, `
                                       SG,   @{L='KPM';E={ Table-CalculateVPM $_.SG   ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng  }}  `
                                    | Out-String
+if ($TextJson) {
+    $textJsonOut  = [PSCustomObject]@{Matches='';SummaryAttack='';SummaryDefence='';ClassFragAttack='';ClassFragDefence=''}
+    $textJsonOut.Matches = ($arrResultTable | Select-Object Match,Winner,@{L='Rating';E={'{0:P0}' -f $_.Rating}},Score1,Team1,Score2,Team2)
+
+    $textJsonOut.SummaryAttack = ($arrSummaryAttTable  | Select-Object -Property Name,@{L='KPM';E={$null}},@{L='KD';E={$null}},Kills,Death,TKill,Dmg,@{L='DPM';E={$null}},FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,@{L='Classes';E={$null}})
+    $textJsonOut.SummaryDefence = ($arrSummaryDefTable | Select-Object -Property Name,@{L='KPM';E={$null}},@{L='KD';E={$null}},Kills,Death,TKill,Dmg,@{L='DPM';E={$null}},FlagStop,Win,Draw,Loss,TimePlayed,@{L='Classes';E={$null}})
+
+    $textJsonOut.ClassFragAttack = ($arrClassFragAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
+    $textJsonOut.ClassFragDefence = ($arrClassFragDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
+    $textJsonOut.ClassTimeAttack = ($arrClassFragAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
+    $textJsonOut.ClassTimeDefence = ($arrClassFragDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
+
+    $textJsonOut | ConvertTo-Json | Out-File -LiteralPath "$outFileStr_stats.json"
+
+}
 
 
 <# Moved class time to % in summary table.
@@ -2178,13 +2195,15 @@ if ($TextSave) {
     } else {   
       $TextFileStr = "$($inputfile[0].Directory.FullName)\FO_Stats_Summary-$($jsonFileCount)games-$('{0:yyMMdd_HHmmss}' -f (Get-Date)).txt"
     }
-    Out-File -InputObject $textOut -FilePath $TextFileStr
+    Out-File -InputObject $textOut -LiteralPath $TextFileStr
     Write-Host "Text stats saved: $TextFileStr"
 }
 
+
+
 <# test Weap counter
 $arrWeaponTable | `  # | Where { ($_.AttackCount + $_.DmgCount) -GT 0 }  `
-                 Sort Round,Team,Name,Class,Weapon `
+                 Sort-Object Round,Team,Name,Class,Weapon `
                 | FT  *, ` #Name,  `
                       #Team, `
                       #Round, `
