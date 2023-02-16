@@ -1,8 +1,6 @@
 ﻿###
-# 22/12/2021
-# PS  COMMAND LINE:- & .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RoundTime <seconds>] [-TextOnly] [-TextSave] [-TextJson]
-# WIN COMMAND LINE:- powershell -Command "& .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RountTime <seconds>] [-TextOnly] [-TextSave] [-TextJson]
-"
+# PS  COMMAND LINE:- & .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RoundTime <seconds>] [-TextOnly] [-TextSave]
+# WIN COMMAND LINE:- powershell -Command "& .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RountTime <seconds>] [-TextOnly] [-TextSave]"
 #
 # NOTE: StatFile parameter now accepts *.json wildcard to generate many HTMLs, Text stats are ALL STATS COMBINED.
 #
@@ -596,8 +594,8 @@ foreach ($jsonFile in $inputFile) {
     $kind    = $item.kind
 
     #Remove any underscores for _ tokens used in Keys 
-    $player  = $item.player -replace '_','.' -replace '\s$','.' -replace '\^','.'  -replace '\$','§'
-    $target  = $item.target -replace '_','.' -replace '\s$','.' -replace '\^','.'  -replace '\$','§'
+    $player  = $item.player -replace '_','.' -replace '\s$','.' -replace '\^[0-9]{0,2}',''  -replace '\$','§'
+    $target  = $item.target -replace '_','.' -replace '\s$','.' -replace '\^[0-9]{0,2}',''  -replace '\$','§'
     $p_team  = $item.playerTeam
     $t_team  = $item.targetTeam
     $class   = $item.playerClass
@@ -1729,7 +1727,6 @@ foreach ($jsonFile in $inputFile) {
     foreach ($st in $subtotalFrg) { $table += "<td>$(if (0 -ne $subtotalFrg[$count] + $subtotalDth[$count]) { "$($subtotalFrg[$count])/$($subtotalDth[$count])" })</td>"; $count++ }
 
 
-    #'<div class="row"><div class="column">' | Out-File -LiteralPath $$htmlOut +=  -Append
     $htmlOut += '<hr><div class="row">'             
     $htmlOut += '<div class="column" style="width:550px;display:inline-table">' 
     $htmlOut += "<h2>Kills/Deaths By Class</h2>`n"  
@@ -2142,21 +2139,6 @@ $textOut += $arrClassFragDefTable  | Format-Table Name,Sco,@{L='KPM';E={ Table-C
                                       Eng,  @{L='KPM';E={ Table-CalculateVPM $_.Eng  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng  }}, `
                                       SG,   @{L='KPM';E={ Table-CalculateVPM $_.SG   ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng  }}  `
                                    | Out-String
-if ($TextJson) {
-    $textJsonOut  = [PSCustomObject]@{Matches='';SummaryAttack='';SummaryDefence='';ClassFragAttack='';ClassFragDefence=''}
-    $textJsonOut.Matches = ($arrResultTable | Select-Object Match,Winner,@{L='Rating';E={'{0:P0}' -f $_.Rating}},Score1,Team1,Score2,Team2)
-
-    $textJsonOut.SummaryAttack = ($arrSummaryAttTable  | Select-Object -Property Name,@{L='KPM';E={$null}},@{L='KD';E={$null}},Kills,Death,TKill,Dmg,@{L='DPM';E={$null}},FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,@{L='Classes';E={$null}})
-    $textJsonOut.SummaryDefence = ($arrSummaryDefTable | Select-Object -Property Name,@{L='KPM';E={$null}},@{L='KD';E={$null}},Kills,Death,TKill,Dmg,@{L='DPM';E={$null}},FlagStop,Win,Draw,Loss,TimePlayed,@{L='Classes';E={$null}})
-
-    $textJsonOut.ClassFragAttack = ($arrClassFragAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
-    $textJsonOut.ClassFragDefence = ($arrClassFragDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
-    $textJsonOut.ClassTimeAttack = ($arrClassFragAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
-    $textJsonOut.ClassTimeDefence = ($arrClassFragDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
-
-    $textJsonOut | ConvertTo-Json | Out-File -LiteralPath "$outFileStr_stats.json"
-
-}
 
 
 <# Moved class time to % in summary table.
@@ -2184,10 +2166,24 @@ $textOut += $arrClassTimeDefTable | Format-Table Name, `
                                   | Out-String
 #>
 
+if ($TextJson) {
+  $textJsonOut  = [PSCustomObject]@{Matches='';SummaryAttack='';SummaryDefence='';ClassFragAttack='';ClassFragDefence=''}
+  $textJsonOut.Matches = ($arrResultTable | Select-Object Match,Winner,@{L='Rating';E={'{0:P0}' -f $_.Rating}},Score1,Team1,Score2,Team2)
+
+  $textJsonOut.SummaryAttack = ($arrSummaryAttTable  | Select-Object -Property Name,@{L='KPM';E={$null}},@{L='KD';E={$null}},Kills,Death,TKill,Dmg,@{L='DPM';E={$null}},FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,@{L='Classes';E={$null}})
+  $textJsonOut.SummaryDefence = ($arrSummaryDefTable | Select-Object -Property Name,@{L='KPM';E={$null}},@{L='KD';E={$null}},Kills,Death,TKill,Dmg,@{L='DPM';E={$null}},FlagStop,Win,Draw,Loss,TimePlayed,@{L='Classes';E={$null}})
+
+  $textJsonOut.ClassFragAttack = ($arrClassFragAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
+  $textJsonOut.ClassFragDefence = ($arrClassFragDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
+  $textJsonOut.ClassTimeAttack = ($arrClassFragAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
+  $textJsonOut.ClassTimeDefence = ($arrClassFragDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
+
+  $textJsonOut | ConvertTo-Json | Out-File -LiteralPath "$outFileStr_stats.json"
+
+}
+
 Write-Host "`n"
 Write-Host $textOut
-
-
 
 if ($TextSave) {
     if ($jsonFileCount -eq 1) {
@@ -2195,11 +2191,9 @@ if ($TextSave) {
     } else {   
       $TextFileStr = "$($inputfile[0].Directory.FullName)\FO_Stats_Summary-$($jsonFileCount)games-$('{0:yyMMdd_HHmmss}' -f (Get-Date)).txt"
     }
-    Out-File -InputObject $textOut -LiteralPath $TextFileStr
+    $textOut | Out-File -LiteralPath $TextFileStr
     Write-Host "Text stats saved: $TextFileStr"
 }
-
-
 
 <# test Weap counter
 $arrWeaponTable | `  # | Where { ($_.AttackCount + $_.DmgCount) -GT 0 }  `
@@ -2225,8 +2219,8 @@ $arrWeaponTable | `  # | Where { ($_.AttackCount + $_.DmgCount) -GT 0 }  `
 # SIG # Begin signature block
 # MIIbngYJKoZIhvcNAQcCoIIbjzCCG4sCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUKNdN+8Zn3PrZSjJJBDcPwsjm
-# B3mgghYTMIIDCDCCAfCgAwIBAgIQVxZN0cTEa7NFKtjIhSbFETANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUSWR3UWhkZf3gvZ7+aaYEf/po
+# v7mgghYTMIIDCDCCAfCgAwIBAgIQVxZN0cTEa7NFKtjIhSbFETANBgkqhkiG9w0B
 # AQsFADAcMRowGAYDVQQDDBFIYXplIEF1dGhlbnRpY29kZTAeFw0yMzAyMTAwNTM3
 # MzRaFw0yNDAyMTAwNTU3MzRaMBwxGjAYBgNVBAMMEUhhemUgQXV0aGVudGljb2Rl
 # MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1M46e4LcpTytNDpPe4AN
@@ -2347,28 +2341,28 @@ $arrWeaponTable | `  # | Where { ($_.AttackCount + $_.DmgCount) -GT 0 }  `
 # 8QIBATAwMBwxGjAYBgNVBAMMEUhhemUgQXV0aGVudGljb2RlAhBXFk3RxMRrs0Uq
 # 2MiFJsURMAkGBSsOAwIaBQCgeDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkG
 # CSqGSIb3DQEJAzEMBgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEE
-# AYI3AgEVMCMGCSqGSIb3DQEJBDEWBBRto/AIO5s9D0PFmAHxC6GT2tMLMDANBgkq
-# hkiG9w0BAQEFAASCAQCElkxQ7H2ALZ7YohJx4KXBTWMRh1I9LlafBCAcT1XEs+H0
-# SAMOMCL7U1mQm8OvBjHcSDn/P4Hi9hJyfl76eJI/yVyhrQEp/WWBhmlA03QbfFni
-# OhKlpxErE9OpD6natK2YIxRlhaLcXOs/BHQurvCjNaK4wl8w4FbYJZfbyAoIbR18
-# NZFnNsS5vtxS8HNfaDrn5I1p8ipuo7pdGtd7ofe99TE0gqd9qXb88RR7GImCGjx1
-# VS8Oq5mmYrn4XHyUfDpeQhvcIlgzR7KZJuHVaDKPUUyHQU77UyNkosSTye9hl5sS
-# otEHeu1eZ6uwu9vF3500/V6DKOXRsnj2R2dQcszJoYIDIDCCAxwGCSqGSIb3DQEJ
+# AYI3AgEVMCMGCSqGSIb3DQEJBDEWBBQd3BhDBxW2XhdazQdjC5T00Wqo2zANBgkq
+# hkiG9w0BAQEFAASCAQDTyxpvGvikUlpfeFTONWPBDBKq/xjq1ptt2OlYT2KUFk0k
+# wW9ubG8AxOYk/HToB5jMzT1SCGvYdE64Fu2CWDkEL/qPkHd1J36fhKz736n6jGfy
+# edYK1O94oLih/5vrrnp7o6QtfwEAHQjYOGXg8FqgFQUIFcymoFoJhGamUXAyokQh
+# T54wc1lzOmd1bKuIN2/ollCpEryMdK29r06lG1Tons3pwvpsClSQRBqgmmSSryoB
+# zI27O0Cnc2EP9b+6W9fMwKfLKnwe9Da2QRq4RvbJGm5+Ed2f4TAcaL3t1rQy3izK
+# FLe0utmTndfvt30o5plM4zQhN69TqKXqjhAC0fVkoYIDIDCCAxwGCSqGSIb3DQEJ
 # BjGCAw0wggMJAgEBMHcwYzELMAkGA1UEBhMCVVMxFzAVBgNVBAoTDkRpZ2lDZXJ0
 # LCBJbmMuMTswOQYDVQQDEzJEaWdpQ2VydCBUcnVzdGVkIEc0IFJTQTQwOTYgU0hB
 # MjU2IFRpbWVTdGFtcGluZyBDQQIQDE1pckuU+jwqSj0pB4A9WjANBglghkgBZQME
 # AgEFAKBpMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
-# DTIzMDIxMTEwMjAxOVowLwYJKoZIhvcNAQkEMSIEIDl261lFkgwjJsKRiJEl1C7s
-# js6gFhwv12lBabP3Z/fsMA0GCSqGSIb3DQEBAQUABIICAMsjiJG0sCtHl/Lnvu/5
-# IBFZBLj+fuPaVGvLL8721R1vbLUGwn8nn+hB3gThDZfuOJ1AwSuJu/vDSgTVWN+j
-# /vK6SIaTQXwHCB9sDMYuaOGAojhVU5PgKfeeNrB7Gep+tj8YjSTXhLuk4+HgTd+E
-# LeA6yBErvDeGBkzy+EQNCzNwjIDv0DqQiTn0tHyPYCwtPYCVCDeNHyuxl+Y/hOTa
-# wZCIHVoZ2WN/eazqjFdeUWea4PlxGE9vZEMQkI5ROs0difdCYl9IXVJdLq4IuWtE
-# lhh47dNkB4B7doN7nV0QjoWLoEjspOhnteWhb2TOzUjmal6B+seyiZn6wwX0doYS
-# r9RvyLRfxLvk2T8pqj2pRv3NH5z5I3w4hxO9izQcM/pDbJ9MR0OZfIp4FLL10b4y
-# ttx1YoGF98/J4mozNKHfuW3pUX/PxnhHdSN9dFqs0EnYBvFBcbEVQxgyfEAJr2GA
-# WKctR4Y9/xGeVieP3xhIONdgA+mM16Fg9O1418h8tJ9JwomXRyxIf8s0kKB+QlPD
-# 7lHVkOG+WE+rlrajOVDm1XxBIXT8VnkgalkWN88NTIxsFdxbQh8shXCc4mpCTU52
-# tUFnJbvE/2ptPvuS8J9/xUn5eBCFtynb8QFWsGTdqDiUM+iNjGDXvShXxxsOMFpd
-# 6e1N8sUmXmaq8G4WujQT1wY9
+# DTIzMDIxNjA0MTQyMFowLwYJKoZIhvcNAQkEMSIEIBTt1jGArmyayA2VAflrR0D8
+# nUd2X2BkmUoSA/UuO5SwMA0GCSqGSIb3DQEBAQUABIICAMPkN2UQWIbub5bx2pOf
+# jumX5nCqF2kMIxRFhYnq8tOkkKD8Beb2khAHWPZtICeZiW/NfK+eSpO0bej/sAH/
+# uFE7rTE789K0oscq0WJNW2wO+wzIK/VbrU18GXW6OPbEobnKW2UUDywcH2rQTeUA
+# ghsDA0FXyXlPukaQtI0RVfLoFQZwRm/5sc9iehlF7+5DYhT7sejK84kqjcprcEH/
+# JWKW+R7c7UqlTSXqtJv+f2qH4Tx2fi/T1+nWOpixWeqZ8gPolyIbrJ8iC3M6pE+3
+# UoL6+s+jyzmFDpmYfzUJ1fOmIhSeeTvlhZFNWqs+wcB6lyylJvz39RXZ1sd6T9rQ
+# vVikCiZxPARpd9NV0SYaBJcBUAQwdmYJ4W9LTaikak3s3KsCoeTgcP6wkwkAsA6G
+# MlQ6y5wCt5Tbt6YYCjYFrabUjAsvlbxHcAJ7wMJ3E/AXQ4t/j7WwHcC5kWCWOUrt
+# uHV9rYJgoQVknpCiFia7bjfvpw8Bed0ymBzR6pFHgGb+LH7Uk3f1MOZ6XLlLN7FV
+# grANgfBo9ga1WkZ+63+JeIuqYIFKtO8WvaU7UatLGrw0mRwcZpR9mqsLZB02mygr
+# QFdDA3JJWKEHvWmlfXjRaQAxPxeCrF7HTxp1n66YRlBMKEayZGs+qL50TOLNQkj/
+# Nsz/WUC95FUB6Ta+mhchvjf3
 # SIG # End signature block
