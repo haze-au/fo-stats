@@ -197,7 +197,7 @@ foreach ($fileName in $filesDownloaded) {
 }
 
 
-if (!($DailyBatch)) { Remove-Item -LiteralPath $fileName; return }
+if (!($DailyBatch)) { "Delete:- $fileName"; Remove-Item -LiteralPath $fileName; return }
 
 $server = "$((($fileName -replace $OutFolder,'') -split '/')[0])/"
 if     ($server -in $OCEPaths) { $strRegion = 'oceania' }

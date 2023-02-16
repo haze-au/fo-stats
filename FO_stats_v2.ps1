@@ -2165,8 +2165,8 @@ $textOut += $arrClassTimeDefTable | Format-Table Name, `
                                   | Out-String
 #>
 
-if ($TextJson) {
-  $textJsonOut  = [PSCustomObject]@{Matches='';SummaryAttack='';SummaryDefence='';ClassFragAttack='';ClassFragDefence=''}
+if ($TextJson -eq $True) {
+  $textJsonOut  = [PSCustomObject]@{Matches='';SummaryAttack='';SummaryDefence='';ClassFragAttack='';ClassFragDefence='';ClassTimeAttack='';ClassTimeDefence=''}
   $textJsonOut.Matches = ($arrResultTable | Select-Object Match,Winner,@{L='Rating';E={'{0:P0}' -f $_.Rating}},Score1,Team1,Score2,Team2)
 
   $textJsonOut.SummaryAttack = ($arrSummaryAttTable  | Select-Object -Property Name,@{L='KPM';E={$null}},@{L='KD';E={$null}},Kills,Death,TKill,Dmg,@{L='DPM';E={$null}},FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,@{L='Classes';E={$null}})
@@ -2174,11 +2174,11 @@ if ($TextJson) {
 
   $textJsonOut.ClassFragAttack = ($arrClassFragAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
   $textJsonOut.ClassFragDefence = ($arrClassFragDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
-  $textJsonOut.ClassTimeAttack = ($arrClassFragAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
-  $textJsonOut.ClassTimeDefence = ($arrClassFragDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
+  $textJsonOut.ClassTimeAttack =  ($arrClassTimeAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng)
+  $textJsonOut.ClassTimeDefence = ($arrClassTimeDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng)
 
-  $textJsonOut | ConvertTo-Json | Out-File -LiteralPath "$outFileStr_stats.json"
-
+  ($textJsonOut | ConvertTo-Json) | Out-File -LiteralPath "$($outFileStr)_stats.json"
+  Write-Host "JSON stats saved: $($outFileStr)_stats.json"
 }
 
 Write-Host "`n"
