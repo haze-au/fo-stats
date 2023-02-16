@@ -43,21 +43,22 @@ param (
   [string]$OutFolder,  #Path of ouput JSON and HTML
   [switch]$LatestFile, #Last modified file only (from the filtered list)
   [int]   $LimitMins,  #Only access files from last X minutes (sum of days and mins)(sum of days and mins)
-  [double]   $LimitDays,  #Only access files from last X days (sum of days and mins)
+  [double]$LimitDays,  #Only access files from last X days (sum of days and mins)
   [switch]$DownloadOnly,#Download JSON only
   [switch]$Overwrite,  #Force re-download do the FO_stats again even when file exists
   [switch]$ForceStats, #Force running stats on already existing file
   [int]   $RoundTime,  #Passed to FO_Stats
   [switch]$TextSave,   #Passed to FO_Stats
+  [switch]$TextJson,   #Passed to FO_Stats
   [switch]$TextOnly,   #Passed to FO_Stats
-  [switch]$OpenHTML    #Passed to FO_Stats
-
+  [switch]$OpenHTML,    #Passed to FO_Stats
+  [switch]$DailyBatch  #For HTTP server daily tallying functions (no use on client)
 )
 
 if ($Demos) { $AwsUrl = 'https://fortressone-demos.s3.amazonaws.com/' }
 else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
 
-$OCEPaths = @('sydney/','sydney-gz/','snoozer/')
+$OCEPaths = @('sydney/','melbourne/','sydney-gz/','snoozer/')
 $USPaths  = @('california/','coach/','dallas/','dallas2/','iowa/','phoenix/','virginia/')
 $EUPaths  = @('dublin/','ireland/','stockholm/')
 $IntPaths = @('bahrain/','guam/','mumbai/','nz/','timbuktu/','tokyo/')
@@ -112,7 +113,7 @@ foreach ($p in ($FilterPath -split ',')) {
 }
 
 #LatestFileOnly
-if ($LatestFile) { $statFiles = ($statFiles | Sort DateTime -Descending)[0] }
+if ($LatestFile) { $statFiles = ($statFiles | Sort-Object DateTime -Descending)[0] }
 
 write-host "FO Stats Downloader: `n"`
             "Date Limiter:`t$('{0:yyyy-MM-dd-HH-mm-ss}' -f $startDate)`n"`
@@ -148,9 +149,9 @@ foreach ($f in $statFiles) {
   $filePath  = "$OutFolder\$(Split-Path $f.Name)"
   $fileName  = "$OutFolder\$($f.Name)"
 
-  if (!$Overwrite -and (Test-Path -LiteralPath $fileName)) {
+  if (!$Overwrite -and (Test-Path -LiteralPath ($fileName -replace '\.json$','.html') )) {
     write-host "SKIPPED: File Already exists [$($f.Name)]"
-    if ($ForceStats) { $filesDownloaded += (Get-Item ($fileName -replace '\[','`[' -replace '\]','`]')) }
+    if ($ForceStats) { $filesDownloaded += (Get-Item -LiteralPath $fileName) }
     $filesSkipped += 1
     continue
   } 
@@ -158,7 +159,7 @@ foreach ($f in $statFiles) {
   if (!(Test-Path -LiteralPath $filePath)) { New-Item -Path $filePath -ItemType Directory | Out-Null }
   write-host "Downloading:- $($f.Name)"
   ([string](invoke-webrequest -Uri "$($AwsUrl)$($f.Name)")) | Out-File -LiteralPath  $fileName
-  $filesDownloaded += (Get-Item ($fileName -replace '\[','`[' -replace '\]','`]'))
+  $filesDownloaded += (Get-Item -LiteralPath $fileName)
 }
 
 if (!$filesSkipped -and $filesDownloaded.Count -eq 0) {
@@ -181,6 +182,7 @@ foreach ($fileName in $filesDownloaded) {
   if ($RoundTime) { $param.RoundTime = $RoundTime }
   if ($TextOnly)  { $param.TextOnly = $true  }
   if ($TextSave)  { $param.TextSave = $true  }
+  if ($TextJson)  { $param.TextJson = $true  }
   if ($OpenHTML)  { $param.$OpenHTML = $true }
 
   $i++
@@ -188,13 +190,34 @@ foreach ($fileName in $filesDownloaded) {
   write-host "FO Stats ($i of $($filesDownloaded.Length)):- `t$($fileName)"
   if ($param.Count -gt 1) { Write-Host "Parameters: $($param.GetEnumerator() | foreach { if ($_.Name -ne 'StatFile') { " -$($_.Name): $($_.Value)" } })" }
   write-host "----------------------------------------------------------------------------------------------------"
-  & .\FO_stats_v2.ps1 @param
+  & $PSScriptRoot\FO_stats_v2.ps1 @param
   write-host "----------------------------------------------------------------------------------------------------"
   write-host "FO Stats Completed:-`t$($fileName)"
   write-host "----------------------------------------------------------------------------------------------------"
-
 }
 
+
+if (!($DailyBatch)) { Remove-Item -LiteralPath $fileName; return }
+
+$server = "$((($fileName -replace $OutFolder,'') -split '/')[0])/"
+if     ($server -in $OCEPaths) { $strRegion = 'oceania' }
+elseif ($server -in $USPaths)  { $strRegion = 'north-america' }
+elseif ($server -in $EUPaths)  { $strRegion = 'europe' }
+else   { Remove-Item -LiteralPath $fileName; return }
+
+$outDir   = "$PSScriptRoot/_daily/$strRegion"
+$batchDir = "$outDir/.batch"
+$newDir   = "$outDir/.new"
+if (!(Test-Path $outDir  )) { New-Item $outDir   -ItemType Directory  | Out-Null }
+if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
+if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
+
+foreach ($fileName in $filesDownloaded) {
+  $playerCount = ((((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json) | Select-Object player,playerClass) | Where { $_.player -ne 'world' -and $_.playerClass -gt 0 } | foreach { $_.player } | Sort-Object | Get-Unique).count
+  if ($playerCount -lt 4) { Remove-Item -LiteralPath fileName; continue }
+  Move-Item -LiteralPath $fileName $newDir -Force
+}
+#>
 
 
 # SIG # Begin signature block
@@ -333,17 +356,17 @@ foreach ($fileName in $filesDownloaded) {
 # LCBJbmMuMTswOQYDVQQDEzJEaWdpQ2VydCBUcnVzdGVkIEc0IFJTQTQwOTYgU0hB
 # MjU2IFRpbWVTdGFtcGluZyBDQQIQDE1pckuU+jwqSj0pB4A9WjANBglghkgBZQME
 # AgEFAKBpMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
-# DTIzMDIxNjA0MTQyMFowLwYJKoZIhvcNAQkEMSIEIG5larGXW8nxxfcUIfcl2jWb
-# vqcHSQ57tZhC7AL8Lbb3MA0GCSqGSIb3DQEBAQUABIICAKTk2PvSKBE/7lAIHjxb
-# lFwlew1lN+z5yLyapY7slcxItW+58c5tfpvhguxRQxVRJceJ93Pb2q48iGIH47k0
-# W1dL5Qp78ZN05uTZfo8Qkd7zgRSsdyJknCalScEah05bpzCuRvUPtU8854Tzvpbd
-# Z4YciagUr2RDtnJyohRoy7mdBZpbOebBYpzM07gF69l/1hF1EdJxXaYuLB+0dT6i
-# 2N+HF5+74VHsW9iAtTSiNdBT+RcxcjdNs9oeZ9McH54IglEtKJGuYjU4DPYF37CC
-# oymgv/+REN52dub+Y8sSsTfUaQDVVwO8PB4WwxXGHv7qiRpKtiwWkpF0uQSxNPRx
-# an+d1GJh73FEU+oiJyhvjiA0MMOMGut8Uz6JTl8SpnSbdeOsOnhP56TLXf+Za7D9
-# AFNhfv111BQJBsahdTd4bNKBZSXdJQZbaFTVMGQAwc7Hc5n5c6z2wYDlDTtxq3cb
-# quLvP6gXOwH0zhvt9XxsmX7lcWFAeidxMvH946QxGbNLVlUo+dlSNTcPwZVz7SnE
-# qPo1HiAaBb9dc8mKC1jgIilQjoS+nBFaqiBGz7AVpT82n87kiDGy7fiMsBZjoRV2
-# 4kTODOzHTsmrR2VIMNlis509eNd2SXVSJpT1UYdBjtSpL1mHduw0GweLX7UpOGZA
-# oQDm1xeLp4RN0PTI2kmp0MDL
+# DTIzMDIxMTEwMjAyMFowLwYJKoZIhvcNAQkEMSIEIG5larGXW8nxxfcUIfcl2jWb
+# vqcHSQ57tZhC7AL8Lbb3MA0GCSqGSIb3DQEBAQUABIICAItUZCRnl7BfBTsBl687
+# dLzboclFwJRVwFZ8Dc8uPrAvq9Xwa/RBd1hpDtPUwN5NSnZQJ0iKNK3oSQFOqJLF
+# SmTj4mN1WZtWV2z76E0K+4bcOsQhEYIcYjNKcgckMk1UAXhP/JcWFa4m0R+oackG
+# bHVAn9EGvsVzjiMvTRe6K5ydI4mS8MjKCQVlk9CWgk9LndungZ8rK9iMO/PIMVEn
+# YS2BRZuCQjz2v23POapJ9h7nJhIH69gcas5zb2zwEEypsSt+bQMdA3G60C/C0dg9
+# kmvBltJw4oQWrsrrksMNtsLjZ0afcL1rZRFyEAnYrlBNfCQ/JTzTPTQyk2Rbm6Ee
+# ndw2b+ERGVdjXakwFeZWAr9PZOEpNicJTW9bdSg8/ESs2NyyCkfVTCyt8JMGtwBG
+# E0aN/XwSCrVsaKtcdrr2Nlg3ugT4UQ1Qw5VWGDJeVyZyDQm0VRtAdNU4KFgPlS4z
+# 40aOtj6ZTDEqyk/77XmXyqGy6LYfS8k9XnrSwwiaQUkI21D5oTvO1ULtpqDSwctH
+# 5sPB2H/8tbuB/8r+bJEOHa4jPael8OzXYYmKMqyz5IT1F1UpAe1ZnQRHlGPRFRUG
+# yFU4m4vvfn56MdT3Zc/A4sKn4kOuR+3AlvLa5/BSzBwoNsgl2HRfJ3D+xzB2WcBC
+# f1X8ex6oana6U8r2A92GbJJ5
 # SIG # End signature block
