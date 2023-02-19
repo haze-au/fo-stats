@@ -222,7 +222,7 @@ if ($DailyBatch) {
       if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
       if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
   
-      if ($fileName.BaseName -in @((Get-ChildItem $batchDir),(Get-ChildItem $newDir)).BaseName) { continue }
+      if ((Get-ChildItem "$batchDir$($fileName.BaseName)*") + (Get-ChildItem "$newDir$($fileName.BaseName)*")) { continue }
 
       Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
 
