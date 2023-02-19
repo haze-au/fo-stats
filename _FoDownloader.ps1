@@ -222,10 +222,10 @@ if ($DailyBatch) {
       if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
       if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
   
-      if (!(Test-Path "$batchDir/$($fileName.BaseName -replace '[\[\]]','````$&')*") -and `
-          !(Test-Path "$newDir/$($fileName.BaseName -replace '[\[\]]','````$&')*") ) { 
+      #if (!(Test-Path "$batchDir/$($fileName.BaseName -replace '[\[\]]','````$&')*") -and `
+      #    !(Test-Path "$newDir/$($fileName.BaseName   -replace '[\[\]]','````$&')*") ) { 
             Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
-      }
+      #}
       rm $fileName
 
       Write-Host "File added to $strRegion batch:- $fileName"
