@@ -55,6 +55,8 @@ param (
   [switch]$DailyBatch  #For HTTP server daily tallying functions (no use on client)
 )
 
+if ($DailyBatch) { $TextJson = $true }
+
 if ($Demos) { $AwsUrl = 'https://fortressone-demos.s3.amazonaws.com/' }
 else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
 
@@ -197,25 +199,36 @@ foreach ($fileName in $filesDownloaded) {
 }
 
 
-if (!($DailyBatch)) { "Delete:- $fileName"; Remove-Item -LiteralPath $fileName; return }
-
-$server = "$((($fileName -replace $OutFolder,'') -split '/')[0])/"
-if     ($server -in $OCEPaths) { $strRegion = 'oceania' }
-elseif ($server -in $USPaths)  { $strRegion = 'north-america' }
-elseif ($server -in $EUPaths)  { $strRegion = 'europe' }
-else   { Remove-Item -LiteralPath $fileName; return }
-
-$outDir   = "$PSScriptRoot/_daily/$strRegion"
-$batchDir = "$outDir/.batch"
-$newDir   = "$outDir/.new"
-if (!(Test-Path $outDir  )) { New-Item $outDir   -ItemType Directory  | Out-Null }
-if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
-if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
+if (!($DailyBatch)) { Remove-Item -LiteralPath $fileName; return }
 
 foreach ($fileName in $filesDownloaded) {
-  $playerCount = ((((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json) | Select-Object player,playerClass) | Where { $_.player -ne 'world' -and $_.playerClass -gt 0 } | foreach { $_.player } | Sort-Object | Get-Unique).count
-  if ($playerCount -lt 4) { Remove-Item -LiteralPath fileName; continue }
-  Move-Item -LiteralPath $fileName $newDir -Force
+  if ((((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) -or `
+   (Get-Content -LiteralPath $fileName -Raw) -notlike '*"gameEnd",*') { 
+     Remove-Item -LiteralPath $fileName -Force
+     continue 
+  }
+
+ 
+  #$OutFolder = 'H:\'
+  #$fileName = gi  -literalpath 'H:\_stats\2021-12-23_10-37-01_[ff-schtop]_blue_vs_red.html'
+  $server = $fileName.FullName.Substring($OutFolder.Length + 1, $FileName.FullName.Length - $OutFolder.Length -1)
+  $server = ($server -split '[\\/]')[0] + "/"
+
+  if     ($server -in $OCEPaths) { $strRegion = 'oceania' }
+  elseif ($server -in $USPaths)  { $strRegion = 'north-america' }
+  elseif ($server -in $EUPaths)  { $strRegion = 'europe' }
+  else   { continue }
+
+  $outDir   = "$PSScriptRoot/_daily/$strRegion"
+  #$batchDir = "$outDir/.batch"
+  $newDir   = "$outDir/.new"
+  if (!(Test-Path $outDir  )) { New-Item $outDir   -ItemType Directory  | Out-Null }
+  #if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
+  if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
+  
+  if (((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) { continue }
+
+  Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
 }
 #>
 

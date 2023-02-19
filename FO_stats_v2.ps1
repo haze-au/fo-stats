@@ -2031,7 +2031,7 @@ function Format-MinSec {
 function Table-CalculateVPM {
   param($Value,$TimePlayed,$Round)
   
-  if ($Value -eq 0) { return '' }
+  if ($Value -eq 0) { return $null }
   if ($Round -in '',$null) { $Round = 2 }
 
   if (!$TimePlayed) { return '' }
@@ -2166,14 +2166,33 @@ $textOut += $arrClassTimeDefTable | Format-Table Name, `
 #>
 
 if ($TextJson -eq $True) {
-  $textJsonOut  = [PSCustomObject]@{Matches='';SummaryAttack='';SummaryDefence='';ClassFragAttack='';ClassFragDefence='';ClassTimeAttack='';ClassTimeDefence=''}
-  $textJsonOut.Matches = ($arrResultTable | Select-Object Match,Winner,@{L='Rating';E={'{0:P0}' -f $_.Rating}},Score1,Team1,Score2,Team2)
+  $textJsonOut  = ([PSCustomObject]@{Matches='';SummaryAttack='';SummaryDefence='';ClassFragAttack='';ClassFragDefence='';ClassTimeAttack='';ClassTimeDefence=''})
+  $textJsonOut.Matches = @($arrResultTable | Select-Object Match,Winner,@{L='Rating';E={'{0:P0}' -f $_.Rating}},Score1,Team1,Score2,Team2)
 
-  $textJsonOut.SummaryAttack = ($arrSummaryAttTable  | Select-Object -Property Name,@{L='KPM';E={$null}},@{L='KD';E={$null}},Kills,Death,TKill,Dmg,@{L='DPM';E={$null}},FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,@{L='Classes';E={$null}})
-  $textJsonOut.SummaryDefence = ($arrSummaryDefTable | Select-Object -Property Name,@{L='KPM';E={$null}},@{L='KD';E={$null}},Kills,Death,TKill,Dmg,@{L='DPM';E={$null}},FlagStop,Win,Draw,Loss,TimePlayed,@{L='Classes';E={$null}})
+  $textJsonOut.SummaryAttack = ($arrSummaryAttTable)  #  | Select-Object -Property Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes)
+  $textJsonOut.SummaryDefence = ($arrSummaryDefTable) #  | Select-Object -Property Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes)
 
-  $textJsonOut.ClassFragAttack = ($arrClassFragAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
-  $textJsonOut.ClassFragDefence = ($arrClassFragDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng,SG)
+  $textJsonOut.ClassFragAttack = ($arrClassFragAttTable  | Select-Object -Property Name, `
+                                                                                    Sco,  @{L='KPM1';E={ Table-CalculateVPM $_.Sco ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sco  }}, `
+                                                                                    Sold, @{L='KPM3';E={ Table-CalculateVPM $_.Sold ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sold }}, `
+                                                                                    Demo, @{L='KPM4';E={ Table-CalculateVPM $_.Demo ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Demo }}, `
+                                                                                    Med,  @{L='KPM5';E={ Table-CalculateVPM $_.Med  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Med  }}, `
+                                                                                    HwG,  @{L='KPM6';E={ Table-CalculateVPM $_.HwG  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).HwG  }}, `
+                                                                                    Pyro, @{L='KPM7';E={ Table-CalculateVPM $_.Pyro ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Pyro }}, `
+                                                                                    Spy,  @{L='KPM8';E={ Table-CalculateVPM $_.Spy  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Spy  }}, `
+                                                                                    Eng,  @{L='KPM9';E={ Table-CalculateVPM $_.Eng  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Eng  }}, `
+                                                                                    SG,   @{L='KPM0';E={ Table-CalculateVPM $_.SG   ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Eng  }})
+  $textJsonOut.ClassFragDefence = ($arrClassFragDefTable | Select-Object -Property Name, `
+                                                                                    Sco,  @{L='KPM1';E={ Table-CalculateVPM $_.Sco ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Sco  }}, `
+                                                                                    Sold, @{L='KPM3';E={ Table-CalculateVPM $_.Sold ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Sold }}, `
+                                                                                    Demo, @{L='KPM4';E={ Table-CalculateVPM $_.Demo ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Demo }}, `
+                                                                                    Med,  @{L='KPM5';E={ Table-CalculateVPM $_.Med  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Med  }}, `
+                                                                                    HwG,  @{L='KPM6';E={ Table-CalculateVPM $_.HwG  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).HwG  }}, `
+                                                                                    Pyro, @{L='KPM7';E={ Table-CalculateVPM $_.Pyro ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Pyro }}, `
+                                                                                    Spy,  @{L='KPM8';E={ Table-CalculateVPM $_.Spy  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Spy  }}, `
+                                                                                    Eng,  @{L='KPM9';E={ Table-CalculateVPM $_.Eng  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng  }}, `
+                                                                                    SG,   @{L='KPM0';E={ Table-CalculateVPM $_.SG   ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng  }})
+
   $textJsonOut.ClassTimeAttack =  ($arrClassTimeAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng)
   $textJsonOut.ClassTimeDefence = ($arrClassTimeDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng)
 
