@@ -200,7 +200,7 @@ if (!$DownloadOnly -and !$Demos) {
 
 if ($DailyBatch) { 
     foreach ($fileName in $filesDownloaded) {
-      if ((((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) -or `
+      if ((((Get-Content -LiteralPath ($fileName -replace '\.json$','_stats.json') -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) -or `
        (Get-Content -LiteralPath $fileName -Raw) -notlike '*"gameEnd",*') { 
          rm $fileName
          continue 
