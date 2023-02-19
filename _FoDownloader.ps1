@@ -198,18 +198,17 @@ if (!$DownloadOnly -and !$Demos) {
     }
 }
 
-if (!($DailyBatch)) { 
+if ($DailyBatch) { 
     foreach ($fileName in $filesDownloaded) {
       if ((((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) -or `
        (Get-Content -LiteralPath $fileName -Raw) -notlike '*"gameEnd",*') { 
-         Remove-Item -LiteralPath $fileName -Force
+         rm $fileName
          continue 
       }
 
- 
       $server = $fileName.FullName.Substring($OutFolder.Length + 1, $FileName.FullName.Length - $OutFolder.Length -1)
       $server = ($server -split '[\\/]')[0] + "/"
-      $server
+
 
       if     ($server -in $OCEPaths) { $strRegion = 'oceania' }
       elseif ($server -in $USPaths)  { $strRegion = 'north-america' }
@@ -217,17 +216,20 @@ if (!($DailyBatch)) {
       else   { continue }
 
       $outDir   = "$outFolder/_daily/$strRegion"
-      #$batchDir = "$outDir/.batch"
+      $batchDir = "$outDir/.batch"
       $newDir   = "$outDir/.new"
       if (!(Test-Path $outDir  )) { New-Item $outDir   -ItemType Directory  | Out-Null }
-      #if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
+      if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
       if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
   
+      if ($fileName.BaseName -in (Get-ChildItem ) { continue }
       if (((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) { continue }
 
       Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
+
+      Write-Host "File added to $strRegion batch:- $fileName"
     }
-} else { Remove-Item -LiteralPath $fileName }
+} 
 
 
 # SIG # Begin signature block
