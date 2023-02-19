@@ -198,7 +198,7 @@ if (!$DownloadOnly -and !$Demos) {
     }
 }
 
-if (!($DailyBatch)) { Remove-Item -LiteralPath $fileName
+if (!($DailyBatch)) { 
     foreach ($fileName in $filesDownloaded) {
       if ((((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) -or `
        (Get-Content -LiteralPath $fileName -Raw) -notlike '*"gameEnd",*') { 
@@ -227,7 +227,7 @@ if (!($DailyBatch)) { Remove-Item -LiteralPath $fileName
 
       Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
     }
-}
+} else { Remove-Item -LiteralPath $fileName }
 
 
 # SIG # Begin signature block
