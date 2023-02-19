@@ -277,16 +277,14 @@ function Generate-DailyStatsHTML {
 foreach ($region in @('oceania','north-america','europe')) {
     if ($ForceBatch) { $doBatch = $true  }
     else             { $dobatch = $false } 
-    <#switch ($region) {
+    switch ($region) {
       #'ALL' { $RegionDateTime = (Get-Date) }
       'north-america' { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::Now,'America/Los_Angeles')) }
       'europe'        { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::Now,'Europe/Dublin')) }
       'oceania'       { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::Now,'Australia/Sydney')) }
       #'INT' { $RegionDateTime = (Get-Date) }
       else  { continue } 
-    }#>
-
-    $RegionDateTime = Get-Date
+    }
 
     #Region Day period will be between 6am to 5:59am
     if ($RegionDateTime.Hour -in @(0,1,2,3,4,5)) { $RegionDateTime = $RegionDateTime.AddDays(-1) }

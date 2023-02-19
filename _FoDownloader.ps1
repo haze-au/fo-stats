@@ -176,61 +176,58 @@ if (!$filesSkipped -and $filesDownloaded.Count -eq 0) {
   return
 }
 
-if ($DownloadOnly -or $Demos) { return }
+if (!$DownloadOnly -and !$Demos) { 
+    write-host "====================================================================================================`n"
+    foreach ($fileName in $filesDownloaded) {
+      $param = @{ StatFile=$fileName }
+      if ($RoundTime) { $param.RoundTime = $RoundTime }
+      if ($TextOnly)  { $param.TextOnly = $true  }
+      if ($TextSave)  { $param.TextSave = $true  }
+      if ($TextJson)  { $param.TextJson = $true  }
+      if ($OpenHTML)  { $param.$OpenHTML = $true }
 
-write-host "====================================================================================================`n"
-foreach ($fileName in $filesDownloaded) {
-  $param = @{ StatFile=$fileName }
-  if ($RoundTime) { $param.RoundTime = $RoundTime }
-  if ($TextOnly)  { $param.TextOnly = $true  }
-  if ($TextSave)  { $param.TextSave = $true  }
-  if ($TextJson)  { $param.TextJson = $true  }
-  if ($OpenHTML)  { $param.$OpenHTML = $true }
-
-  $i++
-  write-host "===================================================================================================="
-  write-host "FO Stats ($i of $($filesDownloaded.Length)):- `t$($fileName)"
-  if ($param.Count -gt 1) { Write-Host "Parameters: $($param.GetEnumerator() | foreach { if ($_.Name -ne 'StatFile') { " -$($_.Name): $($_.Value)" } })" }
-  write-host "----------------------------------------------------------------------------------------------------"
-  & $PSScriptRoot\FO_stats_v2.ps1 @param
-  write-host "----------------------------------------------------------------------------------------------------"
-  write-host "FO Stats Completed:-`t$($fileName)"
-  write-host "----------------------------------------------------------------------------------------------------"
+      $i++
+      write-host "===================================================================================================="
+      write-host "FO Stats ($i of $($filesDownloaded.Length)):- `t$($fileName)"
+      if ($param.Count -gt 1) { Write-Host "Parameters: $($param.GetEnumerator() | foreach { if ($_.Name -ne 'StatFile') { " -$($_.Name): $($_.Value)" } })" }
+      write-host "----------------------------------------------------------------------------------------------------"
+      & $PSScriptRoot\FO_stats_v2.ps1 @param
+      write-host "----------------------------------------------------------------------------------------------------"
+      write-host "FO Stats Completed:-`t$($fileName)"
+      write-host "----------------------------------------------------------------------------------------------------"
+    }
 }
 
-
-if (!($DailyBatch)) { Remove-Item -LiteralPath $fileName; return }
-
-foreach ($fileName in $filesDownloaded) {
-  if ((((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) -or `
-   (Get-Content -LiteralPath $fileName -Raw) -notlike '*"gameEnd",*') { 
-     Remove-Item -LiteralPath $fileName -Force
-     continue 
-  }
+if (!($DailyBatch)) { Remove-Item -LiteralPath $fileName
+    foreach ($fileName in $filesDownloaded) {
+      if ((((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) -or `
+       (Get-Content -LiteralPath $fileName -Raw) -notlike '*"gameEnd",*') { 
+         Remove-Item -LiteralPath $fileName -Force
+         continue 
+      }
 
  
-  #$OutFolder = 'H:\'
-  #$fileName = gi  -literalpath 'H:\_stats\2021-12-23_10-37-01_[ff-schtop]_blue_vs_red.html'
-  $server = $fileName.FullName.Substring($OutFolder.Length + 1, $FileName.FullName.Length - $OutFolder.Length -1)
-  $server = ($server -split '[\\/]')[0] + "/"
+      $server = $fileName.FullName.Substring($OutFolder.Length + 1, $FileName.FullName.Length - $OutFolder.Length -1)
+      $server = ($server -split '[\\/]')[0] + "/"
+      $server
 
-  if     ($server -in $OCEPaths) { $strRegion = 'oceania' }
-  elseif ($server -in $USPaths)  { $strRegion = 'north-america' }
-  elseif ($server -in $EUPaths)  { $strRegion = 'europe' }
-  else   { continue }
+      if     ($server -in $OCEPaths) { $strRegion = 'oceania' }
+      elseif ($server -in $USPaths)  { $strRegion = 'north-america' }
+      elseif ($server -in $EUPaths)  { $strRegion = 'europe' }
+      else   { continue }
 
-  $outDir   = "$PSScriptRoot/_daily/$strRegion"
-  #$batchDir = "$outDir/.batch"
-  $newDir   = "$outDir/.new"
-  if (!(Test-Path $outDir  )) { New-Item $outDir   -ItemType Directory  | Out-Null }
-  #if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
-  if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
+      $outDir   = "$outFolder/_daily/$strRegion"
+      #$batchDir = "$outDir/.batch"
+      $newDir   = "$outDir/.new"
+      if (!(Test-Path $outDir  )) { New-Item $outDir   -ItemType Directory  | Out-Null }
+      #if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
+      if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
   
-  if (((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) { continue }
+      if (((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) { continue }
 
-  Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
+      Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
+    }
 }
-#>
 
 
 # SIG # Begin signature block
