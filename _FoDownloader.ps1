@@ -222,7 +222,7 @@ if ($DailyBatch) {
       if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
       if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
   
-      if ($fileName.BaseName -in (Get-ChildItem ) { continue }
+      if ($fileName.BaseName -in (Get-ChildItem $batchDir)) { continue }
       if (((Get-Content -LiteralPath $fileName -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) { continue }
 
       Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
