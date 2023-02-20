@@ -229,10 +229,10 @@ if ($DailyBatch) {
       if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
   
       
-      if (!(Test-Path -LiteralPath "$newDir/$($fileName.BaseName)_stats.json") -and `
-          !(Test-Path -LiteralPath "$batchDir/$($fileName.BaseName)_stats.json") ) { 
+      #if (!(Test-Path -LiteralPath "$newDir/$($fileName.BaseName)_stats.json") -and `
+      #    !(Test-Path -LiteralPath "$batchDir/$($fileName.BaseName)_stats.json") ) { 
         Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
-      }
+      #}
       rm $fileName
 
       Write-Host "File added to $strRegion batch:- $fileName"

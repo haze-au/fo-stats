@@ -308,16 +308,26 @@ foreach ($region in @('oceania','north-america','europe')) {
     if ($doBatch) {
       foreach ($f in $batchFiles) {
         if (Test-Path -LiteralPath $OutFile) {
-          #Add the files
-          $outJSON = (processFoStatsJSON -CurrentJson ((Get-Content -LiteralPath $outFile -Raw) | ConvertFrom-Json) -NewJson ((Get-Content -LiteralPath $f -Raw)| ConvertFrom-Json))         
-          ($outJSON | ConvertTo-JSON) | Out-File -LiteralPath $outFile
-          Copy-Item -LiteralPath $f -Destination $batchDir -Force
-          Remove-Item -LiteralPath $f -Force
+          #join files
+          $outJSON = (processFoStatsJSON -CurrentJson ((Get-Content -LiteralPath $outFile -Raw) | ConvertFrom-Json) -NewJson ((Get-Content -LiteralPath $f -Raw)| ConvertFrom-Json))
+          if (($f.BaseName -replace '_blue_vs_red_stats','') -in ($outJson.Matches.Match -replace '.*/','')) { 
+            # Skip Match already reported
+            Remove-Item -LiteralPath $f
+            continue
+          }
         } else {
-          #Just move the file
-          Copy-Item -LiteralPath $f -Destination $batchDir -Force
-          Move-Item -LiteralPath $f -Destination $outFile -Force
+          #new file becomes the file
+          $outJSON = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json
         }
+
+        ($outJSON | ConvertTo-JSON) | Out-File -LiteralPath $outFile
+        Copy-Item -LiteralPath $f -Destination $batchDir -Force
+        Remove-Item -LiteralPath $f -Force
+        #} else {
+        #  #Just move the file
+        #  Copy-Item -LiteralPath $f -Destination $batchDir -Force
+        #  Move-Item -LiteralPath $f -Destination $outFile -Force
+        #}
       }
     }
     if ( $doBatch -or ((Test-Path -LiteralPath $outFile) -and !(Test-Path -LiteralPath $outHtml)) ) {
