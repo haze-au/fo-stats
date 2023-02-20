@@ -300,7 +300,7 @@ function Generate-DailyStatsHTML {
     return (ConvertTo-Html -Body $htmlBody -Head $htmlHeader)
 }
 
-<# test code
+
 $j1 = (GC -LiteralPath .\_daily\europe\.new\2023-02-19-22-01-12_[openfirer]_blue_vs_red_stats.json -raw) | ConvertFrom-Json
 & .\_daily\europe\.new\2023-02-19-22-01-12_[openfirer]_blue_vs_red_stats.json
 
@@ -313,8 +313,8 @@ $json | ConvertTo-Json | Out-File .\test.txt
 
 $json = processFoStatsJSON -CurrentJson $j1 -NewJson $j2 -RemoveMatch
 $json | ConvertTo-Json | Out-File .\test2.txt
-& .\test2.txt #>
-
+& .\test2.txt
+<#
 
 foreach ($region in @('oceania','north-america','europe')) {
     if ($ForceBatch) { $doBatch = $true  }
@@ -339,7 +339,7 @@ foreach ($region in @('oceania','north-america','europe')) {
     $newDir   = "$outDir/.new"
 
     if (!(Test-Path $outDir  )) { New-Item $outDir   -ItemType Directory | Out-Null }
-    if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory | Out-Null }
+    #if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory | Out-Null }
     if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory | Out-Null }
 
     if ((Get-ChildItem "$newDir/*.json").Length -gt 0) {
@@ -349,9 +349,11 @@ foreach ($region in @('oceania','north-america','europe')) {
 
     if ($doBatch) {
       foreach ($f in $batchFiles) {
+        $f
         if (Test-Path -LiteralPath $OutFile) {
           #join files
           if (($f.BaseName -replace '_blue_vs_red_stats','') -in ($outJson.Matches.Match -replace '.*/','')) { 
+            "test $($outJson.Matches.Match -replace '.*/','')"
             # Skip Match already reported
             Remove-Item -LiteralPath $f
             Write-Host "Batch Skipped - Match already existing:- $f"
@@ -384,3 +386,4 @@ foreach ($region in @('oceania','north-america','europe')) {
 } #end region for
 
 
+#>
