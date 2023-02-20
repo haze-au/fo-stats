@@ -319,7 +319,7 @@ if ($RemoveMatch) {
   if (!$CurrentJson) { Write-Host '-CurrentJson required'; return}
   $inJson  = (Get-Content $CurrentJson -Raw) | ConvertFrom-Json
   $remJson = (Get-Content $RemoveMatch -Raw) | ConvertFrom-Json
-  $outJson = (processFoStatsJSON -RemoveMatch -CurrentJson ((Get-Content -LiteralPath -LiteralPath $CurrentJson -Raw) | ConvertFrom-Json) -NewJson ((Get-Content -LiteralPath $RemoveMatch -Raw) | ConvertFrom-Json))
+  $outJson = (processFoStatsJSON -RemoveMatch -CurrentJson ($inJson) -NewJson ($remJson))
   
   return
 }
