@@ -317,8 +317,8 @@ $json | ConvertTo-Json | Out-File .\test2.txt
 
 if ($RemoveMatch) {
   if (!$CurrentJson) { Write-Host '-CurrentJson required'; return}
-  $inJson  = (Get-Content $CurrentJson -Raw) | ConvertFrom-Json
-  $remJson = (Get-Content $RemoveMatch -Raw) | ConvertFrom-Json
+  $inJson  = (Get-Content -LiteralPath $CurrentJson -Raw) | ConvertFrom-Json
+  $remJson = (Get-Content -LiteralPath $RemoveMatch -Raw) | ConvertFrom-Json
   $outJson = (processFoStatsJSON -RemoveMatch -CurrentJson ($inJson) -NewJson ($remJson))
   
   return
