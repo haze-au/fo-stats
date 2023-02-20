@@ -206,7 +206,7 @@ function processFoStatsJSON {
 
         foreach ($player in $table) {
             $timePlayed = $player.TimePlayed -split ':'
-            $timeMins   = $timeplayed[0] + ($timePlayed[1] / 60)
+            $timeMins   = [double]$timeplayed[0] + ([double]$timePlayed[1] / 60)
             $player.KPM = '{0:n2}' -f ($player.Kills / $timeMins)
             $player.KD  = '{0:n2}' -f ($player.Kills / $player.Death)
             $player.DPM = '{0:n2}' -f ($player.Dmg / $timeMins)
