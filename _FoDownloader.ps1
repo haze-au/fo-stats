@@ -160,7 +160,7 @@ foreach ($f in $statFiles) {
 
   if (!(Test-Path -LiteralPath $filePath)) { New-Item -Path $filePath -ItemType Directory | Out-Null }
   write-host "Downloading:- $($f.Name)"
-  ([string](invoke-webrequest -Uri "$($AwsUrl)$($f.Name)")) | Out-File -LiteralPath  $fileName
+  (invoke-webrequest -Uri "$($AwsUrl)$($f.Name)").Content | Out-File -LiteralPath  $fileName
   $filesDownloaded += (Get-Item -LiteralPath $fileName)
 }
 
@@ -192,6 +192,12 @@ if (!$DownloadOnly -and !$Demos) {
       if ($param.Count -gt 1) { Write-Host "Parameters: $($param.GetEnumerator() | foreach { if ($_.Name -ne 'StatFile') { " -$($_.Name): $($_.Value)" } })" }
       write-host "----------------------------------------------------------------------------------------------------"
       & $PSScriptRoot\FO_stats_v2.ps1 @param
+      
+      if ($DailyBatch -or $TextJson) {
+        $outJson = (Get-Content -LiteralPath ($fileName -replace '\.json$','_stats.json') -Raw) | ConvertFrom-Json
+        $outJson.Matches[0].Match = "$($fileName.Directory.Parent.Name)/$($fileName.Directory.Name)/$($outJson.Matches[0].Match)"
+        ($outJson | ConvertTo-JSON) | Out-File -LiteralPath ($fileName -replace '\.json$','_stats.json')
+      }
       write-host "----------------------------------------------------------------------------------------------------"
       write-host "FO Stats Completed:-`t$($fileName)"
       write-host "----------------------------------------------------------------------------------------------------"
@@ -222,10 +228,11 @@ if ($DailyBatch) {
       if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
       if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
   
-      #if (!(Test-Path "$batchDir/$($fileName.BaseName -replace '[\[\]]','````$&')*") -and `
-      #    !(Test-Path "$newDir/$($fileName.BaseName   -replace '[\[\]]','````$&')*") ) { 
-            Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
-      #}
+      
+      if (!(Test-Path -LiteralPath "$newDir/$($fileName.BaseName)_stats.json") -and `
+          !(Test-Path -LiteralPath "$batchDir/$($fileName.BaseName)_stats.json") ) { 
+        Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
+      }
       rm $fileName
 
       Write-Host "File added to $strRegion batch:- $fileName"
