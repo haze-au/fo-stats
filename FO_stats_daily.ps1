@@ -3,7 +3,7 @@
 # _daily/US/.new
 ###
 
-param([switch]$ForceBatch)
+param([switch]$ForceBatch,[string]$RemoveMatch,[string]$CurrentJson)
 
 if ($ForceBatch) { $doBatch = $true }
 
@@ -314,6 +314,15 @@ $json | ConvertTo-Json | Out-File .\test.txt
 $json = processFoStatsJSON -CurrentJson $j1 -NewJson $j2 -RemoveMatch
 $json | ConvertTo-Json | Out-File .\test2.txt
 & .\test2.txt #>
+
+if ($RemoveMatch) {
+  if (!$CurrentJson) { Write-Host '-CurrentJson required'; return}
+  $inJson  = (Get-Content $CurrentJson -Raw) | ConvertFrom-Json
+  $remJson = (Get-Content $RemoveMatch -Raw) | ConvertFrom-Json
+  $outJson = (processFoStatsJSON -RemoveMatch -CurrentJson ((Get-Content -LiteralPath $CurrentJson -Raw) | ConvertFrom-Json) -NewJson ((Get-Content -LiteralPath $RemoveMatch -Raw) | ConvertFrom-Json))
+  
+  return
+}
 
 
 foreach ($region in @('oceania','north-america','europe')) {
