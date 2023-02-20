@@ -3,7 +3,7 @@
 # _daily/US/.new
 ###
 
-param([switch]$ForceBatch,[string]$RemoveMatch,[string]$CurrentJson)
+param([switch]$ForceBatch,[string]$RemoveMatch,[string]$FromJson)
 
 if ($ForceBatch) { $doBatch = $true }
 
@@ -316,11 +316,16 @@ $json | ConvertTo-Json | Out-File .\test2.txt
 & .\test2.txt #>
 
 if ($RemoveMatch) {
-  if (!$CurrentJson) { Write-Host '-CurrentJson required'; return}
-  $inJson  = (Get-Content -LiteralPath $CurrentJson -Raw) | ConvertFrom-Json
-  $remJson = (Get-Content -LiteralPath $RemoveMatch -Raw) | ConvertFrom-Json
-  $outJson = (processFoStatsJSON -RemoveMatch -CurrentJson ($inJson) -NewJson ($remJson))
+  if (!$FromJson) { Write-Host '-FromJson required'; return}
+
+  $keepJson  = ((Get-Content -LiteralPath $FromJson -Raw)    | ConvertFrom-Json)
+  $remJson   = ((Get-Content -LiteralPath $RemoveMatch -Raw) | ConvertFrom-Json)
+  $outJson = (processFoStatsJSON -CurrentJson ($keepJson) -NewJson ($remJson) -RemoveMatch)
   
+  if ($keepJson -eq $null -or $remJson -eq $null) { Write-Host "NULL JSON ERROR"; return }
+  ($outJson | ConvertTo-Json) | Out-File -LiteralPath $FromJson
+  Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($FromJson -replace '\.json$','.html')
+  Write-Host "Removed: $RemoveMatch"
   return
 }
 
