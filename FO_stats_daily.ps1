@@ -327,35 +327,6 @@ if ($RemoveMatch) {
   return
 }
 
-if ($StartDateTime) {
-  $StartDateTime = [DateTime]::Parse($StartDateTime)
-  if (!$EndDateTime) { $EndDateTime = $StartDateTime.AddDays(1)}
-  else {
-    $EndDateTime = [DateTime]::Parse($EndDateTime)
-
-    if ($EndDateTime -lt $StartDateTime) {
-      $temp = $StartDateTime
-      $StartDateTime = $EndDateTime
-      $EndDateTime   = $temp
-      Remove-Variable $temp
-    }
-  }
-
-  if ($TimeZone -in 'EU','OCE','US') {
-    switch ($TimeZone) {
-      'EU'  { $StartDateTime.ToUniversalTime(); $EndDateTime.ToUniversalTime() }
-      'OCE' { $timeZoneID = [System.TimeZoneInfo]::GetSystemTimeZones() | Where-Object 
-              ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($StartDateTime,'America/Los_Angeles'))
-              ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($EndDateTime  ,'America/Los_Angeles')) }
-      'US'  { ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($StartDateTime,'America/Los_Angeles'))
-              ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($EndDateTime  ,'America/Los_Angeles')) }
-    }
-
-  }
-
-}
-
-
 foreach ($region in @('oceania','north-america','europe')) {
     if ($ForceBatch) { $doBatch = $true  }
     else             { $dobatch = $false } 
