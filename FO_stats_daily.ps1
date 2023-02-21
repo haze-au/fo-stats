@@ -147,7 +147,7 @@ function processFoStatsJSON {
             $CurrentJson.$array[$pos].FlagTime   = Sum-MinSec -MinSec1 $CurrentJson.$array[$pos].FlagTime   -MinSec2 ($p.FlagTime)   -Deduct
           } else {
             $CurrentJson.$array[$pos].TimePlayed = Sum-MinSec $CurrentJson.$array[$pos].TimePlayed ($p.TimePlayed)
-            $CurrentJson.$array[$pos].FlagTime  = Sum-MinSec $CurrentJson.$array[$pos].FlagTime    ($p.FlagTime)
+            $CurrentJson.$array[$pos].FlagTime   = Sum-MinSec $CurrentJson.$array[$pos].FlagTime    ($p.FlagTime)
           }
 
           if ($CurrentJson.$array[$pos].TimePlayed -in '0:00','') {
@@ -207,9 +207,9 @@ function processFoStatsJSON {
         foreach ($player in $table) {
             $timePlayed = $player.TimePlayed -split ':'
             $timeMins   = [double]$timeplayed[0] + ([double]$timePlayed[1] / 60)
-            $player.KPM = '{0:n2}' -f ($player.Kills / $timeMins)
-            $player.KD  = '{0:n2}' -f ($player.Kills / $player.Death)
-            $player.DPM = '{0:n2}' -f ($player.Dmg / $timeMins)
+            $player.KPM = '{0:0.00}' -f ($player.Kills / $timeMins)
+            $player.KD  = '{0:0.00}' -f ($player.Kills / $player.Death)
+            $player.DPM = '{0:0}' -f ($player.Dmg / $timeMins)
             $player.Classes    = (Table-ClassInfo ($classTable) $player.Name $player.TimePlayed)
         }
         $x++
@@ -217,21 +217,19 @@ function processFoStatsJSON {
 
     $x = 1
     foreach ($table in @($CurrentJson.ClassFragAttack,$CurrentJson.ClassFragDefence)) {
-        foreach ($player in $table) {
-            if ($x -eq 1) { $classTable = [ref]$CurrentJson.ClassTimeAttack  }
-            else          { $classTable = [ref]$CurrentJson.ClassTimeDefence }
+      foreach ($player in $table) {
+        if ($x -eq 1) { $classTable = [ref]$CurrentJson.ClassTimeAttack  }
+        else          { $classTable = [ref]$CurrentJson.ClassTimeDefence }
 
-
-            foreach ($classID in $script:ClassAllowedWithSG) {
-                $class = $ClassToStr[$classID]
-                if ($player.Kills -gt 0) {
-                  $player."KPM$class" = '{0:n0}' -f ($player.$class / ($ClassTable.Value | Where Name -EQ $player.Name).$class / 60)
-                }
-            }
+        foreach ($classID in $ClassAllowedWithSG) {
+          $class   = $ClassToStr[$classID]
+          if ($player.$class -gt 0) {
+            $player."KPM$(if ($classID -eq 10) { 0 } else { $classID })" = '{0:0.00}' -f ($player.$class / (($ClassTable.Value | Where Name -EQ $player.Name)."$(if ($classID -eq 10) { $ClassToStr[9] } else { $class })" / 60))
+          }
         }
-        $x++
+      }
+      $x++
     }
-
     return $CurrentJson
 }
 
@@ -241,7 +239,7 @@ function Generate-DailyStatsHTML {
     $htmlBody  = '<div class=row><div class=column><h2>Match Log</h2>'
     $htmlBody += $JSON.Matches       | Sort-Object Name   | ConvertTo-Html -Fragment
     $htmlBody += '<h2>Attack Summary</h2>'
-    $htmlBody += $JSON.SummaryAttack | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,FlagStop,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment
+    $htmlBody += $JSON.SummaryAttack | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Win,Draw,Loss,Name | ConvertTo-Html -Fragment
     $htmlBody += '<h2>Defence Summary</h2>'
     $htmlBody += $JSON.SummaryDefence | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name  | ConvertTo-Html -Fragment
     $htmlBody += '<h2>Class Kills - Attack</h2>'
@@ -327,6 +325,34 @@ if ($RemoveMatch) {
   Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($FromJson -replace '\.json$','.html')
   Write-Host "Removed: $RemoveMatch"
   return
+}
+
+if ($StartDateTime) {
+  $StartDateTime = [DateTime]::Parse($StartDateTime)
+  if (!$EndDateTime) { $EndDateTime = $StartDateTime.AddDays(1)}
+  else {
+    $EndDateTime = [DateTime]::Parse($EndDateTime)
+
+    if ($EndDateTime -lt $StartDateTime) {
+      $temp = $StartDateTime
+      $StartDateTime = $EndDateTime
+      $EndDateTime   = $temp
+      Remove-Variable $temp
+    }
+  }
+
+  if ($TimeZone -in 'EU','OCE','US') {
+    switch ($TimeZone) {
+      'EU'  { $StartDateTime.ToUniversalTime(); $EndDateTime.ToUniversalTime() }
+      'OCE' { $timeZoneID = [System.TimeZoneInfo]::GetSystemTimeZones() | Where-Object 
+              ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($StartDateTime,'America/Los_Angeles'))
+              ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($EndDateTime  ,'America/Los_Angeles')) }
+      'US'  { ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($StartDateTime,'America/Los_Angeles'))
+              ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($EndDateTime  ,'America/Los_Angeles')) }
+    }
+
+  }
+
 }
 
 
