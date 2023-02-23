@@ -3,7 +3,16 @@
 # _daily/US/.new
 ###
 
-param([switch]$ForceBatch)
+param([switch]$ForceBatch,
+      [string]$RemoveMatch,
+      [string]$FromJson,
+      [string]$StartDateTime,
+      [string]$EndDateTime,
+      [string]$TimeZone,
+      [string]$FilterPath,
+      [ValidateSet('ALL','US','EU','OCE','INT')]
+              $Region,
+      [string]$OutFile )
 
 if ($ForceBatch) { $doBatch = $true }
 
@@ -147,7 +156,7 @@ function processFoStatsJSON {
             $CurrentJson.$array[$pos].FlagTime   = Sum-MinSec -MinSec1 $CurrentJson.$array[$pos].FlagTime   -MinSec2 ($p.FlagTime)   -Deduct
           } else {
             $CurrentJson.$array[$pos].TimePlayed = Sum-MinSec $CurrentJson.$array[$pos].TimePlayed ($p.TimePlayed)
-            $CurrentJson.$array[$pos].FlagTime  = Sum-MinSec $CurrentJson.$array[$pos].FlagTime    ($p.FlagTime)
+            $CurrentJson.$array[$pos].FlagTime   = Sum-MinSec $CurrentJson.$array[$pos].FlagTime    ($p.FlagTime)
           }
 
           if ($CurrentJson.$array[$pos].TimePlayed -in '0:00','') {
@@ -206,10 +215,10 @@ function processFoStatsJSON {
 
         foreach ($player in $table) {
             $timePlayed = $player.TimePlayed -split ':'
-            $timeMins   = $timeplayed[0] + ($timePlayed[1] / 60)
-            $player.KPM = '{0:n2}' -f ($player.Kills / $timeMins)
-            $player.KD  = '{0:n2}' -f ($player.Kills / $player.Death)
-            $player.DPM = '{0:n2}' -f ($player.Dmg / $timeMins)
+            $timeMins   = [double]$timeplayed[0] + ([double]$timePlayed[1] / 60)
+            $player.KPM = '{0:0.00}' -f ($player.Kills / $timeMins)
+            $player.KD  = '{0:0.00}' -f ($player.Kills / $player.Death)
+            $player.DPM = '{0:0}' -f ($player.Dmg / $timeMins)
             $player.Classes    = (Table-ClassInfo ($classTable) $player.Name $player.TimePlayed)
         }
         $x++
@@ -217,21 +226,19 @@ function processFoStatsJSON {
 
     $x = 1
     foreach ($table in @($CurrentJson.ClassFragAttack,$CurrentJson.ClassFragDefence)) {
-        foreach ($player in $table) {
-            if ($x -eq 1) { $classTable = [ref]$CurrentJson.ClassTimeAttack  }
-            else          { $classTable = [ref]$CurrentJson.ClassTimeDefence }
+      foreach ($player in $table) {
+        if ($x -eq 1) { $classTable = [ref]$CurrentJson.ClassTimeAttack  }
+        else          { $classTable = [ref]$CurrentJson.ClassTimeDefence }
 
-
-            foreach ($classID in $script:ClassAllowedWithSG) {
-                $class = $ClassToStr[$classID]
-                if ($player.Kills -gt 0) {
-                  $player."KPM$class" = '{0:n0}' -f ($player.$class / ($ClassTable.Value | Where Name -EQ $player.Name).$class / 60)
-                }
-            }
+        foreach ($classID in $ClassAllowedWithSG) {
+          $class   = $ClassToStr[$classID]
+          if ($player.$class -gt 0) {
+            $player."KPM$(if ($classID -eq 10) { 0 } else { $classID })" = '{0:0.00}' -f ($player.$class / (($ClassTable.Value | Where Name -EQ $player.Name)."$(if ($classID -eq 10) { $ClassToStr[9] } else { $class })" / 60))
+          }
         }
-        $x++
+      }
+      $x++
     }
-
     return $CurrentJson
 }
 
@@ -241,7 +248,7 @@ function Generate-DailyStatsHTML {
     $htmlBody  = '<div class=row><div class=column><h2>Match Log</h2>'
     $htmlBody += $JSON.Matches       | Sort-Object Name   | ConvertTo-Html -Fragment
     $htmlBody += '<h2>Attack Summary</h2>'
-    $htmlBody += $JSON.SummaryAttack | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,FlagStop,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment
+    $htmlBody += $JSON.SummaryAttack | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment
     $htmlBody += '<h2>Defence Summary</h2>'
     $htmlBody += $JSON.SummaryDefence | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name  | ConvertTo-Html -Fragment
     $htmlBody += '<h2>Class Kills - Attack</h2>'
@@ -301,29 +308,119 @@ function Generate-DailyStatsHTML {
 }
 
 
-$j1 = (GC -LiteralPath .\_daily\europe\.new\2023-02-19-22-01-12_[openfirer]_blue_vs_red_stats.json -raw) | ConvertFrom-Json
-& .\_daily\europe\.new\2023-02-19-22-01-12_[openfirer]_blue_vs_red_stats.json
+if ($RemoveMatch) {
+  if (!$FromJson) { Write-Host '-FromJson required'; return}
 
-$j2 = (GC -LiteralPath .\_daily\europe\.new\2023-02-19-22-33-25_[ff-destroy3]_blue_vs_red_stats.json -raw) | ConvertFrom-Json
+  $keepJson  = ((Get-Content -LiteralPath $FromJson -Raw)    | ConvertFrom-Json)
+  $remJson   = ((Get-Content -LiteralPath $RemoveMatch -Raw) | ConvertFrom-Json)
+  $outJson = (processFoStatsJSON -CurrentJson ($keepJson) -NewJson ($remJson) -RemoveMatch)
+  
+  if ($keepJson -eq $null -or $remJson -eq $null) { Write-Host "NULL JSON ERROR"; return }
+  ($outJson | ConvertTo-Json) | Out-File -LiteralPath $FromJson
+  Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($FromJson -replace '\.json$','.html')
+  Write-Host "Removed: $RemoveMatch"
+  return
+}
 
-$json = $null
-$json = processFoStatsJSON -CurrentJson $j1 -NewJson $j2
-$json | ConvertTo-Json | Out-File .\test.txt
-& .\test.txt
+if ($StartDateTime) {
+  if ($Region) {
+    $OCEPaths = @('sydney/','melbourne/','sydney-gz/','snoozer/')
+    $USPaths  = @('california/','coach/','dallas/','dallas2/','iowa/','phoenix/','virginia/')
+    $EUPaths  = @('dublin/','ireland/','stockholm/')
+    $IntPaths = @('bahrain/','guam/','mumbai/','nz/','timbuktu/','tokyo/')
+  
+    if     ($Region -eq 'ALL') { $LatestPaths = $OCEPaths + $USPaths + $EUPaths + $IntPaths }
+    elseif ($Region -eq 'US')  { $LatestPaths = $USPaths  }
+    elseif ($Region -eq 'EU')  { $LatestPaths = $EUPaths  }
+    elseif ($Region -eq 'OCE') { $LatestPaths = $OCEPaths }
+    elseif ($Region -eq 'INT') { $LatestPaths = $IntPaths }
+    
+    $FilterPath = ''
+    foreach ($p in $LatestPaths) { 
+        if ($FilterPath -ne '') { $FilterPath = (@($FilterPath,"$($p)quad/","$($p)staging/") -join ',') }
+        else                    { $FilterPath = "$($p)quad/,$($p)staging/" }
+    }
+  }
 
-$json = processFoStatsJSON -CurrentJson $j1 -NewJson $j2 -RemoveMatch
-$json | ConvertTo-Json | Out-File .\test2.txt
-& .\test2.txt
-<#
+  $StartDT = [DateTime]::Parse($StartDateTime)
+  if (!$EndDateTime) { $EndDT = $StartDT.AddDays(1)}
+  else {
+    $EndDT = [DateTime]::Parse($EndDateTime)
 
-foreach ($region in @('oceania','north-america','europe')) {
+    if ($EndDT -lt $StartDT) {
+      $temp = $StartDT
+      $StartDT = $EndDT
+      $EndDT   = $temp
+      Remove-Variable $temp
+    }
+  }
+
+  if ($TimeZone -in 'EU','OCE','US') {
+    switch ($TimeZone) {
+      'EU'  { $timeZoneID = [System.TimeZoneInfo]::GetSystemTimeZones() | Where-Object DisplayName -like '*Belgrade*'}
+      'OCE' { $timeZoneID = [System.TimeZoneInfo]::GetSystemTimeZones() | Where-Object DisplayName -like '*Sydney*' }
+      'US'  { $timeZoneID = [System.TimeZoneInfo]::GetSystemTimeZones() | Where-Object { $_.DisplayName -like '*Los?Angeles*' -or $_.DisplayName -like '*California*' } }
+      else  { $timeZoneID = [System.TimeZoneInfo]::Utc }
+    }
+    
+    $StartDT = [System.TimeZoneInfo]::ConvertTime($StartDT, [System.TimeZoneInfo]::Local,  $timeZoneID)
+    $EndDT   = [System.TimeZoneInfo]::ConvertTime($EndDT  , [System.TimeZoneInfo]::Local,  $timeZoneID)
+  }
+  
+  if ($OutFile -and (Test-Path -LiteralPath $OutFile)) {
+    $outJson = (Get-Content -LiteralPath $OutFile -Raw) | ConvertFrom-Json
+  } else {
+    $outJson = $null
+  }
+  
+  $i = 0
+  foreach ($path in ($FilterPath -split ',')) {
+    if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
+    foreach ($f in (Get-ChildItem $PSScriptRoot/$path/*_stats.json)) {
+      $fileDT = [datetime]::ParseExact(($f.Name -replace '^(\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d).*$','$1'),'yyyy-MM-dd-HH-mm-ss',$null)
+      if ($fileDT -lt $StartDT.ToUniversalTime() -or $fileDT.ToUniversalTime() -gt $EndDT ) { continue } 
+      if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) { 
+        Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
+        continue 
+      }
+
+      $newJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json
+      if ($newJson.SummaryAttack.Count -lt 4)  { continue }
+      
+      Write-Host "Adding file to JSON:- $f"
+      if (!$outJson) { $outJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json }
+      else { $outJson = processFoStatsJSON -CurrentJson $outJson -NewJson ((Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json) }
+      $i++
+    }
+  }
+
+  if (!$OutFile) {
+    if ($Region) {
+      $OutFile = "statsjoin_$region_$('{0:yyyy-MM-dd_HHmmss}' -f (Get-Date))_$($i)matches.json"
+    } else {
+      $OutFile = "statsjoin_$('{0:yyyy-MM-dd_HHmmss}' -f (Get-Date))_$($i)matches.json"
+    }
+  } 
+
+  if ($i -lt 1) { Write-Host "No batch files found to be added to $region" }
+  
+  if ($outJson) { 
+    $outJson | ConvertTo-Json | Out-File $OutFile 
+    Write-Host "JSON has been generated - $i files added"
+    Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($OutFile -replace '\.json$','.html')
+    Write-Host "Batch HTML - Generated :- $($OutFile -replace '\.json$','.html')"
+    return
+  }
+} 
+
+foreach ($r in @('oceania','north-america','europe')) {
     if ($ForceBatch) { $doBatch = $true  }
     else             { $dobatch = $false } 
-    switch ($region) {
+    switch ($r) {
       #'ALL' { $RegionDateTime = (Get-Date) }
-      'north-america' { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::Now,'America/Los_Angeles')) }
-      'europe'        { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::Now,'Europe/Dublin')) }
-      'oceania'       { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::Now,'Australia/Sydney')) }
+      'north-america' { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTime([datetime]::Now.DateTime,  [System.TimeZoneInfo]::Local, ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Los?Angeles*' -or $_.DisplayName -like '*California*'})) ) }
+      'europe'        { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTime([datetime]::Now.DateTime,  [System.TimeZoneInfo]::Local, ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Belgrade*'})) ) }
+      'oceania'       { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTime([datetime]::Now.DateTime,  [System.TimeZoneInfo]::Local, ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Sydney*'  })) ) }
       #'INT' { $RegionDateTime = (Get-Date) }
       else  { continue } 
     }
@@ -332,15 +429,15 @@ foreach ($region in @('oceania','north-america','europe')) {
     if ($RegionDateTime.Hour -in @(0,1,2,3,4,5)) { $RegionDateTime = $RegionDateTime.AddDays(-1) }
     $strDate = ('{0:yyyy-MM-dd}' -f $RegionDateTime)
 
-    $outDir   = "$PSScriptRoot/_daily/$Region"
-    $outFile  = "$outDir/$($region)_DailyStats_$($strDate).json"
-    $outHtml  = "$outDir/$($region)_DailyStats_$($strDate).html"
-    $batchDir = "$outDir/.batch"
-    $newDir   = "$outDir/.new"
+    $outDir   = "$PSScriptRoot/_daily/$r"
+    $outFile  = "$outDir/$($r)_DailyStats_$($strDate).json"
+    $outHtml  = "$outDir/$($r)_DailyStats_$($strDate).html"
+    #$batchDir = "$outDir/.batch"
+    #$newDir   = "$outDir/.new"
 
     if (!(Test-Path $outDir  )) { New-Item $outDir   -ItemType Directory | Out-Null }
     #if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory | Out-Null }
-    if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory | Out-Null }
+    #if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory | Out-Null }
 
     if ((Get-ChildItem "$newDir/*.json").Length -gt 0) {
       $doBatch = $true
@@ -349,11 +446,9 @@ foreach ($region in @('oceania','north-america','europe')) {
 
     if ($doBatch) {
       foreach ($f in $batchFiles) {
-        $f
         if (Test-Path -LiteralPath $OutFile) {
           #join files
           if (($f.BaseName -replace '_blue_vs_red_stats','') -in ($outJson.Matches.Match -replace '.*/','')) { 
-            "test $($outJson.Matches.Match -replace '.*/','')"
             # Skip Match already reported
             Remove-Item -LiteralPath $f
             Write-Host "Batch Skipped - Match already existing:- $f"
@@ -386,4 +481,3 @@ foreach ($region in @('oceania','north-america','europe')) {
 } #end region for
 
 
-#>

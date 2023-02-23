@@ -42,11 +42,14 @@ param (
   [string]$FilterFile, #Filter the filenames from the XML results, use * for wildcards.
   [string]$OutFolder,  #Path of ouput JSON and HTML
   [switch]$LatestFile, #Last modified file only (from the filtered list)
+          $TargetDate, #Date pointer - limited by -LimitDate or -LimitDays/-LimitMins
+          $LimitDate,
   [int]   $LimitMins,  #Only access files from last X minutes (sum of days and mins)(sum of days and mins)
   [double]$LimitDays,  #Only access files from last X days (sum of days and mins)
   [switch]$DownloadOnly,#Download JSON only
   [switch]$Overwrite,  #Force re-download do the FO_stats again even when file exists
   [switch]$ForceStats, #Force running stats on already existing file
+  ### FO_Stats parameters ###################
   [int]   $RoundTime,  #Passed to FO_Stats
   [switch]$TextSave,   #Passed to FO_Stats
   [switch]$TextJson,   #Passed to FO_Stats
@@ -54,6 +57,10 @@ param (
   [switch]$OpenHTML,    #Passed to FO_Stats
   [switch]$DailyBatch  #For HTTP server daily tallying functions (no use on client)
 )
+
+$script:DayStartOCE = [System.TimeZoneInfo]::ConvertTime([datetime]::Parse('06:00'), ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Sydney*'  }),[System.TimeZoneInfo]::UTC)
+$script:DayStartEU  = [System.TimeZoneInfo]::ConvertTime([datetime]::Parse('06:00'), ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Los?Angeles*' -or $_.DisplayName -like '*California*'}),[System.TimeZoneInfo]::UTC)
+$script:DayStartUS  = [System.TimeZoneInfo]::ConvertTime([datetime]::Parse('06:00'), ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Belgrade*' }),[System.TimeZoneInfo]::UTC)
 
 if ($DailyBatch) { $TextJson = $true }
 
@@ -71,12 +78,21 @@ elseif ($Region -eq 'EU')  { $LatestPaths = $EUPaths  }
 elseif ($Region -eq 'OCE') { $LatestPaths = $OCEPaths }
 elseif ($Region -eq 'INT') { $LatestPaths = $IntPaths }
 
-
 if (!$OutFolder) { $OutFolder = "$PSScriptRoot" }
 if (!(Test-Path -LiteralPath "$OutFolder" )) { New-Item $OutFolder -ItemType Directory -Force | Out-Null }
 $OutFolder = Get-Item -LiteralPath $OutFolder
 
 $timeUTC = (Get-Date).ToUniversalTime()
+
+if ($TargetDate) {
+  if ($TargetDate.GetType() -eq [string]) { $TargetDate = [datetime]::Parse($TargetDate) }
+  if ($TargetDate.GetType() -ne [datetime]) { 'ERROR: -StartDate invalid'; return }
+} 
+
+if ($LimitDate) {
+  if ($LimitDate.getType() -eq [string]) { $LimitDate = [datetime]::Parse($LimitDate) }
+  if ($LimitDate.GetType() -ne [datetime]) { 'ERROR: -EndDate invalid'; return }
+}
 
 if (!$FilterPath -and `
     !$Region    )   { $FilterPath = 'sydney/staging/' }
@@ -97,17 +113,20 @@ function New-UrlStatFile { return [PSCustomObject]@{ Name=$args[0]; DateTime=$ar
 $statFiles = @()
 
 if ($FilterFile -and $FilterFile -notmatch '\*') { $FilterFile = "*$FilterFile*" }
-if ($LimitMins -eq 0 -and $LimitDays -eq 0) {
-  if ($LatestFile -or `
-      $FilterFile) { $LimitDays = 30 }
-  else             { $LimitDays = 1  }
+if (!$LimitDate -and $LimitMins -eq 0 -and $LimitDays -eq 0) {
+  if ($FilterFile)     { $LimitDays = 30 }
+  elseif ($LatestFile) { $LimitDays = 7  }
+  else                 { $LimitDays = 1  }
 } 
 
 
+if (!$TargetDate) { $TargetDate  = $timeUTC.AddMinutes($LimitMins * -1).AddDays($LimitDays * -1) }
+if (!$LimitDate)  { $LimitDate   = $timeUTC }
+
 foreach ($p in ($FilterPath -split ',')) {
-  $startDate = $timeUTC.AddMinutes($LimitMins * -1).AddDays($LimitDays * -1)
-  $tempDate  = $startDate
-  while ($tempDate.Year -le $timeUTC.Year -and $tempDate.Month -le $timeUTC.Month) {
+  $tempDate  = $TargetDate
+  #while ($tempDate.Year -le $LimitDate.Year -and $tempDate.Month -le $LimitDate.Month) {
+  while ($tempDate.Year -le $TargetDate.Year -and $tempDate.Month -le $TargetDate.Month) {
     $xml = [xml](invoke-webrequest -Uri "$($AwsUrl)?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
     $xml.ListBucketResult.Contents | foreach { if ($_) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified) } }
     $tempDate = $tempDate.AddMonths(1)
@@ -118,7 +137,8 @@ foreach ($p in ($FilterPath -split ',')) {
 if ($LatestFile) { $statFiles = ($statFiles | Sort-Object DateTime -Descending)[0] }
 
 write-host "FO Stats Downloader: `n"`
-            "Date Limiter:`t$('{0:yyyy-MM-dd-HH-mm-ss}' -f $startDate)`n"`
+            "-TargetDate:`t$('{0:yyyy-MM-dd-HH-mm-ss}' -f $TargetDate)`n"`
+            "-LimitDate: `t$('{0:yyyy-MM-dd-HH-mm-ss}' -f $LimitDate)`n"`
             "-LimitDays:`t$LimitDays`n" `
             "-LimitMins:`t$LimitMins`n" `
             "-FilterPath:`t$FilterPath`n" `
@@ -137,15 +157,15 @@ write-host "====================================================================
 foreach ($f in $statFiles) {
   if ($FilterFile -and $f.Name -notlike $FilterFile) { continue }
   
-  if (!($FileFilter) -and ($LimitMins -gt 0 -or $LimitDays -gt 0))  {
+  if (!($FileFilter) -and ($LimitMins -gt 0 -or $LimitDays -gt 0 -or $LimitDate))  {
     if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') {
-      $f
       Write-Host "ERROR: Minute/Day limit not possible - file has invalid date/time [$($f.Name)]"
       continue
     } else {
       $f_date = ([DateTime]::ParseExact($matches[0],'yyyy-MM-dd-HH-mm-ss',$null))
-      if ($f_date -lt $timeUTC.AddMinutes($LimitMins * -1).AddDays($LimitDays * -1)) { continue }
+      if ($f_date -lt $TargetDate -or $f_date -gt $LimitDate) { continue }
     }
+
   }
 
   $filePath  = "$OutFolder\$(Split-Path $f.Name)"
@@ -205,39 +225,10 @@ if (!$DownloadOnly -and !$Demos) {
 }
 
 if ($DailyBatch) { 
-    foreach ($fileName in $filesDownloaded) {
-      if ((((Get-Content -LiteralPath ($fileName -replace '\.json$','_stats.json') -Raw) | ConvertFrom-Json).SummaryAttack.Count -lt 4) -or `
-       (Get-Content -LiteralPath $fileName -Raw) -notlike '*"gameEnd",*') { 
-         rm $fileName
-         continue 
-      }
-
-      $server = $fileName.FullName.Substring($OutFolder.Length + 1, $FileName.FullName.Length - $OutFolder.Length -1)
-      $server = ($server -split '[\\/]')[0] + "/"
-
-
-      if     ($server -in $OCEPaths) { $strRegion = 'oceania' }
-      elseif ($server -in $USPaths)  { $strRegion = 'north-america' }
-      elseif ($server -in $EUPaths)  { $strRegion = 'europe' }
-      else   { continue }
-
-      $outDir   = "$outFolder/_daily/$strRegion"
-      $batchDir = "$outDir/.batch"
-      $newDir   = "$outDir/.new"
-      if (!(Test-Path $outDir  )) { New-Item $outDir   -ItemType Directory  | Out-Null }
-      if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory  | Out-Null }
-      if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory  | Out-Null }
-  
-      
-      #if (!(Test-Path -LiteralPath "$newDir/$($fileName.BaseName)_stats.json") -and `
-      #    !(Test-Path -LiteralPath "$batchDir/$($fileName.BaseName)_stats.json") ) { 
-        Copy-Item -LiteralPath ($fileName -replace '\.json$','_stats.json') -Destination $newDir -Force
-      #}
-      rm $fileName
-
-      Write-Host "File added to $strRegion batch:- $fileName"
-    }
-} 
+    & .\FO_stats_daily_Range.ps1 -StartDateTime $DayStartOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartOCE).json"
+    & .\FO_stats_daily_Range.ps1 -StartDateTime $DayStartEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartEU).json"
+    & .\FO_stats_daily_Range.ps1 -StartDateTime $DayStartUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartUS).json"
+}
 
 
 # SIG # Begin signature block
