@@ -109,7 +109,7 @@ if ($Region) {
   $FilterPath = $temp
 } 
 
-function New-UrlStatFile { return [PSCustomObject]@{ Name=$args[0]; DateTime=$args[1] } }
+function New-UrlStatFile { return [PSCustomObject]@{ Name=$args[0]; DateTime=$args[1]; Size=$args[2] } }
 $statFiles = @()
 
 if ($FilterFile -and $FilterFile -notmatch '\*') { $FilterFile = "*$FilterFile*" }
@@ -128,7 +128,7 @@ foreach ($p in ($FilterPath -split ',')) {
   #while ($tempDate.Year -le $LimitDate.Year -and $tempDate.Month -le $LimitDate.Month) {
   while ($tempDate.Year -le $TargetDate.Year -and $tempDate.Month -le $TargetDate.Month) {
     $xml = [xml](invoke-webrequest -Uri "$($AwsUrl)?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
-    $xml.ListBucketResult.Contents | foreach { if ($_) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified) } }
+    $xml.ListBucketResult.Contents | foreach { if ($_) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified $_.Size) } }
     $tempDate = $tempDate.AddMonths(1)
   }
 }
