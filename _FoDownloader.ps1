@@ -225,9 +225,9 @@ if (!$DownloadOnly -and !$Demos) {
 }
 
 if ($DailyBatch) { 
-    & .\FO_stats_daily_Range.ps1 -StartDateTime $DayStartOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartOCE).json"
-    & .\FO_stats_daily_Range.ps1 -StartDateTime $DayStartEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartEU).json"
-    & .\FO_stats_daily_Range.ps1 -StartDateTime $DayStartUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartUS).json"
+    & .\FO_stats_join-json.ps1 -StartDateTime $DayStartOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartOCE).json"
+    & .\FO_stats_join-json.ps1 -StartDateTime $DayStartEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartEU).json"
+    & .\FO_stats_join-json.ps1 -StartDateTime $DayStartUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartUS).json"
 }
 
 
