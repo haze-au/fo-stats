@@ -134,6 +134,11 @@ function weapSN {
     'emp grenadegrenade'       { 'emp'   }
     'flash grenadegrenade'     { 'flash' }
 
+    #23/2/23 - Newby changes v2
+    'incendiarylauncher'       { 'incen' }
+    'napalmgrenade'            { 'napalm' }
+    'glgrenade'                { 'gl' }
+
     #scout
     'flashgrenade'  { 'flash' }
     
