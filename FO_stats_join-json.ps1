@@ -343,7 +343,7 @@ if ($StartDateTime) {
   }
 
   $StartDT = [DateTime]::Parse($StartDateTime)
-  if (!$EndDateTime) { $EndDT = $StartDT.AddDays(1)}
+  if (!$EndDateTime) { $EndDT = $StartDT.AddDays(1) }
   else {
     $EndDT = [DateTime]::Parse($EndDateTime)
 
@@ -363,8 +363,8 @@ if ($StartDateTime) {
       else  { $timeZoneID = [System.TimeZoneInfo]::Utc }
     }
     
-    $StartDT = [System.TimeZoneInfo]::ConvertTime($StartDT, [System.TimeZoneInfo]::Local,  $timeZoneID)
-    $EndDT   = [System.TimeZoneInfo]::ConvertTime($EndDT  , [System.TimeZoneInfo]::Local,  $timeZoneID)
+    $StartDT = [System.TimeZoneInfo]::ConvertTime($StartDT, $timeZoneID, [System.TimeZoneInfo]::Utc)
+    $EndDT   = [System.TimeZoneInfo]::ConvertTime($EndDT  , $timeZoneID, [System.TimeZoneInfo]::Utc)
   }
   
   if ($OutFile -and (Test-Path -LiteralPath $OutFile)) {
@@ -372,13 +372,14 @@ if ($StartDateTime) {
   } else {
     $outJson = $null
   }
-  
+  $StartDT
+  $EndDT
   $i = 0
   foreach ($path in ($FilterPath -split ',')) {
     if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
     foreach ($f in (Get-ChildItem $PSScriptRoot/$path/*_stats.json)) {
       $fileDT = [datetime]::ParseExact(($f.Name -replace '^(\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d).*$','$1'),'yyyy-MM-dd-HH-mm-ss',$null)
-      if ($fileDT -lt $StartDT.ToUniversalTime() -or $fileDT.ToUniversalTime() -gt $EndDT ) { continue } 
+      if ($fileDT -lt $StartDT -or $fileDT -gt $EndDT ) { continue } 
       if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) { 
         Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
         continue 
