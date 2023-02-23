@@ -372,8 +372,7 @@ if ($StartDateTime) {
   } else {
     $outJson = $null
   }
-  $StartDT
-  $EndDT
+
   $i = 0
   foreach ($path in ($FilterPath -split ',')) {
     if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
