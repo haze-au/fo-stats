@@ -13,7 +13,7 @@ param (
   [string[]]$StatFile,
   [int]   $RoundTime,
   [switch]$TextSave,
-  [switch]$TextJson,
+  [switch]$NoStatJson,
   [switch]$TextOnly,
   [switch]$OpenHTML
 )
@@ -2169,7 +2169,7 @@ $textOut += $arrClassTimeDefTable | Format-Table Name, `
                                   | Out-String
 #>
 
-if ($TextJson -eq $True) {
+if (!$NoStatJson) {
   $textJsonOut  = ([PSCustomObject]@{Matches='';SummaryAttack='';SummaryDefence='';ClassFragAttack='';ClassFragDefence='';ClassTimeAttack='';ClassTimeDefence=''})
   $textJsonOut.Matches = @($arrResultTable | Select-Object Match,Winner,@{L='Rating';E={'{0:P0}' -f $_.Rating}},Score1,Team1,Score2,Team2)
 

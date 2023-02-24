@@ -52,14 +52,11 @@ param (
   ### FO_Stats parameters ###################
   [int]   $RoundTime,  #Passed to FO_Stats
   [switch]$TextSave,   #Passed to FO_Stats
-  [switch]$TextJson,   #Passed to FO_Stats
+  [switch]$NoStatJson, #Passed to FO_stats
   [switch]$TextOnly,   #Passed to FO_Stats
-  [switch]$OpenHTML,    #Passed to FO_Stats
+  [switch]$OpenHTML,   #Passed to FO_Stats
   [switch]$DailyBatch  #For HTTP server daily tallying functions (no use on client)
 )
-
-
-if ($DailyBatch) { $TextJson = $true }
 
 if ($Demos) { $AwsUrl = 'https://fortressone-demos.s3.amazonaws.com/' }
 else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
@@ -197,11 +194,11 @@ if (!$DownloadOnly -and !$Demos) {
     write-host "====================================================================================================`n"
     foreach ($fileName in $filesDownloaded) {
       $param = @{ StatFile=$fileName }
-      if ($RoundTime) { $param.RoundTime = $RoundTime }
-      if ($TextOnly)  { $param.TextOnly = $true  }
-      if ($TextSave)  { $param.TextSave = $true  }
-      if ($TextJson)  { $param.TextJson = $true  }
-      if ($OpenHTML)  { $param.$OpenHTML = $true }
+      if ($RoundTime)  { $param.RoundTime  = $RoundTime }
+      if ($TextOnly)   { $param.TextOnly   = $true  }
+      if ($TextSave)   { $param.TextSave   = $true  }
+      if ($NoStatJson) { $param.NoStatJson = $true  }
+      if ($OpenHTML)   { $param.$OpenHTML  = $true  }
 
       $i++
       write-host "===================================================================================================="
@@ -210,7 +207,7 @@ if (!$DownloadOnly -and !$Demos) {
       write-host "----------------------------------------------------------------------------------------------------"
       & $PSScriptRoot\FO_stats_v2.ps1 @param
       
-      if ($DailyBatch -or $TextJson) {
+      if (!$NoStatJson) {
         $outJson = (Get-Content -LiteralPath ($fileName -replace '\.json$','_stats.json') -Raw) | ConvertFrom-Json
         $outJson.Matches[0].Match = "$($fileName.Directory.Parent.Name)/$($fileName.Directory.Name)/$($outJson.Matches[0].Match)"
         ($outJson | ConvertTo-JSON) | Out-File -LiteralPath ($fileName -replace '\.json$','_stats.json')
