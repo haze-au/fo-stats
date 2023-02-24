@@ -244,11 +244,11 @@ function processFoStatsJSON {
 
 function Generate-DailyStatsHTML {
     param([array]$JSON)
-
+    
     $htmlBody  = '<div class=row><div class=column><h2>Match Log</h2>'
     $htmlBody += $JSON.Matches       | Sort-Object Name   | ConvertTo-Html -Fragment
     $htmlBody += '<h2>Attack Summary</h2>'
-    $htmlBody += $JSON.SummaryAttack | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment
+    $htmlBody += $JSON.SummaryAttack  | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment
     $htmlBody += '<h2>Defence Summary</h2>'
     $htmlBody += $JSON.SummaryDefence | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name  | ConvertTo-Html -Fragment
     $htmlBody += '<h2>Class Kills - Attack</h2>'
@@ -305,7 +305,7 @@ function Generate-DailyStatsHTML {
 "@
     
     return (ConvertTo-Html -Body $htmlBody -Head $htmlHeader)
-}
+} # end Generate HTML
 
 
 if ($RemoveMatch) {
