@@ -2088,7 +2088,7 @@ foreach ($i in $arrSummaryAttTable) {
   $i.TimePlayed = Format-MinSec $i.TimePlayed
 }
 
-$textOut += $arrSummaryAttTable | Format-Table Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,TimePlayed,Classes | Out-String
+$textOut += $arrSummaryAttTable | Format-Table Name,KPM,KD,Kills,Death,TKill,@{L='Dmg';E={ '{0:n0}' -f $_.Dmg } },@{L='DPM';E={ '{0:n0}' -f $_.DPM } },@{L='FlagCap';E={ '{0:n0}' -f $_.FlagCap } },@{L='FlagTake';E={ '{0:n0}' -f $_.FlagTake } },FlagTime,TimePlayed,Classes | Out-String
                                    <# OLD - See presentation format above
                                    @{Label='KPM';Expression={ Table-CalculateVPM $_.Kills $_.TimePlayed }},@{Label='K/D';Expression={ [math]::Round($_.Kills / $_.Death,2) }}, ` 
                                    Kills,Death,TKill,Dmg, `
@@ -2109,7 +2109,7 @@ foreach ($j in $arrSummaryDefTable) {
 }
 
 $textOut += "Defence Summary`n"
-$textOut += $arrSummaryDefTable | Format-Table Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes | Out-String
+$textOut += $arrSummaryDefTable | Format-Table Name,KPM,KD,Kills,Death,TKill,@{L='Dmg';E={ '{0:n0}' -f $_.Dmg } },@{L='DPM';E={ '{0:n0}' -f $_.DPM } },@{L='FlagStop';E={ '{0:n0}' -f $_.FlagStop } },Win,Draw,Loss,TimePlayed,Classes | Out-String
                                    <# OLD - See presentation format above
                                    @{Label='KPM';Expression={ Table-CalculateVPM $_.Kills $_.TimePlayed }},@{Label='K/D';Expression={ [math]::Round($_.Kills / $_.Death,2) }}, `
                                    Kills,Death,TKill,Dmg, `

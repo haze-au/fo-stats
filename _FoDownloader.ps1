@@ -58,9 +58,6 @@ param (
   [switch]$DailyBatch  #For HTTP server daily tallying functions (no use on client)
 )
 
-$script:DayStartOCE = [System.TimeZoneInfo]::ConvertTime([datetime]::Parse('06:00'), ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Sydney*'  }),[System.TimeZoneInfo]::UTC)
-$script:DayStartEU  = [System.TimeZoneInfo]::ConvertTime([datetime]::Parse('06:00'), ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Los?Angeles*' -or $_.DisplayName -like '*California*'}),[System.TimeZoneInfo]::UTC)
-$script:DayStartUS  = [System.TimeZoneInfo]::ConvertTime([datetime]::Parse('06:00'), ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Belgrade*' }),[System.TimeZoneInfo]::UTC)
 
 if ($DailyBatch) { $TextJson = $true }
 
@@ -126,7 +123,7 @@ if (!$LimitDate)  { $LimitDate   = $timeUTC }
 foreach ($p in ($FilterPath -split ',')) {
   $tempDate  = $TargetDate
   #while ($tempDate.Year -le $LimitDate.Year -and $tempDate.Month -le $LimitDate.Month) {
-  while ($tempDate.Year -le $TargetDate.Year -and $tempDate.Month -le $TargetDate.Month) {
+  while ($tempDate.Year -le $LimitDate.Year -and $tempDate.Month -le $LimitDate.Month) {
     $xml = [xml](invoke-webrequest -Uri "$($AwsUrl)?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
     $xml.ListBucketResult.Contents | foreach { if ($_) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified $_.Size) } }
     $tempDate = $tempDate.AddMonths(1)
@@ -225,9 +222,24 @@ if (!$DownloadOnly -and !$Demos) {
 }
 
 if ($DailyBatch) { 
-    & .\FO_stats_join-json.ps1 -StartDateTime $DayStartOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartOCE).json"
-    & .\FO_stats_join-json.ps1 -StartDateTime $DayStartEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartEU).json"
-    & .\FO_stats_join-json.ps1 -StartDateTime $DayStartUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayStartUS).json"
+  $DayReportOCE = [datetime]::Parse('19:00')
+  $DayReportUS  = [datetime]::Parse('14:00')
+  $DayReportEU  = [datetime]::Parse('6:00')
+  
+  #OCE 19-23 +1 day, 00-18 Same day, 13-18 6am grace period
+  if     ([DateTime]::UtcNow.hour -in 19..23) { $DayReportOCE = $DayReportOCE.AddDays(-1) }
+  elseif ([DateTime]::UtcNow.hour -in 13..18) { $DayReportOCE = $DayReportOCE.AddDays(-1) }
+  
+  #US 14-23 same day, 0-7 +1 day, 8-14 6am grace period
+  if     ([DateTime]::UtcNow.hour  -in 0..7)    { $DayReportUS  = $DayReportUS.AddDays(-1)  }
+  elseif ([DateTime]::UtcNow.hour  -in 8..13)   { $DayReportUS  = $DayReportUS.AddDays(-1) }
+  
+  #EU UTC time, 0-6 6am grace period
+  if ([DateTime]::UtcNow.hour  -in 0..6) { $DayReportEU  = $DayReportEU.AddDays(-1)  }
+
+    & .\FO_stats_join-json.ps1 -StartDateTime $DayReportOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportOCE).json"
+    & .\FO_stats_join-json.ps1 -StartDateTime $DayReportUS.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportUS).json"
+    & .\FO_stats_join-json.ps1 -StartDateTime $DayReportEU.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
 }
 
 
