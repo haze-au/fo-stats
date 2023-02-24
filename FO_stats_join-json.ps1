@@ -4,11 +4,10 @@
 ###
 
 param([switch]$ForceBatch,
-      [string]$RemoveMatch,
-      [string]$FromJson,
-      [string]$StartDateTime,
-      [string]$EndDateTime,
-      [string]$TimeZone,
+      [string]$RemoveMatch,   # JSON file to remove $FromJson file
+      [string]$FromJson,      # See Remove Match
+      [string]$StartDateTime, # Input UTC time to match file names
+      [string]$EndDateTime,   # Input UTC time to match file names
       [string]$FilterPath,
       [ValidateSet('ALL','US','EU','OCE','INT')]
               $Region,
@@ -354,19 +353,7 @@ if ($StartDateTime) {
       Remove-Variable $temp
     }
   }
-
-  if ($TimeZone -in 'EU','OCE','US') {
-    switch ($TimeZone) {
-      'EU'  { $timeZoneID = [System.TimeZoneInfo]::GetSystemTimeZones() | Where-Object DisplayName -like '*Belgrade*'}
-      'OCE' { $timeZoneID = [System.TimeZoneInfo]::GetSystemTimeZones() | Where-Object DisplayName -like '*Sydney*' }
-      'US'  { $timeZoneID = [System.TimeZoneInfo]::GetSystemTimeZones() | Where-Object { $_.DisplayName -like '*Los?Angeles*' -or $_.DisplayName -like '*California*' } }
-      else  { $timeZoneID = [System.TimeZoneInfo]::Utc }
-    }
-    
-    $StartDT = [System.TimeZoneInfo]::ConvertTime($StartDT, $timeZoneID, [System.TimeZoneInfo]::Utc)
-    $EndDT   = [System.TimeZoneInfo]::ConvertTime($EndDT  , $timeZoneID, [System.TimeZoneInfo]::Utc)
-  }
-  
+ 
   if ($OutFile -and (Test-Path -LiteralPath $OutFile)) {
     $outJson = (Get-Content -LiteralPath $OutFile -Raw) | ConvertFrom-Json
   } else {
@@ -417,72 +404,5 @@ if ($StartDateTime) {
     return
   }
 } 
-
-foreach ($r in @('oceania','north-america','europe')) {
-    if ($ForceBatch) { $doBatch = $true  }
-    else             { $dobatch = $false } 
-    switch ($r) {
-      #'ALL' { $RegionDateTime = (Get-Date) }
-      'north-america' { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTime([datetime]::Now.DateTime,  [System.TimeZoneInfo]::Local, ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Los?Angeles*' -or $_.DisplayName -like '*California*'})) ) }
-      'europe'        { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTime([datetime]::Now.DateTime,  [System.TimeZoneInfo]::Local, ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Belgrade*'})) ) }
-      'oceania'       { $RegionDateTime = ([System.TimeZoneInfo]::ConvertTime([datetime]::Now.DateTime,  [System.TimeZoneInfo]::Local, ([System.TimeZoneInfo]::GetSystemTimeZones() | Where { $_.DisplayName -like '*Sydney*'  })) ) }
-      #'INT' { $RegionDateTime = (Get-Date) }
-      else  { continue } 
-    }
-
-    #Region Day period will be between 6am to 5:59am
-    if ($RegionDateTime.Hour -in @(0,1,2,3,4,5)) { $RegionDateTime = $RegionDateTime.AddDays(-1) }
-    $strDate = ('{0:yyyy-MM-dd}' -f $RegionDateTime)
-
-    $outDir   = "$PSScriptRoot/_daily/$r"
-    $outFile  = "$outDir/$($r)_DailyStats_$($strDate).json"
-    $outHtml  = "$outDir/$($r)_DailyStats_$($strDate).html"
-    #$batchDir = "$outDir/.batch"
-    #$newDir   = "$outDir/.new"
-
-    if (!(Test-Path $outDir  )) { New-Item $outDir   -ItemType Directory | Out-Null }
-    #if (!(Test-Path $batchDir)) { New-Item $batchDir -ItemType Directory | Out-Null }
-    #if (!(Test-Path $newDir  )) { New-Item $newDir   -ItemType Directory | Out-Null }
-
-    if ((Get-ChildItem "$newDir/*.json").Length -gt 0) {
-      $doBatch = $true
-      $batchFiles = (Get-ChildItem "$newDir/*.json")
-    } 
-
-    if ($doBatch) {
-      foreach ($f in $batchFiles) {
-        if (Test-Path -LiteralPath $OutFile) {
-          #join files
-          if (($f.BaseName -replace '_blue_vs_red_stats','') -in ($outJson.Matches.Match -replace '.*/','')) { 
-            # Skip Match already reported
-            Remove-Item -LiteralPath $f
-            Write-Host "Batch Skipped - Match already existing:- $f"
-            continue
-          }
-          $outJSON = (processFoStatsJSON -CurrentJson ((Get-Content -LiteralPath $outFile -Raw) | ConvertFrom-Json) -NewJson ((Get-Content -LiteralPath $f -Raw)| ConvertFrom-Json))
-        } else {
-          #new file becomes the file
-          $outJSON = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json
-        }
-
-        ($outJSON | ConvertTo-JSON) | Out-File -LiteralPath $outFile
-        Write-Host "Batch Added - Match file:- $f"
-        Copy-Item -LiteralPath $f -Destination $batchDir -Force
-        Remove-Item -LiteralPath $f -Force
-        #} else {
-        #  #Just move the file
-        #  Copy-Item -LiteralPath $f -Destination $batchDir -Force
-        #  Move-Item -LiteralPath $f -Destination $outFile -Force
-        #}
-      }
-    }
-    if ( $doBatch -or ((Test-Path -LiteralPath $outFile) -and !(Test-Path -LiteralPath $outHtml)) ) {
-      #generate HTML
-      Write-Host "Batch HTML - Generated :- $outHtml"
-      Generate-DailyStatsHTML -JSON (Get-Content -LiteralPath $outFile -Raw | ConvertFrom-Json) | Out-File -LiteralPath $outHtml
-    }
-
-
-} #end region for
 
 
