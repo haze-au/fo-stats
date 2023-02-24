@@ -218,6 +218,8 @@ if (!$DownloadOnly -and !$Demos) {
       write-host "----------------------------------------------------------------------------------------------------"
       write-host "FO Stats Completed:-`t$($fileName)"
       write-host "----------------------------------------------------------------------------------------------------"
+
+      if ($DailyBatch) { Remove-Item -LiteralPath $fileName -Force }
     }
 }
 
@@ -237,9 +239,9 @@ if ($DailyBatch) {
   #EU UTC time, 0-6 6am grace period
   if ([DateTime]::UtcNow.hour  -in 0..6) { $DayReportEU  = $DayReportEU.AddDays(-1)  }
 
-    & .\FO_stats_join-json.ps1 -StartDateTime $DayReportOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportOCE).json"
-    & .\FO_stats_join-json.ps1 -StartDateTime $DayReportUS.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportUS).json"
-    & .\FO_stats_join-json.ps1 -StartDateTime $DayReportEU.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
+    & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportOCE).json"
+    & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportUS.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportUS).json"
+    & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportEU.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
 }
 
 
