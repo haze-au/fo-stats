@@ -373,7 +373,7 @@ if ($StartDateTime) {
     $outJson = $null
   }
 
-  $i = 0
+  $filesBatched = @()
   foreach ($path in ($FilterPath -split ',')) {
     if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
     foreach ($f in (Get-ChildItem $PSScriptRoot/$path/*_stats.json)) {
@@ -383,15 +383,20 @@ if ($StartDateTime) {
         Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
         continue 
       }
-
-      $newJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json
-      if ($newJson.SummaryAttack.Count -lt 4)  { continue }
-      
-      Write-Host "Adding file to JSON:- $f"
-      if (!$outJson) { $outJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json }
-      else { $outJson = processFoStatsJSON -CurrentJson $outJson -NewJson ((Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json) }
-      $i++
+      $filesBatched += @($f)
     }
+  }
+  
+  $filesBatched = $filesBatched | Sort-Object Name
+  $i = 0
+  foreach ($f in $filesBatched) {
+    $newJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json
+    if ($newJson.SummaryAttack.Count -lt 4)  { continue }
+    
+    Write-Host "Adding file to JSON:- $f"
+    if (!$outJson) { $outJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json }
+    else { $outJson = processFoStatsJSON -CurrentJson $outJson -NewJson ((Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json) }
+    $i++
   }
 
   if (!$OutFile) {
