@@ -397,6 +397,9 @@ if ($StartDateTime) {
   if ($i -lt 1) { Write-Host "No batch files found to be added to $region" }
   
   if ($outJson) { 
+    if (!(Test-Path -LiteralPath (Split-Path -LiteralPath $OutFile))) {
+      New-Item -Path (Split-Path -LiteralPath $OutFile) -ItemType Directory
+    }
     $outJson | ConvertTo-Json | Out-File $OutFile 
     Write-Host "JSON has been generated - $i files added"
     Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($OutFile -replace '\.json$','.html')
