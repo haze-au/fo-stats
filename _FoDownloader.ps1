@@ -86,6 +86,13 @@ if ($TargetDate) {
 if ($LimitDate) {
   if ($LimitDate.getType() -eq [string]) { $LimitDate = [datetime]::Parse($LimitDate) }
   if ($LimitDate.GetType() -ne [datetime]) { 'ERROR: -EndDate invalid'; return }
+
+  if ($TargetDate -gt $LimitDate) {  
+    $temp = $TargetDate
+    $TargetDate = $LimitDate
+    $LimitDate   = $temp
+    Remove-Variable temp
+  }
 }
 
 if (!$FilterPath -and `
@@ -119,7 +126,6 @@ if (!$LimitDate)  { $LimitDate   = $timeUTC }
 
 foreach ($p in ($FilterPath -split ',')) {
   $tempDate  = $TargetDate
-  #while ($tempDate.Year -le $LimitDate.Year -and $tempDate.Month -le $LimitDate.Month) {
   while ($tempDate.Year -le $LimitDate.Year -and $tempDate.Month -le $LimitDate.Month) {
     $xml = [xml](invoke-webrequest -Uri "$($AwsUrl)?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
     $xml.ListBucketResult.Contents | foreach { if ($_) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified $_.Size) } }
