@@ -256,10 +256,26 @@ function Generate-DailyStatsHTML {
     $htmlBody += $JSON.ClassFragDefence | Sort-Object Name | ConvertTo-Html -Fragment
     $htmlBody += '</div></div><div class=row><div class=column style="width:580">'
     $htmlBody += '<h2>Class Time - Attack</h2>'
-    $htmlBody += $JSON.ClassTimeAttack | Sort-Object Name | ConvertTo-Html -Fragment
+    $htmlBody += $JSON.ClassTimeAttack | Select-Object Name, `
+                                        @{L='Sco' ; E={Format-MinSec $_.Sco}}, `
+                                        @{L='Sold'; E={Format-MinSec $_.Sold}}, `
+                                        @{L='Demo'; E={Format-MinSec $_.Demo}}, `
+                                        @{L='Med' ; E={Format-MinSec $_.Med}}, `
+                                        @{L='HwG' ; E={Format-MinSec $_.HwG}}, `
+                                        @{L='Pyro'; E={Format-MinSec $_.Pyro}}, `
+                                        @{L='Spy' ; E={Format-MinSec $_.Spy}}, `
+                                        @{L='Eng' ; E={Format-MinSec $_.Eng}}  | Sort-Object Name | ConvertTo-Html -Fragment
     $htmlBody += '</div><div class=column style="width:580"> '
     $htmlBody += '<h2>Class Time - Defence</h2>'
-    $htmlBody += $JSON.ClassTimeDefence| Sort-Object Name | ConvertTo-Html -Fragment
+    $htmlBody += $JSON.ClassTimeDefence | Select-Object Name, `
+                                        @{L='Sco' ; E={Format-MinSec $_.Sco}}, `
+                                        @{L='Sold'; E={Format-MinSec $_.Sold}}, `
+                                        @{L='Demo'; E={Format-MinSec $_.Demo}}, `
+                                        @{L='Med' ; E={Format-MinSec $_.Med}}, `
+                                        @{L='HwG' ; E={Format-MinSec $_.HwG}}, `
+                                        @{L='Pyro'; E={Format-MinSec $_.Pyro}}, `
+                                        @{L='Spy' ; E={Format-MinSec $_.Spy}}, `
+                                        @{L='Eng' ; E={Format-MinSec $_.Eng}}  | Sort-Object Name | ConvertTo-Html -Fragment
     $htmlBoyd += '</div></div>'
 
     $htmlHeader = @"
@@ -397,7 +413,7 @@ if ($StartDateTime) {
   if ($i -lt 1) { Write-Host "No batch files found to be added to $region" }
   
   if ($outJson) { 
-    if (!(Test-Path -LiteralPath (Split-Path -LiteralPath $OutFile))) {
+    if ($OutFile -match '[\\/]' -and !(Test-Path -LiteralPath (Split-Path -LiteralPath $OutFile))) {
       New-Item -Path (Split-Path -LiteralPath $OutFile) -ItemType Directory
     }
     $outJson | ConvertTo-Json | Out-File $OutFile 
