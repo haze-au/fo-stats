@@ -232,7 +232,7 @@ if ($DailyBatch) {
   $DayReportEU  = [datetime]::Parse('6:00')  # UTC time
   
   #OCE 19-23 +1 day, 00-18 Same day, 13-18 6am grace period
-  if     ([DateTime]::UtcNow.hour -in 19..23) { $DayReportOCE = $DayReportOCE.AddDays(-1) }
+  if     ([DateTime]::UtcNow.hour -in 19..23) { $DayReportOCE = $DayReportOCE.AddDays(1) }
   elseif ([DateTime]::UtcNow.hour -in 13..18) { $DayReportOCE = $DayReportOCE.AddDays(-1) }
   
   #US 14-23 same day, 0-7 +1 day, 8-14 6am grace period
