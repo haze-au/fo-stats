@@ -242,7 +242,7 @@ if ($DailyBatch) {
   elseif ([DateTime]::UtcNow.hour  -in 8..13)  { $DayFilterUS = $DayFilterUS.AddDays(-1); $DayReportUS = $DayFilterUS }
   
   #EU UTC time, 0-6 6am grace period
-  if ([DateTime]::UtcNow.hour  -in 0..6) { $DayFilterEU  = $DayFilterEU.AddDays(-1); $DayReportEU = $DayFilterEU  }
+  if ([DateTime]::UtcNow.hour  -in 0..6) { $DayFilterEU  = $DayFilterEU.AddDays(-1) }
   $DayReportEU = $DayFilterEU
   
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportOCE).json"
