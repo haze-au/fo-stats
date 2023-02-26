@@ -227,24 +227,27 @@ if (!$DownloadOnly -and !$Demos) {
 }
 
 if ($DailyBatch) { 
-  $DayReportOCE = [datetime]::Parse('19:00') # Syd 6am
-  $DayReportUS  = [datetime]::Parse('14:00') # Cali 6am
-  $DayReportEU  = [datetime]::Parse('6:00')  # UTC time
+  $DayFilterOCE = [datetime]::Parse('19:00') # Syd 6am
+  $DayFiltertUS = [datetime]::Parse('14:00') # Cali 6am
+  $DayFilterEU  = [datetime]::Parse('6:00')  # UTC time
   
   #OCE 19-23 +1 day, 00-18 Same day, 13-18 6am grace period
-  if     ([DateTime]::UtcNow.hour -in 19..23) { $DayReportOCE = $DayReportOCE.AddDays(1) }
-  elseif ([DateTime]::UtcNow.hour -in 13..18) { $DayReportOCE = $DayReportOCE.AddDays(-1) }
+  if     ([DateTime]::UtcNow.hour -in 19..23) { $DayReportOCE = $DayFilterOCE.AddDays(1)  } 
+  elseif ([DateTime]::UtcNow.hour -in 0..12)  { $DayReportOCE = $DayFilterOCE; $DayFilterOCE = $DayFilterOCE.AddDays(-1) }
+  elseif ([DateTime]::UtcNow.hour -in 13..18) { $DayReportOCE = $DayFilterOCE; $DayFilterOCE = $DayFilterOCE.AddDays(-1) }
   
   #US 14-23 same day, 0-7 +1 day, 8-14 6am grace period
-  if     ([DateTime]::UtcNow.hour  -in 0..7)    { $DayReportUS  = $DayReportUS.AddDays(-1)  }
-  elseif ([DateTime]::UtcNow.hour  -in 8..13)   { $DayReportUS  = $DayReportUS.AddDays(-1) }
+  if     ([DateTime]::UtcNow.hour  -in 14..23) { $DayReportUS = $DayFilterUS }
+  elseif ([DateTime]::UtcNow.hour  -in 0..7)   { $DayFilterUS = $DayFilterUS.AddDays(-1); $DayReportUS = $DayFilterUS }
+  elseif ([DateTime]::UtcNow.hour  -in 8..13)  { $DayFilterUS = $DayFilterUS.AddDays(-1); $DayFilterUS = $DayFilterUS }
   
   #EU UTC time, 0-6 6am grace period
-  if ([DateTime]::UtcNow.hour  -in 0..6) { $DayReportEU  = $DayReportEU.AddDays(-1)  }
+  if ([DateTime]::UtcNow.hour  -in 0..6) { $DayFilterEU  = $DayFilterEU.AddDays(-1); $DayReportEU = $DayFilterEU  }
+  $DayReportEU = $DayFilterEU
   
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportOCE).json"
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportUS).json"
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
+  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportOCE).json"
+  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportUS).json"
+  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
 }
 
 
