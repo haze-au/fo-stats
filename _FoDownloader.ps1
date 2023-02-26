@@ -228,7 +228,7 @@ if (!$DownloadOnly -and !$Demos) {
 
 if ($DailyBatch) { 
   $DayFilterOCE = [datetime]::Parse('19:00') # Syd 6am
-  $DayFiltertUS = [datetime]::Parse('14:00') # Cali 6am
+  $DayFilterUS = [datetime]::Parse('14:00') # Cali 6am
   $DayFilterEU  = [datetime]::Parse('6:00')  # UTC time
   
   #OCE 19-23 +1 day, 00-18 Same day, 13-18 6am grace period
