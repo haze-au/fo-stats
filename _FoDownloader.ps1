@@ -204,7 +204,7 @@ if (!$DownloadOnly -and !$Demos) {
       if ($TextOnly)   { $param.TextOnly   = $true  }
       if ($TextSave)   { $param.TextSave   = $true  }
       if ($NoStatJson) { $param.NoStatJson = $true  }
-      if ($OpenHTML)   { $param.$OpenHTML  = $true  }
+      if ($OpenHTML)   { $param.OpenHTML   = $true  }
 
       $i++
       write-host "===================================================================================================="

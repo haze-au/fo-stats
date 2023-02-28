@@ -144,8 +144,8 @@ function timeRnd-RoundDown {
 
 function Format-MinSec {
   param($sec)
-
-  $ts = New-TimeSpan -Seconds $sec
+  if (!$sec) { return }
+  $ts = (New-TimeSpan -Seconds $sec)
   $mins = ($ts.Days * 24 + $ts.Hours) * 60 + $ts.minutes
   return "$($mins):$("{0:d2}" -f $ts.Seconds)"
 }
@@ -503,10 +503,11 @@ function GenerateSummaryHtmlTable {
   $subtotal = @(1..6 | foreach { 0 })
 
   foreach ($p in $playerList) {
-    if ($Defence) { $rnd = if ($player.Team -eq 1) { '2' } else { '1' }}
-    else          { $rnd = if ($player.Team -eq 1) { '1' } else { '2' }}  
+    if ($Defence) { $rnd = if ($arrTeam.$p -match '^2') { '1' } else { '2' }}
+    else          { $rnd = if ($arrTeam.$p -match '^1') { '1' } else { '2' }} 
 
-    $player = ($arrPlayerTable | Where { $_.Name -EQ $p -and (($_.Team -match '^1' -and $_.Round -eq $rnd) -or ($_.Team -match '^2' -and $_.Round -eq $rnd))})
+    $player = ($arrPlayerTable | Where-Object { $_.Name -EQ $p -and (($_.Team -match '^1' -and $_.Round -eq $rnd) -or ($_.Team -match '^2' -and $_.Round -eq $rnd))})
+
 
     $team = $arrTeam.$p
     $kills = $player.Kills
@@ -525,8 +526,7 @@ function GenerateSummaryHtmlTable {
     if ($Attack) { $table += "<td>$($flagCap)</td><td>$($flagTake)</td><td>$(Format-MinSec $flagTime)</td>" }
     else         { $table += "<td>$($flagStop)</td>" }
       
-    $table += "<td>$(Format-MinSec $timePlayed)</td>"
-
+    $table += "<td>$(Format-MinSec ([int]$timePlayed))</td>"
     $table += "<td>$(getPlayerClasses -Round $rnd -Player $p)</td>"
     $table += "</tr>`n"
     
