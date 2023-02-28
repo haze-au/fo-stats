@@ -15,6 +15,11 @@ param([switch]$ForceBatch,
 
 if ($ForceBatch) { $doBatch = $true }
 
+$OCEPaths = @('sydney/','melbourne/','sydney-gz/','snoozer/')
+$USPaths  = @('california/','coach/','dallas/','dallas2/','iowa/','phoenix/','virginia/')
+$EUPaths  = @('dublin/','ireland/','stockholm/')
+$IntPaths = @('bahrain/','guam/','mumbai/','nz/','timbuktu/','tokyo/')
+
 $script:ClassToStr = @('World','Sco','Snp','Sold','Demo','Med','HwG','Pyro','Spy','Eng', 'SG')
 $script:ClassAllowedStr = @('Sco','Sold','Demo','Med','HwG','Pyro','Spy','Eng')
 $script:ClassAllowed       = @(1,3,4,5,6,7,8,9)
@@ -338,12 +343,7 @@ if ($RemoveMatch) {
 }
 
 if ($StartDateTime) {
-  if ($Region) {
-    $OCEPaths = @('sydney/','melbourne/','sydney-gz/','snoozer/')
-    $USPaths  = @('california/','coach/','dallas/','dallas2/','iowa/','phoenix/','virginia/')
-    $EUPaths  = @('dublin/','ireland/','stockholm/')
-    $IntPaths = @('bahrain/','guam/','mumbai/','nz/','timbuktu/','tokyo/')
-  
+  if ($Region) {  
     if     ($Region -eq 'ALL') { $LatestPaths = $OCEPaths + $USPaths + $EUPaths + $IntPaths }
     elseif ($Region -eq 'US')  { $LatestPaths = $USPaths  }
     elseif ($Region -eq 'EU')  { $LatestPaths = $EUPaths  }
