@@ -336,8 +336,8 @@ if ($RemoveMatch) {
   $outJson = (processFoStatsJSON -CurrentJson ($keepJson) -NewJson ($remJson) -RemoveMatch)
   
   if ($keepJson -eq $null -or $remJson -eq $null) { Write-Host "NULL JSON ERROR"; return }
-  ($outJson | ConvertTo-Json) | Out-File -LiteralPath $FromJson
-  Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($FromJson -replace '\.json$','.html')
+  ($outJson | ConvertTo-Json) | Out-File -LiteralPath $FromJson -Encoding utf8
+  Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($FromJson -replace '\.json$','.html')  -Encoding utf8
   Write-Host "Removed: $RemoveMatch"
   return
 }
@@ -416,9 +416,9 @@ if ($StartDateTime) {
     if ($OutFile -match '[\\/]' -and !(Test-Path -LiteralPath (Split-Path -LiteralPath $OutFile))) {
       New-Item -Path (Split-Path -LiteralPath $OutFile) -ItemType Directory
     }
-    $outJson | ConvertTo-Json | Out-File $OutFile 
+    $outJson | ConvertTo-Json | Out-File $OutFile  -Encoding utf8
     Write-Host "JSON has been generated - $i files added"
-    Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($OutFile -replace '\.json$','.html')
+    Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($OutFile -replace '\.json$','.html') -Encoding utf8
     Write-Host "Batch HTML - Generated :- $($OutFile -replace '\.json$','.html')"
     return
   }

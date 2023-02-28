@@ -658,7 +658,7 @@ foreach ($jsonFile in $inputFile) {
   if ($txt[0] -notmatch '^\[.*') {
     $txt[0] = "[$($txt[0])"
     $txt[$txt.count - 1] = "$($txt[$txt.count - 1])]"
-    $txt | Out-File -LiteralPath ($jsonFile.FullName)
+    $txt | Out-File -LiteralPath ($jsonFile.FullName) -Encoding utf8
   }
   Remove-Variable txt
 

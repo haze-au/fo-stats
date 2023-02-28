@@ -180,7 +180,7 @@ foreach ($f in $statFiles) {
 
   if (!(Test-Path -LiteralPath $filePath)) { New-Item -Path $filePath -ItemType Directory | Out-Null }
   write-host "Downloading:- $($f.Name)"
-  (invoke-webrequest -Uri "$($AwsUrl)$($f.Name)").Content | Out-File -LiteralPath  $fileName
+  (invoke-webrequest -Uri "$($AwsUrl)$($f.Name)").Content | Out-File -LiteralPath  $fileName  -Encoding utf8
   $filesDownloaded += (Get-Item -LiteralPath $fileName)
 }
 
@@ -216,7 +216,7 @@ if (!$DownloadOnly -and !$Demos) {
       if (!$NoStatJson) {
         $outJson = (Get-Content -LiteralPath ($fileName -replace '\.json$','_stats.json') -Raw) | ConvertFrom-Json
         $outJson.Matches[0].Match = "$($fileName.Directory.Parent.Name)/$($fileName.Directory.Name)/$($outJson.Matches[0].Match)"
-        ($outJson | ConvertTo-JSON) | Out-File -LiteralPath ($fileName -replace '\.json$','_stats.json')
+        ($outJson | ConvertTo-JSON) | Out-File -LiteralPath ($fileName -replace '\.json$','_stats.json')  -Encoding utf8
       }
       write-host "----------------------------------------------------------------------------------------------------"
       write-host "FO Stats Completed:-`t$($fileName)"
