@@ -495,12 +495,12 @@ function GenerateSummaryHtmlTable {
   param([switch]$Attack,[switch]$Defence)
   
   $count = 1
-  $tableHeader = "<table style=""width:600px;display:inline-table"">$($tableStyle2)<tr><th $($columStyle)>#</th><th $($columStyle)>Player</th><th $($columStyle)>Team</th><th $($columStyle)>KPM</th><th $($columStyle)>K/D</th><th $($columStyle)>Kills</th><th $($columStyle)>Dth</th><th $($columStyle)>TK</h>"
+  $tableHeader = "<table style=""width:600px;display:inline-table"">$($tableStyle2)<tr><th $($columStyle)>#</th><th $($columStyle)>Player</th><th $($columStyle)>Team</th><th $($columStyle)>KPM</th><th $($columStyle)>K/D</th><th $($columStyle)>Kills</th><th $($columStyle)>Dth</th><th $($columStyle)>TK</h><th $($columStyle)>Dmg</th><th $($columStyle)>DPM</h>"
   if ($Attack) { $tableHeader += "<th $($columStyle)>Caps</th><th $($columStyle)>Take</th><th $($columStyle)>Carry</th>" }
-  else         { $tableHeader += "<th $($columStyle)>Stop</th>" }
+  else         { $tableHeader += "<th $($columStyle)>FlagStop</th>" }
   $tableHeader += "<th $($columStyle)>Time</th>"
   $table = ''
-  $subtotal = @(1..6 | foreach { 0 })
+  $subtotal = @(1..8 | foreach { 0 })
 
   foreach ($p in $playerList) {
     if ($Defence) { $rnd = if ($arrTeam.$p -match '^2') { '1' } else { '2' }}
@@ -516,12 +516,14 @@ function GenerateSummaryHtmlTable {
     $death = $player.Death
     $kd    = if ($death) { $kills / $death } else { '-' }
     $tkill = $player.TKill
+    $dmg   = $player.Dmg
+    $dpm   = $dmg / ($timePlayed/60)
 
     $flagCap     = $player.FlagCap
     $flagTake    = $player.FlagTake
     $flagTime    = $player.FlagTime
     $flagStop    = $player.FlagStop
-    $table +=  "<tr class=`"$(teamColorCode $team)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td>$('{0:0.00}' -f $kpm)</td><td>$('{0:0.00}' -f $kd)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td>"
+    $table +=  "<tr class=`"$(teamColorCode $team)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td>$('{0:0.00}' -f $kpm)</td><td>$('{0:0.00}' -f $kd)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td><td>$($dmg)</td><td>$('{0:0}' -f $dpm)</td>"
     
     if ($Attack) { $table += "<td>$($flagCap)</td><td>$($flagTake)</td><td>$(Format-MinSec $flagTime)</td>" }
     else         { $table += "<td>$($flagStop)</td>" }
@@ -530,23 +532,22 @@ function GenerateSummaryHtmlTable {
     $table += "<td>$(getPlayerClasses -Round $rnd -Player $p)</td>"
     $table += "</tr>`n"
     
-    $subtotal[0] += $kills; $subtotal[1] += $death; $subtotal[2] += $tkill
+    $subtotal[0] += $kills; $subtotal[1] += $death; $subtotal[2] += $tkill;$subtotal[3] += $dmg;$subtotal[4] = ''
     if ($Attack) {  
-      $subtotal[3] += $flagCap; $subtotal[4] += $flagTake; $subtotal[5] += $FlagTime
+      $subtotal[5] += $flagCap; $subtotal[6] += $flagTake; $subtotal[7] += $FlagTime
     } else {
-      $subtotal[3] += $flagStop
+      $subtotal[5] += $flagStop; $subtotal[6] = $null; $subtotal[7] = $null
     }
-
     $count += 1 
   }
-
-  $subtotal[5] = Format-MinSec $subtotal[5]
 
   $tableHeader += "<th>Classes</th></tr>`n"
   $tableHeader += "</tr>`n"
 
   $table += '<tr><td colspan=5 align=right padding=2px><b>Total:</b></td>'
-  foreach ($st in $subtotal) { if (!$st) { break }; $table += "<td>$($st)</td>" }
+
+  if ($Attack) { $subtotal[7] = Format-MinSec $subtotal[7] }
+  foreach ($st in $subtotal) { if ($st -eq $null) { break }; $table += "<td>$($st)</td>" }
   $ret  = $tableHeader      
   $ret += $table            
   $ret += "</table>`n"
@@ -1556,15 +1557,13 @@ $ccBlue   = 'rowTeam1'
 $ccRed    = 'rowTeam2'
 $ccPink   = 'rowTeamBoth'
 
-
-    $htmlOut = "<html>
-      <head>
-        <style>
+<#        <style>
         body { font-family: calibri; color:white; background-color:rgb(56, 75, 94);}
 
         th { background-color: rgb(19, 37, 56);}
         tr { background-color: rgb(34, 58, 85);}
         table, th, td {
+          white-space: nowrap;
           padding: 2px;
           border: 1px solid rgb(122, 122, 122);
           border-collapse: collapse;
@@ -1576,8 +1575,14 @@ $ccPink   = 'rowTeamBoth'
         .cellGrey   { background-color:rgb(45, 62, 80) }
         .cellAmber  { color:black; background-color: #fcd600 }
         .cellOrange { background-color: #e0662d }
-        .cellGreen  { background-color: #4eb147 }
-        </style>
+        .cellGreen  { background-color: #2357b9 }
+        </style>#>
+
+    $htmlOut = "<html>
+      <head>
+        <link rel=`"stylesheet`" href=`"fo_stats.css`">
+        <link rel=`"stylesheet`" href=`"../../fo_stats.css`">
+        <link rel=`"stylesheet`" href=`"http://haze.fortressone.org/fo_stats.css`">
       </head>
       <body>
         <h1>$($jsonFile.Name)</h1>"
