@@ -1580,9 +1580,9 @@ $ccPink   = 'rowTeamBoth'
 
     $htmlOut = "<html>
       <head>
-        <link rel=`"stylesheet`" href=`".fo_stats.css`">
-        <link rel=`"stylesheet`" href=`"../../.fo_stats.css`">
-        <link rel=`"stylesheet`" href=`"http://haze.fortressone.org/.fo_stats.css`">
+        <link rel=`"stylesheet`" href=`"fo_stats.css`">
+        <link rel=`"stylesheet`" href=`"../../fo_stats.css`">
+        <link rel=`"stylesheet`" href=`"http://haze.fortressone.org/.css/fo_stats.css`">
       </head>
       <body>
         <h1>$($jsonFile.Name)</h1>"
