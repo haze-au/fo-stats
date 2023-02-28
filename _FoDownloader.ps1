@@ -62,7 +62,7 @@ if ($Demos) { $AwsUrl = 'https://fortressone-demos.s3.amazonaws.com/' }
 else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
 
 $OCEPaths = @('sydney/','melbourne/','sydney-gz/','snoozer/')
-$USPaths  = @('california/','coach/','dallas/','dallas2/','iowa/','phoenix/','virginia/')
+$USPaths  = @('california/','coach/','dallas/','dallas2/','iowa/','phoenix/','virginia/','miami/')
 $EUPaths  = @('dublin/','ireland/','stockholm/')
 $IntPaths = @('bahrain/','guam/','mumbai/','nz/','timbuktu/','tokyo/')
 

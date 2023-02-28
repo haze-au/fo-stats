@@ -16,7 +16,7 @@ param([switch]$ForceBatch,
 if ($ForceBatch) { $doBatch = $true }
 
 $OCEPaths = @('sydney/','melbourne/','sydney-gz/','snoozer/')
-$USPaths  = @('california/','coach/','dallas/','dallas2/','iowa/','phoenix/','virginia/')
+$USPaths  = @('california/','coach/','dallas/','dallas2/','iowa/','phoenix/','virginia/','miami/')
 $EUPaths  = @('dublin/','ireland/','stockholm/')
 $IntPaths = @('bahrain/','guam/','mumbai/','nz/','timbuktu/','tokyo/')
 
