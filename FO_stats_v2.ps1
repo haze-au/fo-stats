@@ -1894,7 +1894,7 @@ $ccPink   = 'rowTeamBoth'
         if ($kills + $dth -gt 0) {
           $table += "<td>$($kills)/$($dth)</td>"
         } else {
-          $table += "<td class=`"#F1F1F1`"></td>"
+          $table += "<td class=`"$ccGrey`"></td>"
         }
 
         $subtotalFrg[$count2] += $kills
@@ -1946,7 +1946,7 @@ $ccPink   = 'rowTeamBoth'
           else { $time = "{0:m\:ss}" -f [timespan]::FromSeconds((Get-Variable "arrTimeClassRnd$r").Value.$key) }
 
           if ($time) { $table += "<td>$($time)</td>" }
-          else       { $table += "<td class=`"#F1F1F1`"></td>" }
+          else       { $table += "<td class=`"$ccGrey`"></td>" }
           $count2 +=1
         }
       }
