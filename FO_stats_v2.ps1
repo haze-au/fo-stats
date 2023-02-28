@@ -35,13 +35,23 @@ if ($inputFile -notmatch '.*\.json$') { Write-Host 'ERROR: Following files are n
 
 $regExReplaceFix = '[[+*?()\\.]','\$&'
 
-$ccGrey   = '#F1F1F1'
+<#$ccGrey   = '#F1F1F1'
 $ccAmber  = '#FFD900'
 $ccOrange = '#FFB16C'
 $ccGreen  = '#96FF8F'
 $ccBlue   = '#87ECFF'
 $ccRed    = '#FF8080'
-$ccPink   = '#FA4CFF'
+$ccPink   = '#FA4CFF'#>
+
+$ccGrey   = 'cellGrey'
+$ccAmber  = 'cellAmber'
+$ccOrange = 'cellOrange'
+$ccGreen  = 'cellGreen'
+$ccBlue   = 'rowTeam1'
+$ccRed    = 'rowTeam2'
+$ccPink   = 'rowTeamBoth'
+
+
 
                        # 0        1     2     3      4      5    6      7     8     9     10
 $script:ClassToStr = @('World','Sco','Snp','Sold','Demo','Med','HwG','Pyro','Spy','Eng', 'SG')
@@ -58,10 +68,10 @@ function getPlayerClasses {
 }#>
 
 function getPlayerClasses {
-  param ($Round,$Player)
+  param ($Round,$Player,$TimePlayed)
   return ($arrClassTimeTable  |  Where { $_.Name -eq $Player -and ($Round -lt 1 -or $_.Round -eq $Round) } `
                               | %{ $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 0 } `
-                              | %{ $_.Name } | Sort-Object -Unique) -join ','
+                              | %{ "$($_.Name) $(if ($TimePlayed) { '{0:P0}' -f ($_.Value/$TimePlayed) } )" } | Sort-Object -Unique) -join ','
 }
 
 function nullValueColorCode {
@@ -82,13 +92,23 @@ function nullValueAsBlank {
 
 function teamColorCode {
     switch ($args[0]) {
-      '1'      { $ccBlue  }
-      '2'      { $ccRed   }
-       default { $ccPink  } 
+      '1'      { 'rowTeam1'  }
+      '2'      { 'rowTeam2'  }
+       default { 'rowTeamBoth' } 
     }
 }
 
-# Friendly fire is bad
+function teamColorCodeByName {
+  foreach ($name in ($args[0] -split ','))
+  {
+    $tm = $arrteam.$name
+    if ($lasttm -and $lasttm -ne $tm) { return 'rowTeamBoth' }
+    $lasttm = $tm
+  }
+  return "rowTeam$tm"
+}
+
+<## Friendly fire is bad
 function actionColorCode ($arrTeam, $p1, $p2) {
     #check if action is no Friendly fire
     if ($p1 -eq $p2) {
@@ -99,6 +119,19 @@ function actionColorCode ($arrTeam, $p1, $p2) {
     } else {
       $ccGreen #green
     }
+}#>
+
+
+function actionColorCode ($arrTeam, $p1, $p2) {
+  #check if action is no Friendly fire
+  if ($p1 -eq $p2) {
+    'cellAmber'
+  } elseif ($arrTeam.$p1 -eq $arrTeam.$p2) {
+    #Friendly fire
+    'cellOrange' #orange
+  } else {
+    'cellGreen' #green
+  }
 }
 
 function timeRnd-RoundDown {
@@ -107,6 +140,38 @@ function timeRnd-RoundDown {
    if ($args[0] -lt $args[1]) { '0' }
    else { $args[1] }
  }else { $time }
+}
+
+function Format-MinSec {
+  param($sec)
+
+  $ts = New-TimeSpan -Seconds $sec
+  $mins = ($ts.Days * 24 + $ts.Hours) * 60 + $ts.minutes
+  return "$($mins):$("{0:d2}" -f $ts.Seconds)"
+}
+
+function Table-ClassInfo {
+  param([ref]$Table,$Name,$TimePlayed)
+  $out = ''
+  $classlist = @{}
+  foreach ($p in [array]$Table.Value) {
+    if ($p.Name -eq $Name) {
+      foreach ($class in $ClassAllowed) {
+        $strClass = $ClassToStr[$class]
+        $time     = $p.($strClass)
+
+        if ($time -notin 0,'',$null) {
+          $classlist.$strClass = ($time / $TimePlayed)
+        }
+      }
+
+      foreach ($c in ($classlist.GetEnumerator() | Sort-Object Value -Descending)) {        
+        $out += "$(($c.Name).PadRight(4)) $(('{0:P0}' -f $c.Value).PadLeft(3))|"
+      }
+      
+      return $out -replace '\|$',''
+    }
+  }
 }
 
 # Convert weapon names into friendly short names
@@ -417,7 +482,7 @@ function GenerateVersusHtmlInnerTable {
     $kills = $VersusTable.Value.$key
     if ($kills -eq '' -or $kills -lt 1) { $kills = 0 }
 
-    $tbl += "<td bgcolor=`"$(actionColorCode $refTeam.Value $player $o)`">$($kills)</td>"
+    $tbl += "<td class=`"$(actionColorCode $refTeam.Value $player $o)`">$($kills)</td>"
 
     $subtotal[$count2] = $kills + $subtotal[$count2]
     $count2 +=1
@@ -425,6 +490,70 @@ function GenerateVersusHtmlInnerTable {
 
   return $tbl
 }
+
+function GenerateSummaryHtmlTable {
+  param([switch]$Attack,[switch]$Defence)
+  
+  $count = 1
+  $tableHeader = "<table style=""width:600px;display:inline-table"">$($tableStyle2)<tr><th $($columStyle)>#</th><th $($columStyle)>Player</th><th $($columStyle)>Team</th><th $($columStyle)>KPM</th><th $($columStyle)>K/D</th><th $($columStyle)>Kills</th><th $($columStyle)>Dth</th><th $($columStyle)>TK</h>"
+  if ($Attack) { $tableHeader += "<th $($columStyle)>Caps</th><th $($columStyle)>Take</th><th $($columStyle)>Carry</th>" }
+  else         { $tableHeader += "<th $($columStyle)>Stop</th>" }
+  $tableHeader += "<th $($columStyle)>Time</th>"
+  $table = ''
+  $subtotal = @(1..6 | foreach { 0 })
+
+  foreach ($p in $playerList) {
+    if ($Defence) { $rnd = if ($player.Team -eq 1) { '2' } else { '1' }}
+    else          { $rnd = if ($player.Team -eq 1) { '1' } else { '2' }}  
+
+    $player = ($arrPlayerTable | Where { $_.Name -EQ $p -and (($_.Team -match '^1' -and $_.Round -eq $rnd) -or ($_.Team -match '^2' -and $_.Round -eq $rnd))})
+
+    $team = $arrTeam.$p
+    $kills = $player.Kills
+    $timePlayed  = ((Get-Variable "arrTimeClassRnd$rnd").Value.Keys | Where-Object { $_ -like "$($p -replace '[\[\]]','`$&')_*" }  |  foreach { (Get-Variable "arrTimeClassRnd$rnd").Value.$_ } | Measure-Object -Sum).Sum
+    $kpm   = $kills / ($timePlayed/60)
+    $death = $player.Death
+    $kd    = if ($death) { $kills / $death } else { '-' }
+    $tkill = $player.TKill
+
+    $flagCap     = $player.FlagCap
+    $flagTake    = $player.FlagTake
+    $flagTime    = $player.FlagTime
+    $flagStop    = $player.FlagStop
+    $table +=  "<tr class=`"$(teamColorCode $team)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td>$('{0:0.00}' -f $kpm)</td><td>$('{0:0.00}' -f $kd)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td>"
+    
+    if ($Attack) { $table += "<td>$($flagCap)</td><td>$($flagTake)</td><td>$(Format-MinSec $flagTime)</td>" }
+    else         { $table += "<td>$($flagStop)</td>" }
+      
+    $table += "<td>$(Format-MinSec $timePlayed)</td>"
+
+    $table += "<td>$(getPlayerClasses -Round $rnd -Player $p)</td>"
+    $table += "</tr>`n"
+    
+    $subtotal[0] += $kills; $subtotal[1] += $death; $subtotal[2] += $tkill
+    if ($Attack) {  
+      $subtotal[3] += $flagCap; $subtotal[4] += $flagTake; $subtotal[5] += $FlagTime
+    } else {
+      $subtotal[3] += $flagStop
+    }
+
+    $count += 1 
+  }
+
+  $subtotal[5] = Format-MinSec $subtotal[5]
+
+  $tableHeader += "<th>Classes</th></tr>`n"
+  $tableHeader += "</tr>`n"
+
+  $table += '<tr><td colspan=5 align=right padding=2px><b>Total:</b></td>'
+  foreach ($st in $subtotal) { if (!$st) { break }; $table += "<td>$($st)</td>" }
+  $ret  = $tableHeader      
+  $ret += $table            
+  $ret += "</table>`n"
+
+  return $ret
+}
+
 
 function GenerateFragHtmlTable {
   param([string]$Round)
@@ -448,8 +577,8 @@ function GenerateFragHtmlTable {
     $kills = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round)} | Measure-Object Kills -Sum).Sum
     $death = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round)} | Measure-Object Death -Sum).Sum
     $tkill = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round)} | Measure-Object TKill -Sum).Sum
-    #$table +=  "<tr bgcolor=`"$(teamColorCode (Get-Variable -Name "arrTeam$suffix").Value.$p)`"><td>$($count)</td><td>$($p)</td><td>$((Get-Variable -Name "arrTeam$suffix").Value.$p)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td>"
-    $table +=  "<tr bgcolor=`"$(teamColorCode $team)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td>"
+    
+    $table +=  "<tr class=`"$(teamColorCode $team)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td>"
 
     $table += GenerateVersusHtmlInnerTable -VersusTable $refVersus -Player $p -Round $Round
 
@@ -490,7 +619,7 @@ function GenerateDmgHtmlTable {
   foreach ($p in $playerList) {
     $tableHeader += "<th $($columStyle)>$($count)</th>"
     $dmg = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round)} | Measure-Object Dmg -Sum).Sum
-    $table +=  "<tr bgcolor=`"$(teamColorCode $refTeam.Value.$p)`"><td>$($count)</td><td>$($p)</td><td>$($refTeam.Value.$p)</td><td>$($dmg)</td>"
+    $table +=  "<tr class=`"$(teamColorCode $refTeam.Value.$p)`"><td>$($count)</td><td>$($p)</td><td>$($refTeam.Value.$p)</td><td>$($dmg)</td>"
 
     $table += GenerateVersusHtmlInnerTable -VersusTable $refVersus -Player $p -Round $Round
 
@@ -1363,19 +1492,19 @@ foreach ($jsonFile in $inputFile) {
     <table>
     <tr><th colspan=3><h3>The Attackers</h3></th></tr>
     <tr><th>Award</h>            <th>Winner</th>                          <th>Description</th></tr>
-    <tr><td>Commando</td>        <td align=center width=150px>$(awardScaleCaveat 'Att' $awardAttKills_MaxName)</td>      <td>Most kills ($($awardAttKills_Max))</td></tr>
-    <tr><td>Rambo</td>           <td align=center width=150px>$(awardScaleCaveat 'Att' $awardAttDmg_MaxName)</td>        <td>Most damage ($($awardAttDmg_Max))</td></tr>
-    <tr><td>Golden Hands</td>    <td align=center width=150px>$($awardAttFlagCap_MaxName)</td>    <td>Most caps ($($awardAttFlagCap_Max))</td></tr>
-    <tr><td>Running Man</td>     <td align=center width=150px>$($awardAttFlagTime_MaxName)</td>   <td>Most time with flag ($($awardAttFlagTime_Max)s)</td></tr>
-    <tr><td>Brawler</td>         <td align=center width=150px>$(awardScaleCaveat 'Att' $awardAttKilledHeavy_MaxName)</td><td>Most kills on heavy classes ($($awardAttKilledHeavy_Max))</td></tr>
-    <tr><td>David</td>           <td align=center width=150px>$(awardScaleCaveat 'Att' $awardAttLightKills_MaxName)</td> <td>Most kills as a light class ($($awardAttLightKills_Max))</td></tr>
-    <tr><td>Spec Ops</td>        <td align=center width=150px>$(awardScaleCaveat 'Att' $awardAttKilledDemo_MaxName)</td> <td>Most kills on demo ($($awardAttKilledDemo_Max))</td></tr>
-    <tr><td>Sapper</td>          <td align=center width=150px>$(awardScaleCaveat 'Att' $awardAttKilledSG_MaxName)</td>   <td>Most kills on a SG ($($awardAttKilledSG_Max))</td></tr>
-    <tr><td>Lemming</td>         <td align=center width=150px>$(awardScaleCaveat 'Att' $awardAttDeath_MaxName)</td>      <td>Most Deaths ($($awardAttDeath_Max))</td></tr>
-    <tr><td>Battering Ram</td>   <td align=center width=150px>$(awardScaleCaveat 'Att' $awardAttKD_MinName)</td>         <td>Lowest Kill-Death rank ($($awardAttKD_Min))</td></tr>
-    <tr><td>Buck shot</td>       <td align=center width=150px>$($awardAttDmgPerKill_MaxName)</td>                        <td>Most Damage per kill ($($awardAttDmgPerKill_Max))</td></tr>
-    <tr><td>Predator</td>        <td align=center width=150px>$(awardScaleCaveat 'Att' $awardAttPlayerFrag_MaxName)</td> <td>Most kills on a defender ($($awardAttPlayerFrag_Value) on $($awardAttPlayerFrag_Victim))</td></tr>
-    <tr><td>Hulk Smash</td>      <td align=center width=150px>$(awardScaleCaveat 'Att' $awardAttPlayerDmg_MaxName)</td>  <td>Most damage on a defender ($($awardAttPlayerDmg_Value) on $($awardAttPlayerDmg_Victim))</td></tr>
+    <tr><td>Commando</td>        <td align=center width=150px class=$(teamColorCodeByName $awardAttKills_MaxName)>$(awardScaleCaveat 'Att' $awardAttKills_MaxName)</td>      <td>Most kills ($($awardAttKills_Max))</td></tr>
+    <tr><td>Rambo</td>           <td align=center width=150px class=$(teamColorCodeByName $awardAttDmg_MaxName)>$(awardScaleCaveat 'Att' $awardAttDmg_MaxName)</td>        <td>Most damage ($($awardAttDmg_Max))</td></tr>
+    <tr><td>Golden Hands</td>    <td align=center width=150px class=$(teamColorCodeByName $awardAttFlagCap_MaxName)>$($awardAttFlagCap_MaxName)</td>    <td>Most caps ($($awardAttFlagCap_Max))</td></tr>
+    <tr><td>Running Man</td>     <td align=center width=150px class=$(teamColorCodeByName $awardAttFlagTime_MaxName)>$($awardAttFlagTime_MaxName)</td>   <td>Most time with flag ($($awardAttFlagTime_Max)s)</td></tr>
+    <tr><td>Brawler</td>         <td align=center width=150px class=$(teamColorCodeByName $awardAttKilledHeavy_MaxName)>$(awardScaleCaveat 'Att' $awardAttKilledHeavy_MaxName)</td><td>Most kills on heavy classes ($($awardAttKilledHeavy_Max))</td></tr>
+    <tr><td>David</td>           <td align=center width=150px class=$(teamColorCodeByName $awardAttLightKills_MaxName)>$(awardScaleCaveat 'Att' $awardAttLightKills_MaxName)</td> <td>Most kills as a light class ($($awardAttLightKills_Max))</td></tr>
+    <tr><td>Spec Ops</td>        <td align=center width=150px class=$(teamColorCodeByName $awardAttKilledDemo_MaxName)>$(awardScaleCaveat 'Att' $awardAttKilledDemo_MaxName)</td> <td>Most kills on demo ($($awardAttKilledDemo_Max))</td></tr>
+    <tr><td>Sapper</td>          <td align=center width=150px class=$(teamColorCodeByName $awardAttKilledSG_MaxName)>$(awardScaleCaveat 'Att' $awardAttKilledSG_MaxName)</td>   <td>Most kills on a SG ($($awardAttKilledSG_Max))</td></tr>
+    <tr><td>Lemming</td>         <td align=center width=150px class=$(teamColorCodeByName $awardAttDeath_MaxName)>$(awardScaleCaveat 'Att' $awardAttDeath_MaxName)</td>      <td>Most Deaths ($($awardAttDeath_Max))</td></tr>
+    <tr><td>Battering Ram</td>   <td align=center width=150px class=$(teamColorCodeByName $awardAttKD_MinName)>$(awardScaleCaveat 'Att' $awardAttKD_MinName)</td>         <td>Lowest Kill-Death rank ($($awardAttKD_Min))</td></tr>
+    <tr><td>Buck shot</td>       <td align=center width=150px class=$(teamColorCodeByName $awardAttDmgPerKill_MaxName)>$($awardAttDmgPerKill_MaxName)</td>                        <td>Most Damage per kill ($($awardAttDmgPerKill_Max))</td></tr>
+    <tr><td>Predator</td>        <td align=center width=150px class=$(teamColorCodeByName $awardAttPlayerFrag_MaxName)>$(awardScaleCaveat 'Att' $awardAttPlayerFrag_MaxName)</td> <td>Most kills on a defender ($($awardAttPlayerFrag_Value) on $($awardAttPlayerFrag_Victim))</td></tr>
+    <tr><td>Hulk Smash</td>      <td align=center width=150px class=$(teamColorCodeByName $awardAttPlayerDmg_MaxName)>$(awardScaleCaveat 'Att' $awardAttPlayerDmg_MaxName)</td>  <td>Most damage on a defender ($($awardAttPlayerDmg_Value) on $($awardAttPlayerDmg_Victim))</td></tr>
     "
 
     if ($arrResult.winningTeam -eq 2) {
@@ -1387,19 +1516,19 @@ foreach ($jsonFile in $inputFile) {
     <table>
     <tr><th colspan=3><h3>The Defenders<h3></th></tr>
     <tr><th>Award</h>                <th>Winner</th>                                                  <th>Description</th></tr>
-    <tr><td>Slaughterhouse</td>      <td align=center width=150px>$(awardScaleCaveat 'Def' $awardDefKills_MaxName)</td>      <td>Most kills ($($awardDefKills_Max))</td></tr>
-    <tr><td>Terminator</td>          <td align=center width=150px>$(awardScaleCaveat 'Def' $awardDefKD_MaxName)</td>         <td>Kills-death rank ($($awardDefKD_Max))</td></tr>
-    <tr><td>Juggernaut</td>          <td align=center width=150px>$(awardScaleCaveat 'Def' $awardDefDmg_MaxName)</td>        <td>Most damage ($($awardDefDmg_Max))</td></tr>
-    <tr><td>Dark Knight</td>         <td align=center width=150px>$(awardScaleCaveat 'Def' $awardDefKilledSold_MaxName)</td> <td>Most kills on Soldier ($($awardDefKilledSold_Max))</td></tr>
-    <tr><td>Tank</td>                <td align=center width=150px>$(awardScaleCaveat 'Def' $awardDefKilledHeavy_MaxName)</td><td>Most kills on a heavy class ($($awardDefKilledHeavy_Max))</td></tr>
-    <tr><td>Goliath</td>             <td align=center width=150px>$(awardScaleCaveat 'Def' $awardDefKilledLight_MaxName)</td><td>Most kills on a light class ($($awardDefKilledLight_Max))</td></tr>
-    <tr><td>Sly Fox</td>             <td align=center width=150px>$(awardScaleCaveat 'Def' $awardDefDeath_MinName)</td>      <td>Lowest Deaths ($($awardDefDeath_Min))</td></tr>
-    <tr><td>Team Player</td>         <td align=center width=150px>$($awardDefDmgPerKill_MaxName)</td>                        <td>Most damage per kill ($($awardDefDmgPerKill_Max))</td></tr>
-    <tr><td>Nemesis</td>             <td align=center width=150px>$(awardScaleCaveat 'Def' $awardDefPlayerFrag_MaxName)</td> <td>Most Kills on an attacker ($($awardDefPlayerFrag_Value) on $($awardDefPlayerFrag_Victim))</td></tr>
-    <tr><td>No quarter</td>          <td align=center width=150px>$($awardDefDmgPerKill_MinName)</td>                        <td>Lowest damage per kill ($($awardDefDmgPerKill_Min))</td></tr>
-    <tr><td>Attention whore</td>     <td align=center width=150px>$(awardScaleCaveat 'Def' $awardDefDmgAll_MaxName)</td>     <td>Most damage given + taken ($($awardDefDmgAll_Max))</td></tr>
-    <tr><td>Shy Guy</td>             <td align=center width=150px>$(awardScaleCaveat 'Def' $awardDefDmgTaken_MinName)</td>   <td>Lowest damage taken ($($awardDefDmgTaken_Min))</td></tr>
-    <tr><td>Mr Magoo</td>            <td align=center width=150px>$($awardDefMagoo_MaxName)</td>      <td>Team Kill/Damage above avg ($('{0:p0}' -f $awardDefMagoo_Max))</td></tr>`n"
+    <tr><td>Slaughterhouse</td>      <td align=center width=150px class=$(teamColorCodeByName $awardDefKills_MaxName)>$(awardScaleCaveat 'Def' $awardDefKills_MaxName)</td>      <td>Most kills ($($awardDefKills_Max))</td></tr>
+    <tr><td>Terminator</td>          <td align=center width=150px class=$(teamColorCodeByName $awardDefKD_MaxName)>$(awardScaleCaveat 'Def' $awardDefKD_MaxName)</td>         <td>Kills-death rank ($($awardDefKD_Max))</td></tr>
+    <tr><td>Juggernaut</td>          <td align=center width=150px class=$(teamColorCodeByName $awardDefDmg_MaxName)>$(awardScaleCaveat 'Def' $awardDefDmg_MaxName)</td>        <td>Most damage ($($awardDefDmg_Max))</td></tr>
+    <tr><td>Dark Knight</td>         <td align=center width=150px class=$(teamColorCodeByName $awardDefKilledSold_MaxName)>$(awardScaleCaveat 'Def' $awardDefKilledSold_MaxName)</td> <td>Most kills on Soldier ($($awardDefKilledSold_Max))</td></tr>
+    <tr><td>Tank</td>                <td align=center width=150px class=$(teamColorCodeByName $awardDefKilledHeavy_MaxName)>$(awardScaleCaveat 'Def' $awardDefKilledHeavy_MaxName)</td><td>Most kills on a heavy class ($($awardDefKilledHeavy_Max))</td></tr>
+    <tr><td>Goliath</td>             <td align=center width=150px class=$(teamColorCodeByName $awardDefKilledLight_MaxName)>$(awardScaleCaveat 'Def' $awardDefKilledLight_MaxName)</td><td>Most kills on a light class ($($awardDefKilledLight_Max))</td></tr>
+    <tr><td>Sly Fox</td>             <td align=center width=150px class=$(teamColorCodeByName $awardDefDeath_MinName)>$(awardScaleCaveat 'Def' $awardDefDeath_MinName)</td>      <td>Lowest Deaths ($($awardDefDeath_Min))</td></tr>
+    <tr><td>Team Player</td>         <td align=center width=150px class=$(teamColorCodeByName $awardDefDmgPerKill_MaxName)>$($awardDefDmgPerKill_MaxName)</td>                        <td>Most damage per kill ($($awardDefDmgPerKill_Max))</td></tr>
+    <tr><td>Nemesis</td>             <td align=center width=150px class=$(teamColorCodeByName $awardDefPlayerFrag_MaxName)>$(awardScaleCaveat 'Def' $awardDefPlayerFrag_MaxName)</td> <td>Most Kills on an attacker ($($awardDefPlayerFrag_Value) on $($awardDefPlayerFrag_Victim))</td></tr>
+    <tr><td>No quarter</td>          <td align=center width=150px class=$(teamColorCodeByName $awardDefDmgPerKill_MinName)>$($awardDefDmgPerKill_MinName)</td>                        <td>Lowest damage per kill ($($awardDefDmgPerKill_Min))</td></tr>
+    <tr><td>Attention whore</td>     <td align=center width=150px class=$(teamColorCodeByName $awardDefDmgAll_MaxName)>$(awardScaleCaveat 'Def' $awardDefDmgAll_MaxName)</td>     <td>Most damage given + taken ($($awardDefDmgAll_Max))</td></tr>
+    <tr><td>Shy Guy</td>             <td align=center width=150px class=$(teamColorCodeByName $awardDefDmgTaken_MinName)>$(awardScaleCaveat 'Def' $awardDefDmgTaken_MinName)</td>   <td>Lowest damage taken ($($awardDefDmgTaken_Min))</td></tr>
+    <tr><td>Mr Magoo</td>            <td align=center width=150px class=$(teamColorCodeByName $awardDefMagoo_MaxName)>$($awardDefMagoo_MaxName)</td>      <td>Team Kill/Damage above avg ($('{0:p0}' -f $awardDefMagoo_Max))</td></tr>`n"
 
     if ($arrResult.winningTeam -eq 2) {
       $awardsHtml += "<tr><td colspan=3 align=right><i>*Team1 scaled: Only $('{0:p0}' -f [math]::Round((1 - $arrResult.winRating),2)) of Rnd2 played</i></td></tr>`n"
@@ -1409,14 +1538,45 @@ foreach ($jsonFile in $inputFile) {
     ###
     # Generate the HTML Ouput
     ###
+
+
+<#$ccGrey   = '#F1F1F1'
+$ccAmber  = '#FFD900'
+$ccOrange = '#FFB16C'
+$ccGreen  = '#96FF8F'
+$ccBlue   = '#87ECFF'
+$ccRed    = '#FF8080'
+$ccPink   = '#FA4CFF'#>
+
+$ccGrey   = 'cellGrey'
+$ccAmber  = 'cellAmber'
+$ccOrange = 'cellOrange'
+$ccGreen  = 'cellGreen'
+$ccBlue   = 'rowTeam1'
+$ccRed    = 'rowTeam2'
+$ccPink   = 'rowTeamBoth'
+
+
     $htmlOut = "<html>
       <head>
         <style>
-          table, th, td {
-            border: 1px solid black;
-            border-collapse: collapse;
-            min-width: 20px;
-          }
+        body { font-family: calibri; color:white; background-color:rgb(56, 75, 94);}
+
+        th { background-color: rgb(19, 37, 56);}
+        tr { background-color: rgb(34, 58, 85);}
+        table, th, td {
+          padding: 2px;
+          border: 1px solid rgb(122, 122, 122);
+          border-collapse: collapse;
+          min-width: 20px;
+        }
+        .rowTeam1    { background-color: #2357b9 }
+        .rowTeam2    { background-color: #d63333 }
+        .rowTeamBoth { background-color: #b71dbd } 
+        .cellGrey   { background-color:rgb(45, 62, 80) }
+        .cellAmber  { color:black; background-color: #fcd600 }
+        .cellOrange { background-color: #e0662d }
+        .cellGreen  { background-color: #4eb147 }
         </style>
       </head>
       <body>
@@ -1425,7 +1585,7 @@ foreach ($jsonFile in $inputFile) {
 
     $htmlOut += "<table cellpadding=`"3`">
     <tr><th>Result</th><th>Scores</th><th>Win Rating</th></tr>
-    <tr><td bgcolor=`"$(teamColorCode $arrResult.winningTeam)`">"  
+    <tr><td class=`"$(teamColorCode $arrResult.winningTeam)`">"  
 
     switch ($arrResult.winningTeam) {
       '0'     { $htmlOut += "DRAW! "                                  }
@@ -1433,27 +1593,42 @@ foreach ($jsonFile in $inputFile) {
     }
 
     $htmlOut += "</td><td>Team1: $($arrResult.team1Score) vs Team2: $($arrResult.team2Score)</td><td>$('{0:p0}' -f $arrResult.winRating) ($($arrResult.winRatingDesc))</td></tr>`n</table>`n"  
-
+    
     #### awards
     $htmlOut += "<hr><h2>Awards</h2>`n"
     $htmlOut += $awardsHtml
 
     #Frag Total Table
-    $htmlOut += "<hr><h2>TOTAL - Frags and Damage</h2>`n"  
-    $htmlOut += GenerateFragHtmlTable ''
-    $htmlOut += GenerateDmgHtmlTable ''
-   
+    #$htmlOut += "<hr><h2>TOTAL - Attack and Defence</h2>`n"  
+    #$htmlOut += GenerateFragHtmlTable ''
+    #$htmlOut += GenerateDmgHtmlTable ''
+    $htmlOut += "<hr><h2>Attack and Defence</h2>`n"
+    $htmlOut += '<div class="row"><div class="column"  style="display:inline-table;padding-right:5px">'
+    $htmlOut += "<h3>Attack</h3>`n"         
+    $htmlOut += GenerateSummaryHtmlTable -Attack
+    $htmlOut += '</div><div class="column"  style="display:inline-table">'
+    $htmlOut += "<h3>Defence</h3>`n"            
+    $htmlOut += GenerateSummaryHtmlTable -Defence
+    $htmlOut += '</div></div>'
 
-    $htmlOut += "<hr><h2>Frags - Round 1 and Round 2</h2>`n"  
+    $htmlOut += "<hr><h2>Frags</h2>`n" 
+    $htmlOut += '<div class="row"><div class="column"  style="display:inline-table;padding-right:5px">'
+    $htmlOut += "<h3>Round 1</h3>`n" 
     $htmlOut += GenerateFragHtmlTable -Round '1'
+    $htmlOut += '</div><div class="column"  style="display:inline-table">'
+    $htmlOut += "<h3>Round 2</h3>`n"   
     $htmlOut += GenerateFragHtmlTable -Round '2'
-
-  
+    $htmlOut += '</div></div>'
 
     #Damage by Round Table
-    $htmlOut += "<hr><h2>Damage - Round 1 and Round 2</h2>`n"  
+    $htmlOut += "<hr><h2>Damage</h2>`n"  
+    $htmlOut += '<div class="row"><div class="column"  style="display:inline-table;padding-right:5px">' 
+    $htmlOut += "<h3>Round 1</h3>`n"   
     $htmlOut += GenerateDmgHtmlTable -Round '1'
+    $htmlOut += '</div><div class="column"  style="display:inline-table">'
+    $htmlOut += "<h3>Round 2</h3>`n"          
     $htmlOut += GenerateDmgHtmlTable -Round '2'
+    $htmlOut += '</div></div>'
    
 
     ###
@@ -1483,7 +1658,7 @@ foreach ($jsonFile in $inputFile) {
       $kills = ($arrPlayerTable | Where Name -eq $p | Measure Kills -Sum).Sum
       $death = ($arrPlayerTable | Where Name -eq $p | Measure Death -Sum).Sum
       $tKill = ($arrPlayerTable | Where Name -eq $p | Measure TKill -Sum).Sum
-      $table +=  "<tr bgcolor=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($kills)</td><td>$($death)</td><td>$($tKill)</td>"
+      $table +=  "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($kills)</td><td>$($death)</td><td>$($tKill)</td>"
       
       $count2 = 0  
       foreach ($min in 1..$timeBlock) {
@@ -1502,7 +1677,7 @@ foreach ($jsonFile in $inputFile) {
           $value = "$($kills)/$($dth)"
         }
 
-        $table += "<td bgcolor=`"$($cellCC)`" width=40px>$($value)</td>"
+        $table += "<td class=`"$($cellCC)`" width=40px>$($value)</td>"
         
         $subtotalFrg[$count2] += $kills
         $subtotalDth[$count2] += $dth
@@ -1556,7 +1731,7 @@ foreach ($jsonFile in $inputFile) {
       $dmg   = ($arrPlayerTable | Where Name -eq $p | Measure Dmg -Sum).Sum
       $death = ($arrPlayerTable | Where Name -eq $p | Measure Death -Sum).Sum
       $tKill = ($arrPlayerTable | Where Name -eq $p | Measure TKill -Sum).Sum
-      $table +=  "<tr bgcolor=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($dmg)</td><td>$($death)</td><td>$($tKill)</td>"
+      $table +=  "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($dmg)</td><td>$($death)</td><td>$($tKill)</td>"
       
       $count2 = 0  
       foreach ($min in 1..$timeBlock) {
@@ -1564,7 +1739,7 @@ foreach ($jsonFile in $inputFile) {
         $dmg = $arrDmgMin.$key
         if ($kills -eq '' -or $kills -lt 1) { $kills = 0 }
 
-        $table += "<td bgcolor=`"$((nullValueColorCode $dmg $ccGreen))`" width=40px>$($dmg)</td>"
+        $table += "<td class=`"$((nullValueColorCode $dmg $ccGreen))`" width=40px>$($dmg)</td>"
 
         $subtotalDmg[$count2] += $dmg
 
@@ -1622,7 +1797,7 @@ foreach ($jsonFile in $inputFile) {
 
     foreach ($p in $playerList) {    
       #$pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $p 
-      $table +=  "<tr bgcolor=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td>
+      $table +=  "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td>
                     <td>$(($arrPlayerTable | Where Name -EQ $p | Measure FlagCap   -Sum).Sum)</td>
                     <td>$(($arrPlayerTable | Where Name -EQ $p | Measure FlagTake  -Sum).Sum)</td>
                     <td>$(($arrPlayerTable | Where Name -EQ $p | Measure FlagThrow -Sum).Sum)</td>
@@ -1657,7 +1832,7 @@ foreach ($jsonFile in $inputFile) {
           $value = "$($cap)/$($Took)/$($throw)"
         }
 
-        $table += "<td bgcolor=`"$($cellCC)`">$($value)</td>"
+        $table += "<td class=`"$($cellCC)`">$($value)</td>"
         $count2 +=1
       }
 
@@ -1703,7 +1878,7 @@ foreach ($jsonFile in $inputFile) {
 
     foreach ($p in $playerList) { 
       $kills = ($arrPlayerTable | Where Name -eq $p | Measure Kills -sum).Sum
-      $table +=  "<tr bgcolor=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($kills)</td>"
+      $table +=  "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($kills)</td>"
 
       $count2 = 0
       foreach ($o in ($ClassAllowedwithSG)) {
@@ -1714,7 +1889,7 @@ foreach ($jsonFile in $inputFile) {
         if ($kills + $dth -gt 0) {
           $table += "<td>$($kills)/$($dth)</td>"
         } else {
-          $table += "<td bgcolor=`"#F1F1F1`"></td>"
+          $table += "<td class=`"#F1F1F1`"></td>"
         }
 
         $subtotalFrg[$count2] += $kills
@@ -1732,7 +1907,7 @@ foreach ($jsonFile in $inputFile) {
 
 
     $htmlOut += '<hr><div class="row">'             
-    $htmlOut += '<div class="column" style="width:550px;display:inline-table">' 
+    $htmlOut += '<div class="column" style="width:550px;display:inline-table;padding-right:5px">' 
     $htmlOut += "<h2>Kills/Deaths By Class</h2>`n"  
     $htmlOut += $tableHeader                        
     $htmlOut += $table                              
@@ -1749,7 +1924,7 @@ foreach ($jsonFile in $inputFile) {
 
     $count = 1
     foreach ($p in $playerList) {
-        $table +=  "<tr bgcolor=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td>"
+        $table +=  "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td>"
         
       foreach ($r in 1..2) {
         $pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $p -Round $r
@@ -1766,7 +1941,7 @@ foreach ($jsonFile in $inputFile) {
           else { $time = "{0:m\:ss}" -f [timespan]::FromSeconds((Get-Variable "arrTimeClassRnd$r").Value.$key) }
 
           if ($time) { $table += "<td>$($time)</td>" }
-          else       { $table += "<td bgcolor=`"#F1F1F1`"></td>" }
+          else       { $table += "<td class=`"#F1F1F1`"></td>" }
           $count2 +=1
         }
       }
@@ -1867,7 +2042,7 @@ foreach ($jsonFile in $inputFile) {
 
         if ($class -ne $lastClass -and $foundFF -lt 1) {        
           if ($lastClass -ne '') {
-            $playerStats += "<tr bgcolor=`"$(teamColorCode $arrTeam.$p)`"><td colspan=2 align=right><b>$($ClassToStr[$lastClass]) Totals:</b></td>
+            $playerStats += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td colspan=2 align=right><b>$($ClassToStr[$lastClass]) Totals:</b></td>
                               <td></td><td></td><td>$(nullValueAsBlank $totKill[0])</td><td>$(nullValueAsBlank $totDmg[0])</td><td>$(nullValueAsBlank $totDth[0])</td><td>$(nullValueAsBlank $totDmgTk[0])</td>
                               <td></td><td></td><td>$(nullValueAsBlank $totKill[1])</td><td>$(nullValueAsBlank $totDmg[1])</td><td>$(nullValueAsBlank $totDth[1])</td><td>$(nullValueAsBlank $totDmgTk[1])</td></tr>"
                               #<td></td><td></td><td>$(nullValueAsBlank $totKill[2])</td><td>$(nullValueAsBlank $totDmg[2])</td><td>$(nullValueAsBlank $totDth[2])</td><td>$(nullValueAsBlank $totDmgTk[2])</td></tr>"
@@ -1906,32 +2081,32 @@ foreach ($jsonFile in $inputFile) {
         $subTotalDth   = $objRnd1.Death    + $objRnd2.Death
         $subTotalDmgTk = $objRnd1.DmgTaken + $objRnd2.DmgTaken#>
 
-        $playerStats += "<tr bgcolor=`"$(teamColorCode $arrTeam.$p)`"><td>$($weapon)</td><td>$($ClassToStr[$class])</td>
-                          <td bgcolor=`"$(nullValueColorCode ($objRnd1.AttackCount) $ccGreen)`">$(nullValueAsBlank $objRnd1.AttackCount)</td>
-                            <td bgcolor=`"$(nullValueColorCode ($objRnd1.HitPercent) $ccGreen)`">$('{0:P0}' -f (nullValueAsBlank $objRnd1.HitPercent))</td>
-                            <td bgcolor=`"$(nullValueColorCode ($objRnd1.Kills) $ccGreen)`">$(nullValueAsBlank $objRnd1.Kills)</td>
-                            <td bgcolor=`"$(nullValueColorCode ($objRnd1.Dmg) $ccGreen)`">$(nullValueAsBlank $objRnd1.Dmg)</td>
-                            <td bgcolor=`"$(nullValueColorCode ($objRnd1.Death) $ccNormOrSuicide)`">$(nullValueAsBlank $objRnd1.Death)</td>
-                            <td bgcolor=`"$(nullValueColorCode ($objRnd1.DmgTaken) $ccNormOrSuicide)`">$(nullValueAsBlank $objRnd1.DmgTaken)</td>
-                          <td bgcolor=`"$(nullValueColorCode ($objRnd2.AttackCount) $ccGreen)`">$(nullValueAsBlank $objRnd2.AttackCount)</td>
-                            <td bgcolor=`"$(nullValueColorCode ($objRnd2.HitPercent) $ccGreen)`">$('{0:P0}' -f (nullValueAsBlank $objRnd2.HitPercent))</td>
-                            <td bgcolor=`"$(nullValueColorCode ($objRnd2.Kills) $ccGreen)`">$(nullValueAsBlank $objRnd2.Kills)</td>
-                            <td bgcolor=`"$(nullValueColorCode ($objRnd2.Dmg) $ccGreen)`">$(nullValueAsBlank $objRnd2.Dmg)</td>
-                            <td bgcolor=`"$(nullValueColorCode ($objRnd2.Death) $ccNormOrSuicide)`">$(nullValueAsBlank $objRnd2.Death)</td>
-                            <td bgcolor=`"$(nullValueColorCode ($objRnd2.DmgTaken) $ccNormOrSuicide)`">$(nullValueAsBlank $objRnd2.DmgTaken)</td></tr>`n"
+        $playerStats += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($weapon)</td><td>$($ClassToStr[$class])</td>
+                          <td class=`"$(nullValueColorCode ($objRnd1.AttackCount) $ccGreen)`">$(nullValueAsBlank $objRnd1.AttackCount)</td>
+                            <td class=`"$(nullValueColorCode ($objRnd1.HitPercent) $ccGreen)`">$('{0:P0}' -f (nullValueAsBlank $objRnd1.HitPercent))</td>
+                            <td class=`"$(nullValueColorCode ($objRnd1.Kills) $ccGreen)`">$(nullValueAsBlank $objRnd1.Kills)</td>
+                            <td class=`"$(nullValueColorCode ($objRnd1.Dmg) $ccGreen)`">$(nullValueAsBlank $objRnd1.Dmg)</td>
+                            <td class=`"$(nullValueColorCode ($objRnd1.Death) $ccNormOrSuicide)`">$(nullValueAsBlank $objRnd1.Death)</td>
+                            <td class=`"$(nullValueColorCode ($objRnd1.DmgTaken) $ccNormOrSuicide)`">$(nullValueAsBlank $objRnd1.DmgTaken)</td>
+                          <td class=`"$(nullValueColorCode ($objRnd2.AttackCount) $ccGreen)`">$(nullValueAsBlank $objRnd2.AttackCount)</td>
+                            <td class=`"$(nullValueColorCode ($objRnd2.HitPercent) $ccGreen)`">$('{0:P0}' -f (nullValueAsBlank $objRnd2.HitPercent))</td>
+                            <td class=`"$(nullValueColorCode ($objRnd2.Kills) $ccGreen)`">$(nullValueAsBlank $objRnd2.Kills)</td>
+                            <td class=`"$(nullValueColorCode ($objRnd2.Dmg) $ccGreen)`">$(nullValueAsBlank $objRnd2.Dmg)</td>
+                            <td class=`"$(nullValueColorCode ($objRnd2.Death) $ccNormOrSuicide)`">$(nullValueAsBlank $objRnd2.Death)</td>
+                            <td class=`"$(nullValueColorCode ($objRnd2.DmgTaken) $ccNormOrSuicide)`">$(nullValueAsBlank $objRnd2.DmgTaken)</td></tr>`n"
                           <# Removed Sub totals - too large
-                            <td bgcolor=`"$(nullValueColorCode $subTotalShot    $ccGreen)`">$(nullValueAsBlank $subTotalShot)</td>
-                            <td bgcolor=`"$(nullValueColorCode $subTotalHit   $ccGreen)`">$('{0:P0}' -f (nullValueAsBlank $subTotalHit))</td>
-                            <td bgcolor=`"$(nullValueColorCode $subTotalKill  $ccGreen)`">$(nullValueAsBlank $subTotalKill)</td>
-                            <td bgcolor=`"$(nullValueColorCode $subTotalDmg   $ccGreen)`">$(nullValueAsBlank $subTotalDmg)</td>    
-                            <td bgcolor=`"$(nullValueColorCode $subTotalDth   $ccNormOrSuicide)`">$(nullValueAsBlank $subTotalDth)</td>
-                            <td bgcolor=`"$(nullValueColorCode $subTotalDmgTk $ccNormOrSuicide)`">$(nullValueAsBlank $subTotalDmgTk)</td></tr>`n"#>
+                            <td class=`"$(nullValueColorCode $subTotalShot    $ccGreen)`">$(nullValueAsBlank $subTotalShot)</td>
+                            <td class=`"$(nullValueColorCode $subTotalHit   $ccGreen)`">$('{0:P0}' -f (nullValueAsBlank $subTotalHit))</td>
+                            <td class=`"$(nullValueColorCode $subTotalKill  $ccGreen)`">$(nullValueAsBlank $subTotalKill)</td>
+                            <td class=`"$(nullValueColorCode $subTotalDmg   $ccGreen)`">$(nullValueAsBlank $subTotalDmg)</td>    
+                            <td class=`"$(nullValueColorCode $subTotalDth   $ccNormOrSuicide)`">$(nullValueAsBlank $subTotalDth)</td>
+                            <td class=`"$(nullValueColorCode $subTotalDmgTk $ccNormOrSuicide)`">$(nullValueAsBlank $subTotalDmgTk)</td></tr>`n"#>
 
       } #end foreach
 
       if ($foundFF) { $lastClass = 'Friendly' }
       
-      $playerStats += "<tr bgcolor=`"$(teamColorCode $arrTeam.$p)`"><td colspan=2 align=right><b>$($lastClass) Totals:</b></td>
+      $playerStats += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td colspan=2 align=right><b>$($lastClass) Totals:</b></td>
                       <td></td><td></td><td>$(nullValueAsBlank $totKill[0])</td><td>$(nullValueAsBlank $totDmg[0])</td><td>$(nullValueAsBlank $totDth[0])</td><td>$(nullValueAsBlank $totDmgTk[0])</td>
                       <td></td><td></td><td>$(nullValueAsBlank $totKill[1])</td><td>$(nullValueAsBlank $totDmg[1])</td><td>$(nullValueAsBlank $totDth[1])</td><td>$(nullValueAsBlank $totDmgTk[1])</td></tr>`n"
                       #<td></td><td></td><td>$(nullValueAsBlank $totKill[2])</td><td>$(nullValueAsBlank $totDmg[2])</td><td>$(nullValueAsBlank $totDth[2])</td><td>$(nullValueAsBlank $totDmgTk[2])</td></tr>`n"
@@ -2023,14 +2198,6 @@ foreach ($jsonFile in $inputFile) {
 }
 
 
-function Format-MinSec {
-  param($sec)
-
-  $ts = New-TimeSpan -Seconds $sec
-  $mins = ($ts.Days * 24 + $ts.Hours) * 60 + $ts.minutes
-  return "$($mins):$("{0:d2}" -f $ts.Seconds)"
-}
-
 #Value Per Minute
 function Table-CalculateVPM {
   param($Value,$TimePlayed,$Round)
@@ -2041,31 +2208,6 @@ function Table-CalculateVPM {
   if (!$TimePlayed) { return '' }
   return [math]::Round($Value / ($TimePlayed/60),$Round)
 }
-
-function Table-ClassInfo {
-  param([ref]$Table,$Name,$TimePlayed)
-  $out = ''
-  $classlist = @{}
-  foreach ($p in [array]$Table.Value) {
-    if ($p.Name -eq $Name) {
-      foreach ($class in $ClassAllowed) {
-        $strClass = $ClassToStr[$class]
-        $time     = $p.($strClass)
-
-        if ($time -notin 0,'',$null) {
-          $classlist.$strClass = ($time / $TimePlayed)
-        }
-      }
-
-      foreach ($c in ($classlist.GetEnumerator() | Sort-Object Value -Descending)) {        
-        $out += "$(($c.Name).PadRight(4)) $(('{0:P0}' -f $c.Value).PadLeft(3))|"
-      }
-      
-      return $out -replace '\|$',''
-    }
-  }
-}
-
 
 $textOut = ''
 $textOut += "###############"
