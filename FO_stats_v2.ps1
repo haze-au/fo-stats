@@ -488,10 +488,10 @@ function GenerateVersusHtmlInnerTable {
       $hoverText = "<b>Self-affliction</b><br>$player`: $kills"
       $colour = 'Amber'
     } elseif ($refTeam.Value.$Player -eq $refTeam.Value.$o) {
-      $hoverText = "<b>Friendly fire</b><br> $player`: $kills <br>$o`: $($VersusTable.Value."$($o)_$($player)")"
+      $hoverText = "<b>Friendly fire</b><br> $player`: $kills <br>$o`: $killsOpponent"
       $colour = 'Orange'
     } else {
-      $hoverText = "<b>Head to Head</b><br>$player`: $kills <br>$o`: $($VersusTable.Value."$($o)_$($player)")"
+      $hoverText = "<b>Head to Head</b><br>$player`: $kills <br>$o`: $killsOpponent"
       $colour = 'Green'
     }
 
