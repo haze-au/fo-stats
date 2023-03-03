@@ -480,9 +480,23 @@ function GenerateVersusHtmlInnerTable {
   foreach ($o in $playerList) {
     $key = "$($player)_$($o)"
     $kills = $VersusTable.Value.$key
+    $killsOpponent = $VersusTable.Value."$($o)_$($player)"
     if ($kills -eq '' -or $kills -lt 1) { $kills = 0 }
+    if ($killsOpponent -eq '' -or $killsOpponent -lt 1) { $killsOpponent = 0 }
 
-    $tbl += "<td class=`"$(actionColorCode $refTeam.Value $player $o)`">$($kills)</td>"
+    if ($o -eq $player) {
+      $hoverText = "<b>Self-affliction</b><br>$player`: $kills"
+      $colour = 'Amber'
+    } elseif ($refTeam.Value.$Player -eq $refTeam.Value.$o) {
+      $hoverText = "<b>Friendly fire</b><br> $player`: $kills <br>$o`: $($VersusTable.Value."$($o)_$($player)")"
+      $colour = 'Orange'
+    } else {
+      $hoverText = "<b>Head to Head</b><br>$player`: $kills <br>$o`: $($VersusTable.Value."$($o)_$($player)")"
+      $colour = 'Green'
+    }
+
+    $tbl += "<td class=`"$(actionColorCode $refTeam.Value $player $o)`"><div class=`"VersusHover`">$($kills)<span class=`"VersusHoverText$colour`">$hoverText</span></div>
+    </td>"
 
     $subtotal[$count2] = $kills + $subtotal[$count2]
     $count2 +=1
@@ -495,8 +509,8 @@ function GenerateSummaryHtmlTable {
   param([switch]$Attack,[switch]$Defence)
   
   $count = 1
-  $tableHeader = "<table id=`"summary$(if ($Defence) { 'Defence' } else { 'Attack' })`" style=""width:600px;display:inline-table""><thead><tr><th>#</th><th>Player</th><th>Team</th><th>KPM</th><th>K/D</th><th>Kills</th><th>Dth</th><th>TK</h><th>Dmg</th><th>DPM</h>"
-  if ($Attack) { $tableHeader += "<th>Caps</th><th>Take</th><th>Carry</th>" }
+  $tableHeader = "<table id=`"summary$(if ($Defence) { 'Defence' } else { 'Attack' })`" style=""width:600px;display:inline-table""><thead><tr><th>#</th><th>Player</th><th>Team</th><th title='Kills per minute'>KPM</th><th title='Kill-death ratio'>K/D</th><th title='Kills'>Kills</th><th title='Deaths'>Dth</th><th title='Team kills'>TK</h><th title='Damage'>Dmg</th><th title='Damage per miunte'>DPM</h>"
+  if ($Attack) { $tableHeader += "<th title='Flag Captures'>Caps</th><th title='Flag pickups'>Take</th><th title='Time flag held'>Carry</th>" }
   else         { $tableHeader += "<th>FlagStop</th>" }
   $tableHeader += "<th>Time</th>"
   $table = ''
@@ -567,12 +581,12 @@ function GenerateFragHtmlTable {
   }
   
   $count = 1
-  $tableHeader = "<table id=`"fragRound$Round`" style=""width:600px;display:inline-table""><thead><tr><th>#</th><th>Player</th><th>Team</th><th>Kills</th><th>Dth</th><th>TK</h>"
+  $tableHeader = "<table id=`"fragRound$Round`" style=""width:600px;display:inline-table""><thead><tr><th>#</th><th>Player</th><th>Team</th><th title='Kills'>Kills</th><th title='Deaths'>Dth</th><th title='Team kills'>TK</h>"
   $table = ''
   $subtotal = @($playerList | foreach { 0 } )
 
   foreach ($p in $playerList) {
-    $tableHeader += "<th>$($count)</th>"
+    $tableHeader += "<th title='$($p)'>$($count)</th>"
     $team = $refTeam.Value.$p
     #$team  = ($arrPlayerTable | Where { $_.Name -eq $p -and (!$Round -or $_.Round -eq $Round) } `
     #                          | %{ $_.Team} | Sort-Object -Unique) -join '&'
@@ -613,7 +627,7 @@ function GenerateDmgHtmlTable {
   }
 
   $count = 1
-  $tableHeader = "<table id=`"damageRound$Round`" style=""width:700px;display:inline-table""><thead><tr><th>#</th><th>Player</th><th>Team</th><th>Dmg</th>"
+  $tableHeader = "<table id=`"damageRound$Round`" style=""width:700px;display:inline-table""><thead><tr><th>#</th><th>Player</th><th>Team</th><th title='Damage'>Dmg</th>"
   $table = ''
   $subtotal = @($playerList | foreach { 0 } )
 
@@ -1649,7 +1663,7 @@ $ccPink   = 'rowTeamBoth'
     
     $table = ''
     $tableHeader = "<thead><tr><th colspan=6></ht><th colspan=$([math]::Ceiling($round1EndTime / 60) + 1)>Rnd1</ht><th colspan=$($timeBlock - $([math]::Ceiling($round1EndTime / 60)) + 1)>Rnd2</th></tr>
-    <tr><th>#</th><th>Player</th><th>Team</th><th>Kills</th><th>Dth</th><th>TK</h>"
+    <tr><th>#</th><th>Player</th><th>Team</th><th title='Kills'>Kills</th><th title='Deaths'>Dth</th><th title='Team kills'>TK</h>"
     
     foreach ($min in 1..$timeBlock) { 
       $tableHeader += "<th>$($min)</th>" 
@@ -1793,7 +1807,7 @@ $ccPink   = 'rowTeamBoth'
 
     $tableHeader = "<table id=`"perMinFlag`" style=""width:30%;display:inline-table"">
     <thead><tr><th colspan=8></ht><th colspan=$([math]::Ceiling($round1EndTime / 60))>Rnd1 <i>(Cp/Tk/Thr or Stop)</i></ht><th colspan=$($timeBlock - $([math]::Ceiling($round1EndTime / 60)))>Rnd2 <i>(Cp/Tk/Thr or Stop)</i></th></tr>
-    <tr><th>#</th><th>Player</th><th>Team</th><th>Caps</th><th>Took</th><th>Throw</h><th>Time</h><th>Stop</h>"
+    <tr><th>#</th><th>Player</th><th>Team</th><th title='Flags captures'>Caps</th><th title='Flag pickups'>Took</th><th title='Flag throws'>Throw</h><th title='Time flag held'>Time</h><th title='Times killed flag carrier'>Stop</h>"
     $table = ''
 
     foreach ($min in 1..$timeBlock) { $tableHeader += "<th>$($min)</th>" }
@@ -1870,7 +1884,7 @@ $ccPink   = 'rowTeamBoth'
     $count = 1
     $tableHeader = "<table id=`"classKills`" >
     <thead><tr><th colspan=4></th><th colspan=9>Both Rounds</th></tr>
-    <tr><th>#</th><th>Player</th><th>Team</th><th>Kills</th>
+    <tr><th>#</th><th>Player</th><th>Team</th><th title='Kills'>Kills</th>
     <th>Sco</th>
     <th>Sold</th>
     <th>Demo</th>
@@ -1926,7 +1940,7 @@ $ccPink   = 'rowTeamBoth'
 
     $table = ''
     $tableHeader = "<table id=`"classTime`" ><thead><tr><th colspan=3></th><th colspan=9>Rnd1</th><th colspan=9>Rnd2</th></tr>
-    <tr><th>#</th><th>Player</th><th>Team</th><th>K/D</h>
+    <tr><th>#</th><th>Player</th><th>Team</th><th title='Kill-death ratio'>K/D</h>
     <th>Sco</th><th>Sold</th><th>Demo</th><th>Med</th><th>HwG</th><th>Pyro</th><th>Spy</th><th>Eng</th>
     <th>K/D</h><th>Sco</th><th>Sold</th><th>Demo</th><th>Med</th><th>HwG</th><th>Pyro</th><th>Spy</th><th>Eng</th>
     </tr></thead>"
