@@ -1579,6 +1579,10 @@ $ccPink   = 'rowTeamBoth'
 
     $htmlOut = "<html>
       <head>
+        <script src=`"tablesort.min.js`"></script>
+        <script src=`"tablesort.number.min.js`"></script>
+        <script src=`"../../tablesort.min.js`"></script>
+        <script src=`"../../tablesort.number.min.js`"></script>
         <script src=`"http://haze.fortressone.org/.css/tablesort.min.js`"></script>
         <script src=`"http://haze.fortressone.org/.css/tablesort.number.min.js`"></script>
         <link rel=`"stylesheet`" href=`"fo_stats.css`">
