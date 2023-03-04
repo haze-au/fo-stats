@@ -69,9 +69,14 @@ function getPlayerClasses {
 
 function getPlayerClasses {
   param ($Round,$Player,$TimePlayed)
-  return ($arrClassTimeTable  |  Where { $_.Name -eq $Player -and ($Round -lt 1 -or $_.Round -eq $Round) } `
-                              | %{ $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 0 } `
-                              | %{ "$($_.Name)$(if ($TimePlayed) { ' ' + ('{0:P0}' -f ($_.Value/$TimePlayed)) } )" } | Sort-Object -Unique) -join ','
+  
+  $pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $Player -Round $Round
+  $filter = ($arrClassTimeTable  |  Where-Object { $_.Name -eq $Player -and ($Round -lt 1 -or $_.Round -eq $Round) })                
+  $classes = ($filter | %{ $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 0 } | %{ $_.Name }) -join ','
+  
+  $hover = ($classes -split ',' | %{ "<b>$_</b>: $(Format-MinSec $filter.$_)" }) -join '<br>'
+
+  return "$classes<span class=`"ClassHoverText$($arrPlayerTable[$pos].Team)`">$hover</span> "
 }
 
 function nullValueColorCode {
@@ -511,7 +516,7 @@ function GenerateSummaryHtmlTable {
   $count = 1
   $tableHeader = "<table id=`"summary$(if ($Defence) { 'Defence' } else { 'Attack' })`" style=""width:600px;display:inline-table""><thead><tr><th>#</th><th>Player</th><th>Team</th><th title='Kills per minute'>KPM</th><th title='Kill-death ratio'>K/D</th><th title='Kills'>Kills</th><th title='Deaths'>Dth</th><th title='Team kills'>TK</h><th title='Damage'>Dmg</th><th title='Damage per miunte'>DPM</h>"
   if ($Attack) { $tableHeader += "<th title='Flag Captures'>Caps</th><th title='Flag pickups'>Take</th><th title='Time flag held'>Carry</th>" }
-  else         { $tableHeader += "<th>FlagStop</th>" }
+  else         { $tableHeader += "<th title='Killed flag carrier'>FlagStop</th>" }
   $tableHeader += "<th>Time</th>"
   $table = ''
   $subtotal = @(1..8 | foreach { 0 })
@@ -543,7 +548,7 @@ function GenerateSummaryHtmlTable {
     else         { $table += "<td>$($flagStop)</td>" }
       
     $table += "<td>$(Format-MinSec ([int]$timePlayed))</td>"
-    $table += "<td>$(getPlayerClasses -Round $rnd -Player $p)</td>"
+    $table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $rnd -Player $p)</div></td>"
     $table += "</tr>`n"
     
     $subtotal[0] += $kills; $subtotal[1] += $death; $subtotal[2] += $tkill;$subtotal[3] += $dmg;$subtotal[4] = ''
@@ -598,7 +603,7 @@ function GenerateFragHtmlTable {
 
     $table += GenerateVersusHtmlInnerTable -VersusTable $refVersus -Player $p -Round $Round
 
-    $table += "<td>$(getPlayerClasses -Round $Round -Player $p)</td>"
+    $table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $Round -Player $p)</div></td>"
     $table += "</tr>`n"
     
     $count += 1 
@@ -638,7 +643,7 @@ function GenerateDmgHtmlTable {
 
     $table += GenerateVersusHtmlInnerTable -VersusTable $refVersus -Player $p -Round $Round
 
-    $table += "<td>$(getPlayerClasses -Round $Round -Player $p)</td>"
+    $table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $Round -Player $p)</div></td>"
     $table += "</tr>`n"
     
     $count += 1 
@@ -742,8 +747,8 @@ foreach ($jsonFile in $inputFile) {
     $kind    = $item.kind
 
     #Remove any underscores for _ tokens used in Keys 
-    $player  = $item.player -replace '_','.' -replace '\s$','.' -replace '\^[0-9]{0,2}',''  -replace '\$','§'
-    $target  = $item.target -replace '_','.' -replace '\s$','.' -replace '\^[0-9]{0,2}',''  -replace '\$','§'
+    $player  = $item.player -replace '_','.' -replace '\s$','.' -replace '\^[b0-9]{0,1}',''  -replace '\$','§'
+    $target  = $item.target -replace '_','.' -replace '\s$','.' -replace '\^([b0-9]{0,1}|b|&[0-9a-fA-F]{2}|x[0-9]{3})',''  -replace '\$','§'
     $p_team  = $item.playerTeam
     $t_team  = $item.targetTeam
     $class   = $item.playerClass
