@@ -251,7 +251,6 @@ function Generate-DailyStatsHTML {
     
     $htmlBody  = '<div class=row><div class=column><h2>Match Log</h2>'
     $htmlBody += $JSON.Matches       | Sort-Object Name   | ConvertTo-Html -Fragment
-    $htmlBody += '<script>document.body.innerHTML = linkify(document.body.innerHTML);</script>'
     $htmlBody += '<h2>Attack Summary</h2>'
     $htmlBody += $JSON.SummaryAttack  | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment
     $htmlBody += '<h2>Defence Summary</h2>'
@@ -333,8 +332,9 @@ function Generate-DailyStatsHTML {
     }</script>
 
 "@
-    
-    return (ConvertTo-Html -Body $htmlBody -Head $htmlHeader)
+    $htmlPost += '<script>document.body.innerHTML = linkify(document.body.innerHTML);</script>'
+
+    return (ConvertTo-Html -Body $htmlBody -Head $htmlHeader -PostContent $htmlPost)
 } # end Generate HTML
 
 
