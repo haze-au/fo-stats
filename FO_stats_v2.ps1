@@ -386,11 +386,11 @@ function arrClassTable-UpdatePlayer {
 }
 
 function arrFindPlayer-WeaponTable {
-  param( [string]$Name, $Round, [string]$Weapon, $Class )
+  param( [string]$Name, $Round, $PlayerClass, [string]$Weapon, $Class )
   
   $count = 0
   foreach ($p in $script:arrWeaponTable) {
-    if ($p.Name -eq $Name -and $p.Round -eq $Round -and $p.Weapon -eq $Weapon -and $p.Class -eq $Class) {
+    if ($p.Name -eq $Name -and $p.Round -eq $Round -and ($PlayerClass -and $p.PlayerClass -eq $PlayerClass) -and $p.Weapon -eq $Weapon -and $p.Class -eq $Class) {
       return $count
     }
     $count += 1
@@ -409,7 +409,7 @@ function arrWeaponTable-UpdatePlayer {
          [switch]$Increment
        )
 
-  $pos = arrFindPlayer-WeaponTable -Name $Name -Round $Round -Weapon $Weapon -Class $Class
+  $pos = arrFindPlayer-WeaponTable -Name $Name -Round $Round -Weapon $Weapon -Class $Class -PlayerClass $PlayerClass
   if ($pos -lt 0) {
     $obj = [pscustomobject]@{ Name=$Name
                               PlayerClass=$PlayerClass
@@ -1911,9 +1911,9 @@ $ccPink   = 'rowTeamBoth'
       $count2 = 0
       foreach ($o in ($ClassAllowedwithSG)) {
         $key = "$($p)_$($o)"
-        $kills = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.PlayerClass -eq $o } | Measure-Object Kills -Sum).Sum
+        $kills = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $o } | Measure-Object Kills -Sum).Sum
         $dth   = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.PlayerClass -eq $o } | Measure-Object Death -Sum).Sum
-
+        
         if ($kills + $dth -gt 0) {
           $table += "<td>$($kills)/$($dth)</td>"
         } else {
@@ -2049,24 +2049,20 @@ $ccPink   = 'rowTeamBoth'
         else                 { $class = $w.Class}
         $weapon = $w.Weapon
 
-        $objRnd1 = [PSCustomObject]@{ Name=$p; Class=$class; Kills=0; Dmg=0; Death=0; DmgTaken=0; AttackCount=''; HitPercent=''; pos=-1 }
-        $objRnd2 = [PSCustomObject]@{ Name=$p; Class=$class; Kills=0; Dmg=0; Death=0; DmgTaken=0; AttackCount=''; HitPercent=''; pos=-1 }
-        $objRnd1.pos = arrFindPlayer-WeaponTable -Name $p -Round 1 -Weapon $weapon -Class $w.Class
-        $objRnd2.pos = arrFindPlayer-WeaponTable -Name $p -Round 2 -Weapon $weapon -Class $w.Class
+        $objRnd1 = [PSCustomObject]@{ Name=$p; Class=$class; Kills=0; Dmg=0; Death=0; DmgTaken=0; AttackCount=0; HitPercent=''; pos=1 }
+        $objRnd2 = [PSCustomObject]@{ Name=$p; Class=$class; Kills=0; Dmg=0; Death=0; DmgTaken=0; AttackCount=0; HitPercent=''; pos=2 }
         
         foreach ($o in @($objRnd1,$objRnd2)) {
-          if ($o.pos -gt -1) {  
-            $o.Kills = $arrWeaponTable[$o.pos].Kills
-            $o.Dmg   = [double]$arrWeaponTable[$o.pos].Dmg
-            $o.Death = [double]$arrWeaponTable[$o.pos].Death
-            $o.DmgTaken = [double]$arrWeaponTable[$o.pos].DmgTaken
-            if ($arrWeaponTable[$o.pos].AttackCount -gt 0) {
-              $o.AttackCount = [double]$arrWeaponTable[$o.pos].AttackCount
-              $o.HitPercent  = [double]$arrWeaponTable[$o.pos].DmgCount / [double]$arrWeaponTable[$o.pos].AttackCount
-            }
-            
+          $o.Kills = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object Kills -Sum).Sum
+          $o.Dmg   = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object Dmg -Sum).Sum
+          $o.Death = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object Death -Sum).Sum
+          $o.DmgTaken    = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object DmgTaken -Sum).Sum
+          $o.AttackCount = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object AttackCount -Sum).Sum
+          
+          if ($o.AttackCount -gt 0) {
+            $o.HitPercent  = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object DmgCount -Sum).Sum / $o.AttackCount
           }
-        } 
+        }    
 
         if ($class -ne $lastClass -and $foundFF -lt 1) {        
           if ($lastClass -ne '') {
@@ -2400,6 +2396,7 @@ if ($TextSave) {
     $textOut | Out-File -LiteralPath $TextFileStr -Encoding utf8
     Write-Host "Text stats saved: $TextFileStr"
 }
+
 
 <# test Weap counter
 $arrWeaponTable | `  # | Where { ($_.AttackCount + $_.DmgCount) -GT 0 }  `
