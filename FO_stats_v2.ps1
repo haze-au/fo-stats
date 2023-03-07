@@ -500,8 +500,10 @@ function GenerateVersusHtmlInnerTable {
       $colour = 'Green'
     }
 
-    $tbl += "<td class=`"$(actionColorCode $refTeam.Value $player $o)`"><div class=`"VersusHover`">$($kills)<span class=`"VersusHoverText$colour`">$hoverText</span></div>
-    </td>"
+    $tbl += "<td class=`"$(actionColorCode $refTeam.Value $player $o)`">$($kills)</td>"
+    # Java Scirpt implemented
+    #$tbl += "<td class=`"$(actionColorCode $refTeam.Value $player $o)`"><div class=`"VersusHover`">$($kills)<span class=`"VersusHoverText$colour`">$hoverText</span></div>
+    #</td>"
 
     $subtotal[$count2] = $kills + $subtotal[$count2]
     $count2 +=1
@@ -1599,6 +1601,7 @@ $ccPink   = 'rowTeamBoth'
 
     $htmlOut = "<html>
       <head>
+        <script src=`"http://haze.fortressone.org/.css/fo_stats.js`"></script>
         <script src=`"tablesort.min.js`"></script>
         <script src=`"tablesort.number.min.js`"></script>
         <script src=`"../../tablesort.min.js`"></script>
@@ -1659,7 +1662,10 @@ $ccPink   = 'rowTeamBoth'
     $htmlOut += "<h3>Round 2</h3>`n"          
     $htmlOut += GenerateDmgHtmlTable -Round '2'
     $htmlOut += '</div></div>'
-   
+    $htmlOut += '<script>MakeVersusHover("fragRound1"); </script>';
+    $htmlOut += '<script>MakeVersusHover("fragRound2"); </script>';
+    $htmlOut += '<script>MakeVersusHover("damageRound1"); </script>';
+    $htmlOut += '<script>MakeVersusHover("damageRound2"); </script>';
 
     ###
     # frag/death per mins
