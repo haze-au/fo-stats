@@ -786,10 +786,11 @@ foreach ($jsonFile in $inputFile) {
       if ($type -in 'damageDone','kill') {
         $potentialSpies = $arrTimeTrack.keys -match '.*_lastClass$'
         $potentialSpies = $potentialSpies | foreach { if ($arrTimeTrack.$_ -eq 8) { ($_ -split '_')[0] } }
-      
+
         # If only 1 spy found fix it, else forget it
         if ($potentialSpies.Count -eq 1 -and $potentialSpies -notin '',$null) { 
           $player = ($potentialSpies -split '_')[0]
+          $weap = 'gas'
         } else { continue }
       } 
     }
@@ -923,12 +924,12 @@ foreach ($jsonFile in $inputFile) {
 
       'death' {
         $arrDeathMin.$keyTime    += 1
-        
         #record sg deahts in class table only i.e.e Class 10/SG.
         if ($player  -ne '' -and $class -ne 0) {
           arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'Death' -Increment
           if ($item.attacker -in 'world','') {
-            arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon 'world' -Class $class -Property 'Death' -Increment
+            if ($weap -ne 'laser') { $weap = 'world' }
+            arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'Death' -Increment
           }
         }
         continue
