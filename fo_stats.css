@@ -4,7 +4,7 @@ html,body,table { font-size: 105%; }
 
 body { 
 /*  display: table-cell;vertical-align: middle;*/
-  font-family: calibri; font-weight: bold;  color:white; background-color:rgb(56, 75, 94);
+  font-family: "Calibri";   color:white; background-color:rgb(56, 75, 94);
 }
 
 
@@ -17,33 +17,13 @@ th { background-color: rgb(19, 37, 56);}
 tr { background-color: rgb(34, 58, 85);}
 /*tr:nth-child(odd){ background-color: rgb(51, 79, 110); }*/
 
-table.sortable th button {
-  position: absolute;
-  padding: 4px;
-  margin: 1px;
-  font-weight: bold;
-  background: transparent;
-  border: none;
-  display: inline;
-  right: 0;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 100%;
-  text-align: left;
-  outline: none;
-  cursor: pointer;
-}
-
 table, th, td {
   white-space: nowrap;
-  padding: 5px;
+  padding: 3px;
   border: 1px solid rgb(122, 122, 122);
   border-collapse: collapse;
   min-width: 20px;
 }
-
-
 
 .rowTeam1    { background-color: #2357b9 }
 .rowTeam1:nth-child(odd){ background-color: #173772 ; }
@@ -57,5 +37,134 @@ table, th, td {
 .cellOrange { background-color: #c74e16 }
 .cellOrange:nth-child(odd) { background-color: #ad4312  }
 .cellGreen  { background-color: #2b8b24  }
-.cellGreen:nth-child(odd)  { background-color: #2f6b2b;  }
+.cellGreen:nth-child(odd)  { background-color: #2f6b2b }
+
+th[role=columnheader]:not(.no-sort) {
+	cursor: pointer;
+}
+
+
+
+.VersusHover {
+  position: relative;
+  display: inline-block;
+}
+
+.VersusHover .VersusHoverTextGreen, .VersusHover .VersusHoverTextAmber, .VersusHover .VersusHoverTextOrange {
+  font-size: 90%;
+  visibility: hidden;
+  width: 190px;
+  /*background-color: lightblue;*/
+  color: black;
+  text-align: left;
+  border-radius: 6px;
+  padding: 5px 0;
+  padding-left: 10px;
+  position: absolute;
+  z-index: 1;
+  bottom: 140%;
+  left: 50%;
+  margin-left: -60px;
+}
+
+.VersusHover .VersusHoverTextGreen::after, .VersusHoverTextAmber::After, .VersusHoverTextOrange::After {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 30%;
+  margin-left: -5px;
+  border-width: 7px;
+  border-style: solid;
+  /*border-color: lightblue transparent transparent transparent;*/
+}
+
+
+.VersusHover .VersusHoverTextHeader {
+  font-size: 90%;
+  visibility: hidden;
+  width: 120px;
+  /*background-color: lightblue;*/
+  color: black;
+  text-align: left;
+  border-radius: 6px;
+  padding: 5px 0;
+  padding-left: 10px;
+  position: absolute;
+  z-index: 1;
+  bottom: 140%;
+  left: 50%;
+  margin-left: -60px;
+}
+
+.VersusHover .VersusHoverTextHeader::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 30%;
+  margin-left: -5px;
+  border-width: 7px;
+  border-style: solid;
+  /*border-color: lightblue transparent transparent transparent;*/
+}
+
+
+.VersusHover .VersusHoverTextGreen::after { border-color: lightgreen transparent transparent transparent }
+.VersusHover .VersusHoverTextGreen { background-color: lightgreen }
+
+.VersusHover .VersusHoverTextGreen::after { border-color: lightgreen transparent transparent transparent }
+.VersusHover .VersusHoverTextGreen { background-color: lightgreen }
+.VersusHover .VersusHoverTextAmber::after { border-color: lightyellow transparent transparent transparent }
+.VersusHover .VersusHoverTextAmber { background-color: lightyellow }
+.VersusHover .VersusHoverTextOrange::after { border-color: orange transparent transparent transparent }
+.VersusHover .VersusHoverTextOrange { background-color: orange }
+
+
+.VersusHover:hover .VersusHoverTextGreen, .VersusHover:hover .VersusHoverTextAmber, .VersusHover:hover .VersusHoverTextOrange, 
+.VersusHover:hover .VersusHoverTextHeader {
+  visibility: visible;
+}
+
+
+.ClassHover {
+  position: relative;
+  display: inline-block;
+}
+
+.ClassHover .ClassHoverText1, .ClassHover .ClassHoverText2 {
+  font-size: 90%;
+  visibility: hidden;
+  width: 100px;
+  color: black;
+  text-align: left;
+  border-radius: 6px;
+  padding: 5px 0;
+  padding-left: 10px;
+  position: absolute;
+  z-index: 1;
+  bottom: 140%;
+  left: 55;
+  margin-left: -60px;
+}
+
+.ClassHover .ClassHoverText1::after, .ClassHoverText2::After {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 20%;
+  margin-left: -5px;
+  border-width: 7px;
+  border-style: solid;
+}
+
+.ClassHover .ClassHoverText1::after { border-color: lightblue transparent transparent transparent }
+.ClassHover .ClassHoverText1 { background-color: lightblue }
+.ClassHover .ClassHoverText2::after { border-color: lightcoral transparent transparent transparent }
+.ClassHover .ClassHoverText2 { background-color: lightcoral }
+
+.ClassHover:hover .ClassHoverText1, .ClassHover:hover .ClassHoverText2 {
+  visibility: visible;
+}
+
+
+
 

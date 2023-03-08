@@ -11,7 +11,7 @@ function MakeVersusHover(strTable) {
         var div = document.createElement('div');
 
         if (table.rows[0].cells[pvpStart + i - 1].innerText != "Classes") {
-            div.innerHTML = id + '<span class="VersusHoverTextAmber">' + row.cells[1].innerText + '</span>';
+            div.innerHTML = id + '<span class="VersusHoverTextHeader">' + row.cells[1].innerText + '</span>';
             div.className = 'VersusHover';
             table.rows[0].cells[pvpStart + i - 1].innerHTML = div.outerHTML;
         }
