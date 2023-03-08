@@ -552,7 +552,7 @@ function GenerateSummaryHtmlTable {
       
     $table += "<td>$(Format-MinSec ([int]$timePlayed))</td>"
     #$table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $rnd -Player $p)</div></td>"
-    $table += "<td>$(getPlayerClasses -Round $rnd -Player $p)</td>"
+    $table += "<td id=`"ClassColumn`">$(getPlayerClasses -Round $rnd -Player $p)</td>"
     $table += "</tr>`n"
     
     $subtotal[0] += $kills; $subtotal[1] += $death; $subtotal[2] += $tkill;$subtotal[3] += $dmg;$subtotal[4] = ''
@@ -564,9 +564,9 @@ function GenerateSummaryHtmlTable {
     $count += 1 
   }
 
-  $tableHeader += "<th>Classes</th></tr></thead>`n"
+  $tableHeader += "<th id=`"ClassColumn`">Classes</th></tr></thead>`n"
 
-  $table += '<tfoot><tr><td colspan=5 align=right padding=2px><b>Total:</b></td>'
+  $table += '<tfoot><tr id="TotalRow"><td colspan=5 align=right padding=2px><b>Total:</b></td>'
 
   if ($Attack) { $subtotal[7] = Format-MinSec $subtotal[7] }
   foreach ($st in $subtotal) { if ($st -eq $null) { break }; $table += "<td>$($st)</td>" }
@@ -608,15 +608,15 @@ function GenerateFragHtmlTable {
     $table += GenerateVersusHtmlInnerTable -VersusTable $refVersus -Player $p -Round $Round
 
     #$table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $Round -Player $p)</div></td>"
-    $table += "<td>$(getPlayerClasses -Round $Round -Player $p)</td>"
+    $table += "<td id=`"ClassColumn`">$(getPlayerClasses -Round $Round -Player $p)</td>"
     $table += "</tr>`n"
     
     $count += 1 
   }
 
-  $tableHeader += "<th>Classes</th></tr></thead>`n"
+  $tableHeader += "<th id=`"ClassColumn`">Classes</th></tr></thead>`n"
 
-  $table += '<tfoot><tr><td colspan=6 align=right padding=2px><b>Total:</b></td>'
+  $table += '<tfoot><tr id="TotalRow"><td colspan=6 align=right padding=2px><b>Total:</b></td>'
   foreach ($st in $subtotal) { $table += "<td>$($st)</td>" }
   $table += '</tr></tfoot>'
   $ret = $tableHeader      
@@ -649,15 +649,15 @@ function GenerateDmgHtmlTable {
     $table += GenerateVersusHtmlInnerTable -VersusTable $refVersus -Player $p -Round $Round
 
     #$table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $Round -Player $p)</div></td>"
-    $table += "<td>$(getPlayerClasses -Round $Round -Player $p)</td>"
+    $table += "<td id=`"ClassColumn`">$(getPlayerClasses -Round $Round -Player $p)</td>"
     $table += "</tr>`n"
     
     $count += 1 
   }
 
-  $tableHeader += "<th>Classes</th></tr></thead>`n"
+  $tableHeader += "<th id=`"ClassColumn`">Classes</th></tr></thead>`n"
 
-  $table += '<tfoot><tr><td colspan=4 align=right padding=2px><b>Total:</b><i> *minus self-dmg</i></td>'
+  $table += '<tfoot><tr id="TotalRow"><td colspan=4 align=right padding=2px><b>Total:</b><i> *minus self-dmg</i></td>'
   foreach ($st in $subtotal) { $table += "<td>$($st)</td>" }
   $table += '</tr></tfoot>'
   $ret += $tableHeader   
@@ -1736,7 +1736,7 @@ $ccPink   = 'rowTeamBoth'
       $count += 1 
     }
 
-    $table += '<tfoot><tr><td colspan=6 align=right padding=2px><b>Total:</b></td>'
+    $table += '<tfoot><tr id="TotalRow"><td colspan=6 align=right padding=2px><b>Total:</b></td>'
     $count = 0
     foreach ($st in $subtotalFrg) { 
       $table += "<td>$([int]$subtotalFrg[$count])/$([int]$subtotaldth[$count])</td>"
@@ -1795,7 +1795,7 @@ $ccPink   = 'rowTeamBoth'
       $count += 1 
     }
 
-    $table += '<tfoot><tr><td colspan=6 align=right padding=2px><b>Total:</b></td>'
+    $table += '<tfoot><tr id="TotalRow"><td colspan=6 align=right padding=2px><b>Total:</b></td>'
 
     $count = 0
     foreach ($st in $subtotalDmg) { 
@@ -1875,7 +1875,7 @@ $ccPink   = 'rowTeamBoth'
       $count += 1 
     }
 
-    $table += '<tfoot><tr><td colspan=8 align=right padding=2px><b>Total:</b></td>'
+    $table += '<tfoot><tr id="TotalRow"><td colspan=8 align=right padding=2px><b>Total:</b></td>'
     $count = 0
     foreach ($st in $subtotalCap) { 
       $table += "<td>$($subtotalCap[$count])/$($subtotalTook[$count])/$($subtotalThrow[$count])</td>"
@@ -1936,7 +1936,7 @@ $ccPink   = 'rowTeamBoth'
       $count += 1 
     }
 
-    $table += '<tfoot><tr><td colspan=4 align=right padding=2px><b>Total:</b></td>'
+    $table += '<tfoot><tr id="TotalRow"><td colspan=4 align=right padding=2px><b>Total:</b></td>'
     $count = 0
     foreach ($st in $subtotalFrg) { $table += "<td>$(if (0 -ne $subtotalFrg[$count] + $subtotalDth[$count]) { "$($subtotalFrg[$count])/$($subtotalDth[$count])" })</td>"; $count++ }
     $htmlOut += '</tr></tfoot>'
