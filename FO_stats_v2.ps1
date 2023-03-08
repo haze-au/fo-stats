@@ -76,7 +76,8 @@ function getPlayerClasses {
   
   $hover = ($classes -split ',' | %{ "<b>$_</b>: $(Format-MinSec $filter.$_)" }) -join '<br>'
 
-  return "$classes<span class=`"ClassHoverText$($arrPlayerTable[$pos].Team)`">$hover</span> "
+  #return "$classes<span class=`"ClassHoverText$($arrPlayerTable[$pos].Team)`">$hover</span> "
+  return $classes
 }
 
 function nullValueColorCode {
@@ -490,13 +491,13 @@ function GenerateVersusHtmlInnerTable {
     if ($killsOpponent -eq '' -or $killsOpponent -lt 1) { $killsOpponent = 0 }
 
     if ($o -eq $player) {
-      $hoverText = "<b>Self-affliction</b><br>$player`: $kills"
+      #$hoverText = "<b>Self-affliction</b><br>$player`: $kills"
       $colour = 'Amber'
     } elseif ($refTeam.Value.$Player -eq $refTeam.Value.$o) {
-      $hoverText = "<b>Friendly fire</b><br> $player`: $kills <br>$o`: $killsOpponent"
+      #$hoverText = "<b>Friendly fire</b><br> $player`: $kills <br>$o`: $killsOpponent"
       $colour = 'Orange'
     } else {
-      $hoverText = "<b>Head to Head</b><br>$player`: $kills <br>$o`: $killsOpponent"
+      #$hoverText = "<b>Head to Head</b><br>$player`: $kills <br>$o`: $killsOpponent"
       $colour = 'Green'
     }
 
@@ -550,7 +551,8 @@ function GenerateSummaryHtmlTable {
     else         { $table += "<td>$($flagStop)</td>" }
       
     $table += "<td>$(Format-MinSec ([int]$timePlayed))</td>"
-    $table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $rnd -Player $p)</div></td>"
+    #$table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $rnd -Player $p)</div></td>"
+    $table += "<td>$(getPlayerClasses -Round $rnd -Player $p)</td>"
     $table += "</tr>`n"
     
     $subtotal[0] += $kills; $subtotal[1] += $death; $subtotal[2] += $tkill;$subtotal[3] += $dmg;$subtotal[4] = ''
@@ -605,7 +607,8 @@ function GenerateFragHtmlTable {
 
     $table += GenerateVersusHtmlInnerTable -VersusTable $refVersus -Player $p -Round $Round
 
-    $table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $Round -Player $p)</div></td>"
+    #$table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $Round -Player $p)</div></td>"
+    $table += "<td>$(getPlayerClasses -Round $Round -Player $p)</td>"
     $table += "</tr>`n"
     
     $count += 1 
@@ -645,7 +648,8 @@ function GenerateDmgHtmlTable {
 
     $table += GenerateVersusHtmlInnerTable -VersusTable $refVersus -Player $p -Round $Round
 
-    $table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $Round -Player $p)</div></td>"
+    #$table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $Round -Player $p)</div></td>"
+    $table += "<td>$(getPlayerClasses -Round $Round -Player $p)</td>"
     $table += "</tr>`n"
     
     $count += 1 
@@ -1662,10 +1666,6 @@ $ccPink   = 'rowTeamBoth'
     $htmlOut += "<h3>Round 2</h3>`n"          
     $htmlOut += GenerateDmgHtmlTable -Round '2'
     $htmlOut += '</div></div>'
-    $htmlOut += '<script>MakeVersusHover("fragRound1"); </script>';
-    $htmlOut += '<script>MakeVersusHover("fragRound2"); </script>';
-    $htmlOut += '<script>MakeVersusHover("damageRound1"); </script>';
-    $htmlOut += '<script>MakeVersusHover("damageRound2"); </script>';
 
     ###
     # frag/death per mins
@@ -2151,21 +2151,10 @@ $ccPink   = 'rowTeamBoth'
     }
 
     $htmlOut += '</div></div>' 
-    $htmlOut += "</body>
-              <script>
-                new Tablesort(document.getElementById('summaryAttack'), { descending: true } );
-                new Tablesort(document.getElementById('summaryDefence'), { descending: true } );
-                new Tablesort(document.getElementById('fragRound1'), { descending: true } );
-                new Tablesort(document.getElementById('fragRound2'), { descending: true } );
-                new Tablesort(document.getElementById('damageRound1'), { descending: true } );
-                new Tablesort(document.getElementById('damageRound2'), { descending: true } );
-                new Tablesort(document.getElementById('perMinFragDeath'), { descending: true } );
-                new Tablesort(document.getElementById('perMinDamage'), { descending: true } );
-                new Tablesort(document.getElementById('perMinFlag'), { descending: true } );
-                new Tablesort(document.getElementById('classKills'), { descending: true } );
-                new Tablesort(document.getElementById('classTime'), { descending: true } );
-              </script>
-              </html>"     
+    $htmlOut += "<script>
+                FO_Post();
+              </script>"
+    $htmlOut += "</body></html>"
 
     $htmlOut | Out-File -LiteralPath "$outFileStr.html" -Encoding utf8
     if ($OpenHTML) { & "$outFileStr.html" }
