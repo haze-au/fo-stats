@@ -55,6 +55,7 @@ param (
   [switch]$NoStatJson, #Passed to FO_stats
   [switch]$TextOnly,   #Passed to FO_Stats
   [switch]$OpenHTML,   #Passed to FO_Stats
+  [switch]$CleanUp,    #Delete JSON after stats.
   [switch]$DailyBatch  #For HTTP server daily tallying functions (no use on client)
 )
 
@@ -222,7 +223,7 @@ if (!$DownloadOnly -and !$Demos) {
       write-host "FO Stats Completed:-`t$($fileName)"
       write-host "----------------------------------------------------------------------------------------------------"
 
-      if ($DailyBatch) { Remove-Item -LiteralPath $fileName -Force }
+      if ($DailyBatch -or $CleanUp) { Remove-Item -LiteralPath $fileName -Force }
     }
 }
 
