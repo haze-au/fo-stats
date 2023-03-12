@@ -72,7 +72,7 @@ function getPlayerClasses {
   
   $pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $Player -Round $Round
   $filter = ($arrClassTimeTable  |  Where-Object { $_.Name -eq $Player -and ($Round -lt 1 -or $_.Round -eq $Round) })                
-  $classes = ($filter | %{ $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 0 } | %{ $_.Name }) -join ','
+  $classes = ($filter | %{ $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 15 } | %{ $_.Name }) -join ','
   
   $hover = ($classes -split ',' | %{ "<b>$_</b>: $(Format-MinSec $filter.$_)" }) -join '<br>'
 
@@ -753,8 +753,9 @@ foreach ($jsonFile in $inputFile) {
     $kind    = $item.kind
 
     #Remove any underscores for _ tokens used in Keys 
-    $player  = $item.player -replace '_','.' -replace '\s$','.' -replace '\^[b0-9]{0,1}',''  -replace '\$','§'
-    $target  = $item.target -replace '_','.' -replace '\s$','.' -replace '\^([b0-9]{0,1}|b|&[0-9a-fA-F]{2}|x[0-9]{3})',''  -replace '\$','§'
+    $player  = $item.player -replace '_','.' -replace '\s$','.' -replace '\$','§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})','' 
+    $target  = $item.target -replace '_','.' -replace '\s$','.' -replace '\$','§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})','' 
+    
     $p_team  = $item.playerTeam
     $t_team  = $item.targetTeam
     $class   = $item.playerClass

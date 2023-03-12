@@ -324,15 +324,10 @@ function Generate-DailyStatsHTML {
 
     </style>
     
-    <script>function linkify(inputText) {
-      var replacedText, replacePattern1, replacePattern2, replacePattern3;
-      replacePattern1 = /(([-A-z0-9]+\/){2}[-_0-9A-z]+)/gim;
-      replacedText = inputText.replace(replacePattern1, '<a href="`$1_blue_vs_red.html" target="_blank">`$1</a>');
-      return replacedText;
-    }</script>
+    <script src=http://haze.fortressone.org/.css/fo_daily.js></script>
 
 "@
-    $htmlPost += '<script>document.body.innerHTML = linkify(document.body.innerHTML);</script>'
+    $htmlPost += '<script>fo_daily_post();</script>'
 
     return (ConvertTo-Html -Body $htmlBody -Head $htmlHeader -PostContent $htmlPost)
 } # end Generate HTML

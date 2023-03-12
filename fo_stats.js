@@ -82,13 +82,116 @@ function GetClassTime(strTable, id, classCol) {
                 hoverText = hoverText + "<b>" + tfClass + "</b>: " + col.innerText;
             }
 
-            var hoverClass = cTable.rows[i].cells[2].innerText;
+
+            if (cTable.rows[i].cells[2].innerText.match("^(1|2)$")) {
+                var hoverClass = cTable.rows[i].cells[2].innerText;
+            } else {
+                var hoverClass = "0";
+            }
+
             var div = document.createElement('div');
             div.innerHTML = cStr + '<span class="ClassHoverText' + hoverClass + '">' + hoverText + '</span>';
             div.className = 'ClassHover';
             classCol.innerHTML = div.outerHTML;
         }
 
+    }
+}
+
+function MakePlayerProfiles(strTable, kind) {
+    var table = document.getElementById(strTable);
+    var flagTable = document.getElementById("perMinFlag").getElementsByTagName('tbody')[0];
+
+
+    for (var i = 0, row; row = table.getElementsByTagName('tbody')[0].rows[i]; i++) {
+        let player = row.cells[0].innerText;
+        let team = row.cells[2].innerText;
+
+        var plusRound2 = 0;
+        if (kind == 'both') {
+            var round = 1;
+            var plusRound2 = 2;
+        } else if (kind == 'round') {
+            var round = strTable.slice(-1);
+        } else if ((kind == 'attack' && team.match("^1.*$")) || (kind == 'defence' && team.match("^2.*$"))) {
+            var round = 1;
+        } else if ((kind == 'attack' && team.match("^.*2$")) || (kind == 'defence' && team.match("^.*1$"))) {
+            var round = 2;
+        }
+
+        var fragTable = document.getElementById("fragRound" + round).getElementsByTagName('tbody')[0];
+        var damageTable = document.getElementById("damageRound" + round).getElementsByTagName('tbody')[0];
+        var classTitle = "Classes:";
+
+        for (var j = 0, row2; row2 = fragTable.rows[j]; j++) {
+
+            if (row2.cells[0].innerText == player) {
+                frags = Number(row2.cells[3].innerText);
+                deaths = Number(row2.cells[4].innerText);
+                tkills = Number(row2.cells[5].innerText);
+                dmg = Number(damageTable.rows[j].cells[3].innerText);
+                caps = Number(flagTable.rows[j].cells[3].innerText);
+                stops = Number(flagTable.rows[j].cells[7].innerText);
+                ftime = flagTable.rows[j].cells[6].innerText
+                takes = Number(flagTable.rows[j].cells[4].innerText);
+                cls = fragTable.rows[j].cells[fragTable.rows[j].cells.length - 1].innerText;
+                break;
+            }
+        }
+
+        if (plusRound2 > 0) {
+            var fragTable = document.getElementById("fragRound2").getElementsByTagName('tbody')[0];
+            var damageTable = document.getElementById("damageRound2").getElementsByTagName('tbody')[0];
+
+            for (var j = 0, row2; row2 = fragTable.rows[j]; j++) {
+                if (row2.cells[0].innerText == player) {
+                    frags = frags + Number(row2.cells[3].innerText);
+                    deaths = deaths + Number(row2.cells[4].innerText);
+                    tkills = tkills + Number(row2.cells[5].innerText);
+                    dmg = dmg + Number(damageTable.rows[j].cells[3].innerText);
+                    cls = cls + '<br>' + fragTable.rows[j].cells[fragTable.rows[j].cells.length - 1].innerText;
+                    classTitle = "Classes Rnd1:<br>Classes Rnd2:"
+                    break;
+                }
+            }
+        }
+
+
+        var div = document.createElement('div');
+        var cStr = row.cells[1].innerText;
+        
+        if (kind == 'both') { 
+            hoverTitle = 'Attack & Defence' 
+        } else if (kind == 'attack' || (round == 1 && team.match("^1.*$")) || (round == 2 && team.match("^.*2$"))) { 
+            hoverTitle = 'Attack'
+        } else if (kind == 'defence' || (round == 1 && team.match("^2.*$")) || (round == 2 && team.match("^.*1$"))) {
+            hoverTitle = 'Defence'
+        }
+
+        if (row2.cells[2].innerText.match("^(1|2)$")) {
+            var hoverClass = row2.cells[2].innerText;
+        } else {
+            var hoverClass = "0";
+        }
+
+        var divTxt = cStr + '<span class="PlayerHoverText' + hoverClass + '"><table class="hideTable"><tr><td><b>' + hoverTitle + '</b></td></tr>';
+        if (kind == 'attack' || kind == 'both' || hoverTitle == 'Attack') {
+            divTxt = divTxt + '<tr><td><b>Caps/Takes:</b></td><td>' + caps + ' / ' + takes + '</td></tr>';
+            divTxt = divTxt + '<tr><td><b>Flag Time:</b></td><td>' + ftime + '</td></tr>';
+        }
+        if (kind == 'defence' || kind == 'both' || hoverTitle == 'Defence') {
+            divTxt = divTxt + '<tr><td><b>Flag stops:</b></td><td>' + stops + '</td></tr>';
+        }
+        divTxt = divTxt +
+            '<tr><td><b>Kill/Death:</b></td><td>' + frags + ' / ' + deaths + '</td></tr>' +
+            '<tr><td><b>Damage:</b></td><td>' + dmg + '</td></tr>' +
+            '<tr><td><b>TKill:</b></td><td>' + tkills + '</td></tr>' +
+            '<tr><td><b>' + classTitle + '</b></td><td>' + cls + '</td></tr>' +
+            '</span>';
+
+        div.innerHTML = divTxt;
+        div.className = 'PlayerHover';
+        row.cells[1].innerHTML = div.outerHTML;
     }
 }
 
@@ -110,4 +213,15 @@ function FO_Post() {
     MakeVersusHover("damageRound2");
     MakeSummaryHover("summaryAttack");
     MakeSummaryHover("summaryDefence");
+    MakePlayerProfiles("summaryAttack", 'attack');
+    MakePlayerProfiles("summaryDefence", 'defence');
+    MakePlayerProfiles("fragRound1", 'round');
+    MakePlayerProfiles("fragRound2", 'round');
+    MakePlayerProfiles("damageRound1", 'round');
+    MakePlayerProfiles("damageRound2", 'round');
+    MakePlayerProfiles("perMinFragDeath", 'both');
+    MakePlayerProfiles("perMinDamage", 'both');
+    MakePlayerProfiles("perMinFlag", 'both');
+    MakePlayerProfiles("classKills", 'both');
+    MakePlayerProfiles("classTime", 'both');
 }

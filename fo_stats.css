@@ -82,17 +82,18 @@ th[role=columnheader]:not(.no-sort) {
 .VersusHover .VersusHoverTextHeader {
   font-size: 90%;
   visibility: hidden;
-  width: 120px;
-  /*background-color: lightblue;*/
+  width: auto;
+  background-color: whitesmoke;
   color: black;
   text-align: left;
   border-radius: 6px;
   padding: 5px 0;
   padding-left: 10px;
+  padding-right: 10px;
   position: absolute;
   z-index: 1;
   bottom: 140%;
-  left: 50%;
+  left: 400%;
   margin-left: -60px;
 }
 
@@ -100,12 +101,13 @@ th[role=columnheader]:not(.no-sort) {
   content: "";
   position: absolute;
   top: 100%;
-  left: 30%;
+  left: 25px;
   margin-left: -5px;
   border-width: 7px;
   border-style: solid;
-  /*border-color: lightblue transparent transparent transparent;*/
+  border-color: whitesmoke transparent transparent transparent;
 }
+
 
 
 .VersusHover .VersusHoverTextGreen::after { border-color: lightgreen transparent transparent transparent }
@@ -115,8 +117,8 @@ th[role=columnheader]:not(.no-sort) {
 .VersusHover .VersusHoverTextGreen { background-color: lightgreen }
 .VersusHover .VersusHoverTextAmber::after { border-color: lightyellow transparent transparent transparent }
 .VersusHover .VersusHoverTextAmber { background-color: lightyellow }
-.VersusHover .VersusHoverTextOrange::after { border-color: orange transparent transparent transparent }
-.VersusHover .VersusHoverTextOrange { background-color: orange }
+.VersusHover .VersusHoverTextOrange::after { border-color: lightsalmon transparent transparent transparent }
+.VersusHover .VersusHoverTextOrange { background-color: lightsalmon }
 
 
 .VersusHover:hover .VersusHoverTextGreen, .VersusHover:hover .VersusHoverTextAmber, .VersusHover:hover .VersusHoverTextOrange, 
