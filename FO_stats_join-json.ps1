@@ -15,10 +15,10 @@ param([switch]$ForceBatch,
 
 if ($ForceBatch) { $doBatch = $true }
 
-$OCEPaths = @('sydney/','melbourne/','sydney-gz/','snoozer/')
-$USPaths  = @('california/','coach/','dallas/','dallas2/','iowa/','phoenix/','virginia/','miami/')
-$EUPaths  = @('dublin/','ireland/','stockholm/')
-$IntPaths = @('bahrain/','guam/','mumbai/','nz/','timbuktu/','tokyo/')
+$OCEPaths = @('sydney/','melbourne/')
+$USPaths  = @('california/','dallas/','virginia/','miami/')
+$EUPaths  = @('ireland/','stockholm/')
+$IntPaths = @('bahrain/','guam/','mumbai/','tokyo/')
 
 $script:ClassToStr = @('World','Sco','Snp','Sold','Demo','Med','HwG','Pyro','Spy','Eng', 'SG')
 $script:ClassAllowedStr = @('Sco','Sold','Demo','Med','HwG','Pyro','Spy','Eng')

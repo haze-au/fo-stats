@@ -34,12 +34,14 @@ function MakeVersusHover(strTable) {
             div.innerHTML = col.innerText + '<span class="VersusHoverText' + hoverClass + '"><b>' + hoverTitle + '</b><br>' +
                 row.cells[1].innerText + ": " + col.innerText + "<br>" +
                 table.rows[pos].cells[1].innerText + ': ' + opValue + '</span>';
-            div.id = strTable + '-' + j + pos;
+            col.id = strTable + '-' + i + '-' + pos;
             div.className = 'VersusHover';
 
             col.innerHTML = div.outerHTML;
         }
     }
+
+    HighlightMaxVersus(strTable);
 
 }
 
@@ -51,9 +53,44 @@ function MakeSummaryHover(strTable) {
 
     for (var i = 1, row; row = table.rows[i]; i++) {
         if (row.cells[0].innerText.match("^Total:.*$")) { break; }
-        GetClassTime(strTable, i, row.cells[classStart]);
+        GetClassTime(strTable, row.cells[0].innerText, row.cells[classStart]);
     }
 }
+
+function MakePerMinFragHover (strTable) {
+    var table = document.getElementById(strTable).getElementsByTagName('tbody')[0];
+   if (strTable.match("^class.*$")) { var start = 4; }
+   else { var start = 6; }
+
+    for (var i = 0, row; row = table.rows[i]; i++) {
+        for (var j = start, col; col = row.cells[j]; j++) {
+            var strKD = col.innerText;
+            if (strKD) {
+                var arrKD = strKD.split('/');
+                if (arrKD.length == 1 || arrKD[1] == 0) {
+                    var kd = "&infin;";
+                } else {
+                    var kd = arrKD[0] / arrKD[1];
+                    kd = Number.parseFloat(kd).toFixed(2);
+                }
+                var rank = arrKD[0] - arrKD[1];
+	        var team = row.cells[2].innerText;
+                if (team.match("^.&.$")) { team = '0'; }
+
+                
+                var div = document.createElement('div');
+                div.innerHTML = strKD +
+                                '<span class="ClassHoverText' + team  + '">' +
+                                '<b>Rank:</b> ' + rank + '<br>' +
+                                '<b>K/D:</b> ' + kd + ' </span>';
+                div.className = "ClassHover";
+                col.innerHTML = div.outerHTML;
+            }  
+        }
+    }
+}
+
+
 
 function GetClassTime(strTable, id, classCol) {
     var cTable = document.getElementById("classTime");
@@ -159,10 +196,10 @@ function MakePlayerProfiles(strTable, kind) {
 
         var div = document.createElement('div');
         var cStr = row.cells[1].innerText;
-        
-        if (kind == 'both') { 
-            hoverTitle = 'Attack & Defence' 
-        } else if (kind == 'attack' || (round == 1 && team.match("^1.*$")) || (round == 2 && team.match("^.*2$"))) { 
+
+        if (kind == 'both') {
+            hoverTitle = 'Attack & Defence'
+        } else if (kind == 'attack' || (round == 1 && team.match("^1.*$")) || (round == 2 && team.match("^.*2$"))) {
             hoverTitle = 'Attack'
         } else if (kind == 'defence' || (round == 1 && team.match("^2.*$")) || (round == 2 && team.match("^.*1$"))) {
             hoverTitle = 'Defence'
@@ -195,6 +232,128 @@ function MakePlayerProfiles(strTable, kind) {
     }
 }
 
+function MakeAwardPlayerProfile(strTable) {
+    var table = document.getElementById(strTable);
+    if (strTable == "awardDefence") {
+        var copyTable = document.getElementById("summaryDefence").getElementsByTagName('tbody')[0];
+    } else {
+        var copyTable = document.getElementById("summaryAttack").getElementsByTagName('tbody')[0];
+    }
+
+    for (var i = 0, row; row = table.getElementsByTagName('tbody')[0].rows[i]; i++) {
+        if (row.cells.length < 3) { continue; }
+        let names = row.cells[1].innerText.split(',');
+        let newInnerTxt = "";
+        for (var j = 0, player; player = names[j]; j++) {
+            for (var k = 0, row2; row2 = copyTable.rows[k].cells[1]; k++) {
+                if (row2 == "") { continue; }
+                if (row2.innerText == player.replace('*', '').trim()) {
+                    if (newInnerTxt != "") { newInnerTxt = newInnerTxt + ", " }
+                    var span = row2.getElementsByTagName('span')[0];
+                    var div = document.createElement('div');
+                    div.className = 'PlayerHover';
+                    div.innerHTML = player + span.outerHTML;
+                    newInnerTxt = newInnerTxt + div.outerHTML;
+                    break;
+                }
+            }
+        }
+
+        if (newInnerTxt != "") { row.cells[1].innerHTML = newInnerTxt; }
+    }
+}
+
+function MakeH4PlayerProfile() {
+    var elements = document.getElementsByTagName('h4');
+    var copyTable = document.getElementById("perMinFragDeath").getElementsByTagName('tbody')[0];
+
+    for (var i = 0, name; name = elements[i].innerText; i++) {
+        let newInnerTxt = "";
+            for (var k = 0, row2; row2 = copyTable.rows[k].cells[1]; k++) {
+                if (row2.innerText == "") { continue; }
+                if (row2.innerText == name) {
+                    if (newInnerTxt != "") { newInnerTxt = newInnerTxt + ", " }
+                    var span = row2.getElementsByTagName('span')[0];
+                    var div = document.createElement('div');
+                    div.className = 'PlayerHover';
+                    div.innerHTML = name + span.outerHTML;
+                    newInnerTxt = newInnerTxt + div.outerHTML;
+                    break;
+                }
+            }
+
+        if (newInnerTxt != "") { elements[i].innerHTML = newInnerTxt; }
+    }
+}
+
+function InsertDailyStatsURL() {
+    var folders = window.location.pathname.split('/');
+    var location = '/' + folders[folders.length - 3] + '/' + folders[folders.length - 2];
+    let fopath = window.location.pathname;
+    fopath = fopath.substring(1).replace('.html', '.json');
+
+    var txt = '<hr><b>Server</b> : ' + '<a href="' + location + '/?C=N;O=D;P=*.html">' + location + '</a> | ';
+    txt = txt + '<b>Daily stats</b> : <a href="http://haze.fortressone.org/_daily/north-america/?C=N;O=D;P=*.html" target="_blank">North-America</a> / '
+    txt = txt + '<a href="http://haze.fortressone.org/_daily/oceania/?C=N;O=D;P=*.html" target="_blank">Oceania</a> / '
+    txt = txt + '<a href="http://haze.fortressone.org/_daily/europe/?C=N;O=D;P=*.html" target="_blank">Europe</a> | '
+    txt = txt + '<b>Raw JSON</b> : <a href="http://fortressone-stats.s3-website-ap-southeast-2.amazonaws.com/' + fopath + '" target="_blank">FO stats archive</a>'
+    txt = txt + '<hr>'
+    var anchor = document.getElementsByTagName('h1')[0].insertAdjacentHTML('afterEnd', txt);
+}
+
+function HighlightMaxVersus(strTable) {
+    var table = document.getElementById(strTable).getElementsByTagName('tbody');
+    var elements = table[0].getElementsByClassName("cellGreen");
+    const values = [];
+    let ids = [];
+    for (i = 0; i < elements.length; i++) {
+        if (strTable == "perMinFragDeath") {
+	    if (!elements[i].innerText.match("^[0-9]+\/[0-9]+")) { continue; }
+            split = elements[i].innerText.split('/');
+            values.push(Number(split[0]-split[1]));
+        } else if (elements[i].innerText.match("^[0-9]+$")) {
+	    values.push(Number(elements[i].innerText));
+        } else { continue; }
+        ids.push(elements[i].id);
+    }
+    max = Math.max(...values);
+
+    if (ids[0]) {
+        for (i = 0; i < values.length; i++) {
+            if (values[i] == max) {
+                document.getElementById(ids[i]).classList.add("max");
+            }
+        }
+    } else {
+        for (i = 0; i < elements.length; i++) {
+            if (values[i] == max) {
+                elements[i].classList.add("max");
+            }
+        }
+    }
+
+}
+
+function HighlightMax(strTable, column) {
+    table = document.getElementById(strTable).getElementsByTagName('tbody')[0];
+    elements = table.querySelectorAll('td:nth-child(' + column + ')');
+    const values = [];
+
+    for (i = 0; i < elements.length; i++) {
+        if (elements[i].innerText.match("^[0-9]+(\.[0-9]+)?$")) {
+            values.push(Number(elements[i].innerText.replace(':', '')));
+        }
+    }
+    max = Math.max(...values);
+    for (i = 0; i < elements.length; i++) {
+        if (elements[i].innerText.replace(':', '') == max) {
+            elements[i].classList.add("max");
+        }
+    }
+}
+
+
+
 function FO_Post() {
     new Tablesort(document.getElementById('summaryAttack'), { descending: true });
     new Tablesort(document.getElementById('summaryDefence'), { descending: true });
@@ -207,6 +366,7 @@ function FO_Post() {
     new Tablesort(document.getElementById('perMinFlag'), { descending: true });
     new Tablesort(document.getElementById('classKills'), { descending: true });
     new Tablesort(document.getElementById('classTime'), { descending: true });
+    InsertDailyStatsURL();
     MakeVersusHover("fragRound1");
     MakeVersusHover("fragRound2");
     MakeVersusHover("damageRound1");
@@ -224,4 +384,33 @@ function FO_Post() {
     MakePlayerProfiles("perMinFlag", 'both');
     MakePlayerProfiles("classKills", 'both');
     MakePlayerProfiles("classTime", 'both');
+    MakeAwardPlayerProfile("awardDefence");
+    MakeAwardPlayerProfile("awardAttack");
+    MakePerMinFragHover("perMinFragDeath");
+    MakePerMinFragHover("classKills");
+    HighlightMax("summaryAttack", '4');
+    HighlightMax("summaryAttack", '5');
+    HighlightMax("summaryAttack", '6');
+    HighlightMax("summaryAttack", '7');
+    HighlightMax("summaryAttack", '9');
+    HighlightMax("summaryAttack", '10');
+    HighlightMax("summaryAttack", '11');
+    HighlightMax("summaryAttack", '13');
+    HighlightMax("summaryDefence", '4');
+    HighlightMax("summaryDefence", '5');
+    HighlightMax("summaryDefence", '6');
+    HighlightMax("summaryDefence", '7');
+    HighlightMax("summaryDefence", '9');
+    HighlightMax("summaryDefence", '10');
+    HighlightMax("summaryDefence", '11');
+    HighlightMax("summaryDefence", '13');
+    HighlightMaxVersus("perMinDamage");
+    HighlightMaxVersus("perMinFragDeath");
+    HighlightMax("perMinFlag", '4');
+    HighlightMax("perMinFlag", '5');
+    HighlightMax("perMinFlag", '6');
+    HighlightMax("perMinFlag", '7');
+    HighlightMax("perMinFlag", '8');
+    MakeH4PlayerProfile();
+
 }

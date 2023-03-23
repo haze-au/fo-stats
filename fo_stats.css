@@ -2,11 +2,24 @@
 
 html,body,table { font-size: 105%; }
 
+h1 { margin-bottom: 1; }
+
+a:link { color: lightyellow;}
+a:visited { color: lightyellow; }
+a:hover { color: orange; }
+
 body { 
 /*  display: table-cell;vertical-align: middle;*/
   font-family: "Calibri";   color:white; background-color:rgb(56, 75, 94);
 }
 
+.hideTable, .hideTable tr, .hideTable td {
+color: black;
+background-color: transparent;
+border: 0;
+padding: 0;
+padding-left: 5px;
+}
 
 h1 { color:aliceblue; }
 h2 { color:#fff3cb; margin-top:20px; margin-bottom: 10px   }
@@ -17,12 +30,18 @@ th { background-color: rgb(19, 37, 56);}
 tr { background-color: rgb(34, 58, 85);}
 /*tr:nth-child(odd){ background-color: rgb(51, 79, 110); }*/
 
+
 table, th, td {
   white-space: nowrap;
   padding: 3px;
   border: 1px solid rgb(122, 122, 122);
   border-collapse: collapse;
   min-width: 20px;
+}
+
+.max {
+  font-weight: 800;
+  color: #ffd700;
 }
 
 .rowTeam1    { background-color: #2357b9 }
@@ -48,30 +67,34 @@ th[role=columnheader]:not(.no-sort) {
 .VersusHover {
   position: relative;
   display: inline-block;
+  cursor: pointer;
 }
 
 .VersusHover .VersusHoverTextGreen, .VersusHover .VersusHoverTextAmber, .VersusHover .VersusHoverTextOrange {
   font-size: 90%;
+  font-weight: normal;
   visibility: hidden;
-  width: 190px;
+  width: auto;
   /*background-color: lightblue;*/
   color: black;
   text-align: left;
   border-radius: 6px;
   padding: 5px 0;
   padding-left: 10px;
+  padding-right: 10px;
   position: absolute;
   z-index: 1;
-  bottom: 140%;
-  left: 50%;
+  bottom: 130%;
+  left: 44px;
   margin-left: -60px;
 }
+
 
 .VersusHover .VersusHoverTextGreen::after, .VersusHoverTextAmber::After, .VersusHoverTextOrange::After {
   content: "";
   position: absolute;
   top: 100%;
-  left: 30%;
+  left: 20px;
   margin-left: -5px;
   border-width: 7px;
   border-style: solid;
@@ -83,25 +106,25 @@ th[role=columnheader]:not(.no-sort) {
   font-size: 90%;
   visibility: hidden;
   width: auto;
-  background-color: whitesmoke;
   color: black;
   text-align: left;
   border-radius: 6px;
   padding: 5px 0;
   padding-left: 10px;
-  padding-right: 10px;
+  padding-right: 15px;
   position: absolute;
   z-index: 1;
-  bottom: 140%;
-  left: 400%;
+  bottom: 130%;
+  left: 44px;
   margin-left: -60px;
+  background-color: whitesmoke;
 }
 
 .VersusHover .VersusHoverTextHeader::after {
   content: "";
   position: absolute;
   top: 100%;
-  left: 25px;
+  left: 19px;
   margin-left: -5px;
   border-width: 7px;
   border-style: solid;
@@ -117,8 +140,8 @@ th[role=columnheader]:not(.no-sort) {
 .VersusHover .VersusHoverTextGreen { background-color: lightgreen }
 .VersusHover .VersusHoverTextAmber::after { border-color: lightyellow transparent transparent transparent }
 .VersusHover .VersusHoverTextAmber { background-color: lightyellow }
-.VersusHover .VersusHoverTextOrange::after { border-color: lightsalmon transparent transparent transparent }
-.VersusHover .VersusHoverTextOrange { background-color: lightsalmon }
+.VersusHover .VersusHoverTextOrange::after { border-color: #FFC2AA transparent transparent transparent }
+.VersusHover .VersusHoverTextOrange { background-color: #FFC2AA }
 
 
 .VersusHover:hover .VersusHoverTextGreen, .VersusHover:hover .VersusHoverTextAmber, .VersusHover:hover .VersusHoverTextOrange, 
@@ -127,46 +150,79 @@ th[role=columnheader]:not(.no-sort) {
 }
 
 
-.ClassHover {
+.ClassHover, .PlayerHover {
   position: relative;
   display: inline-block;
+  cursor: pointer;
 }
 
-.ClassHover .ClassHoverText1, .ClassHover .ClassHoverText2 {
+.ClassHover .ClassHoverText1, .ClassHover .ClassHoverText2, .ClassHover .ClassHoverText0 {
+  font-weight: normal;
   font-size: 90%;
   visibility: hidden;
-  width: 100px;
+  width: auto;
   color: black;
   text-align: left;
   border-radius: 6px;
   padding: 5px 0;
   padding-left: 10px;
+  padding-right: 15px;
   position: absolute;
   z-index: 1;
-  bottom: 140%;
+  bottom: 130%;
   left: 55;
   margin-left: -60px;
 }
 
-.ClassHover .ClassHoverText1::after, .ClassHoverText2::After {
+.ClassHover .ClassHoverText1::after, .ClassHoverText2::After, .ClassHoverText0::After {
   content: "";
   position: absolute;
   top: 100%;
-  left: 20%;
+  left: 15%;
   margin-left: -5px;
   border-width: 7px;
   border-style: solid;
 }
 
+.ClassHover .ClassHoverText1::after, .PlayerHover .PlayerHoverText1::after { border-color: lightblue transparent transparent transparent }
+.ClassHover .ClassHoverText1, .PlayerHover .PlayerHoverText1 { background-color: lightblue }
+.ClassHover .ClassHoverText2::after, .PlayerHover .PlayerHoverText2::after { border-color: #ffb5ad transparent transparent transparent }
+.ClassHover .ClassHoverText2, .PlayerHover .PlayerHoverText2 { background-color: #ffb5ad  }
 .ClassHover .ClassHoverText1::after { border-color: lightblue transparent transparent transparent }
 .ClassHover .ClassHoverText1 { background-color: lightblue }
-.ClassHover .ClassHoverText2::after { border-color: lightcoral transparent transparent transparent }
-.ClassHover .ClassHoverText2 { background-color: lightcoral }
+.ClassHover .ClassHoverText0::after, .PlayerHover .PlayerHoverText0::after { border-color: violet transparent transparent transparent }
+.ClassHover .ClassHoverText0, .PlayerHover .PlayerHoverText0 { background-color: violet }
 
-.ClassHover:hover .ClassHoverText1, .ClassHover:hover .ClassHoverText2 {
+
+.ClassHover:hover .ClassHoverText1, .ClassHover:hover .ClassHoverText2, .ClassHover:hover .ClassHoverText0,
+.PlayerHover:hover .PlayerHoverText1, .PlayerHover:hover .PlayerHoverText2, .PlayerHover:hover .PlayerHoverText0 {
   visibility: visible;
 }
 
 
+.PlayerHover .PlayerHoverText1, .PlayerHover .PlayerHoverText2, .PlayerHover .PlayerHoverText0 {
+  font-size: 80%;
+  visibility: hidden;
+  width: auto;
+  color: black;
+  text-align: left;
+  border-radius: 6px;
+  padding: 5px 0;
+  padding-left: 10px;
+  padding-right: 15px;
+  position: absolute;
+  z-index: 1;
+  bottom: 130%;
+  left: 55;
+  margin-left: -60px;
+}
 
-
+.PlayerHover .PlayerHoverText1::after, .PlayerHoverText2::After, .PlayerHoverText0::After {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 15px;
+  margin-left: -5px;
+  border-width: 7px;
+  border-style: solid;
+}

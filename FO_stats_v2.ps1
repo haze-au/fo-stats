@@ -9,7 +9,7 @@
 ###
 
 param (
-  [Parameter(Mandatory=$true)] 
+  [Parameter(Mandatory = $true)] 
   [string[]]$StatFile,
   [int]   $RoundTime,
   [switch]$TextSave,
@@ -20,20 +20,20 @@ param (
 
 
 # Process input file, make sure it is valid.
-$inputFileStr = $StatFile -replace '(?<!`)[\[\]]','`$&'
+$inputFileStr = $StatFile -replace '(?<!`)[\[\]]', '`$&'
 
 if ($inputFileStr -contains '*') { $inputFile = Get-ChildItem $inputFileStr }
-elseif (Test-Path $inputFileStr) { $inputFile = @(Get-Item $inputFileStr)  }
+elseif (Test-Path $inputFileStr) { $inputFile = @(Get-Item $inputFileStr) }
 
 # If a folder search for all JSON files
 if ($inputFile.Count -eq 1 -and (Test-Path $inputFile -PathType Container)) {
-    $inputFile = Get-ChildItem $inputFile -Filter '*.json'
+  $inputFile = Get-ChildItem $inputFile -Filter '*.json'
 }
 
-if ($inputFile.Length -lt 1)          { Write-Host "ERROR: No JSON files found at '$inputFileStr'"; return }
+if ($inputFile.Length -lt 1) { Write-Host "ERROR: No JSON files found at '$inputFileStr'"; return }
 if ($inputFile -notmatch '.*\.json$') { Write-Host 'ERROR: Following files are not JSON files...'; ($inputFile -notmatch '.*\.json$') | FT Name | Out-String ; return }
 
-$regExReplaceFix = '[[+*?()\\.]','\$&'
+$regExReplaceFix = '[[+*?()\\.]', '\$&'
 
 <#$ccGrey   = '#F1F1F1'
 $ccAmber  = '#FFD900'
@@ -43,22 +43,22 @@ $ccBlue   = '#87ECFF'
 $ccRed    = '#FF8080'
 $ccPink   = '#FA4CFF'#>
 
-$ccGrey   = 'cellGrey'
-$ccAmber  = 'cellAmber'
+$ccGrey = 'cellGrey'
+$ccAmber = 'cellAmber'
 $ccOrange = 'cellOrange'
-$ccGreen  = 'cellGreen'
-$ccBlue   = 'rowTeam1'
-$ccRed    = 'rowTeam2'
-$ccPink   = 'rowTeamBoth'
+$ccGreen = 'cellGreen'
+$ccBlue = 'rowTeam1'
+$ccRed = 'rowTeam2'
+$ccPink = 'rowTeamBoth'
 
 
 
-                       # 0        1     2     3      4      5    6      7     8     9     10
-$script:ClassToStr = @('World','Sco','Snp','Sold','Demo','Med','HwG','Pyro','Spy','Eng', 'SG')
-$script:ClassAllowedStr = @('Sco','Sold','Demo','Med','HwG','Pyro','Spy','Eng', 'SG')
-$script:ClassAllowed       = @(1,3,4,5,6,7,8,9)
-$script:ClassAllowedwithSG = @(1,3,4,5,6,7,8,9,10)
-$script:TeamToColor  = @('Civ','Blue','Red','Yellow','Green')
+# 0        1     2     3      4      5    6      7     8     9     10
+$script:ClassToStr = @('World', 'Sco', 'Snp', 'Sold', 'Demo', 'Med', 'HwG', 'Pyro', 'Spy', 'Eng', 'SG')
+$script:ClassAllowedStr = @('Sco', 'Sold', 'Demo', 'Med', 'HwG', 'Pyro', 'Spy', 'Eng', 'SG')
+$script:ClassAllowed = @(1, 3, 4, 5, 6, 7, 8, 9)
+$script:ClassAllowedwithSG = @(1, 3, 4, 5, 6, 7, 8, 9, 10)
+$script:TeamToColor = @('Civ', 'Blue', 'Red', 'Yellow', 'Green')
 
 #array of team keys, playername
 <# wc Old Get Player CLases
@@ -68,13 +68,13 @@ function getPlayerClasses {
 }#>
 
 function getPlayerClasses {
-  param ($Round,$Player,$TimePlayed)
+  param ($Round, $Player, $TimePlayed)
   
   $pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $Player -Round $Round
   $filter = ($arrClassTimeTable  |  Where-Object { $_.Name -eq $Player -and ($Round -lt 1 -or $_.Round -eq $Round) })                
-  $classes = ($filter | %{ $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 15 } | %{ $_.Name }) -join ','
+  $classes = ($filter | % { $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 15 } | % { $_.Name }) -join ','
   
-  $hover = ($classes -split ',' | %{ "<b>$_</b>: $(Format-MinSec $filter.$_)" }) -join '<br>'
+  $hover = ($classes -split ',' | % { "<b>$_</b>: $(Format-MinSec $filter.$_)" }) -join '<br>'
 
   #return "$classes<span class=`"ClassHoverText$($arrPlayerTable[$pos].Team)`">$hover</span> "
   return $classes
@@ -82,8 +82,8 @@ function getPlayerClasses {
 
 function nullValueColorCode {
   switch ($args[0]) {
-    ''      { $ccGrey  }
-    '0'       { $ccGrey  }
+    '' { $ccGrey }
+    '0' { $ccGrey }
     default { $args[1] }
   }
 }
@@ -91,22 +91,22 @@ function nullValueColorCode {
 function nullValueAsBlank {
   if ($args[0] -match '^0+%?$') {
     return ''
-  } else {
+  }
+  else {
     $args[0]
   }
 }
 
 function teamColorCode {
-    switch ($args[0]) {
-      '1'      { 'rowTeam1'  }
-      '2'      { 'rowTeam2'  }
-       default { 'rowTeamBoth' } 
-    }
+  switch ($args[0]) {
+    '1' { 'rowTeam1' }
+    '2' { 'rowTeam2' }
+    default { 'rowTeamBoth' } 
+  }
 }
 
 function teamColorCodeByName {
-  foreach ($name in ($args[0] -split ','))
-  {
+  foreach ($name in ($args[0] -split ',')) {
     $tm = $arrteam.$name
     if ($lasttm -and $lasttm -ne $tm) { return 'rowTeamBoth' }
     $lasttm = $tm
@@ -132,20 +132,23 @@ function actionColorCode ($arrTeam, $p1, $p2) {
   #check if action is no Friendly fire
   if ($p1 -eq $p2) {
     'cellAmber'
-  } elseif ($arrTeam.$p1 -eq $arrTeam.$p2) {
+  }
+  elseif ($arrTeam.$p1 -eq $arrTeam.$p2) {
     #Friendly fire
     'cellOrange' #orange
-  } else {
+  }
+  else {
     'cellGreen' #green
   }
 }
 
 function timeRnd-RoundDown {
- # p1 = $time , $p2 = roundendtime
- if ($args[0] / 60 -lt 0.4) {
-   if ($args[0] -lt $args[1]) { '0' }
-   else { $args[1] }
- }else { $time }
+  # p1 = $time , $p2 = roundendtime
+  if ($args[0] / 60 -lt 0.4) {
+    if ($args[0] -lt $args[1]) { '0' }
+    else { $args[1] }
+  }
+  else { $time }
 }
 
 function Format-MinSec {
@@ -157,16 +160,16 @@ function Format-MinSec {
 }
 
 function Table-ClassInfo {
-  param([ref]$Table,$Name,$TimePlayed)
+  param([ref]$Table, $Name, $TimePlayed)
   $out = ''
   $classlist = @{}
   foreach ($p in [array]$Table.Value) {
     if ($p.Name -eq $Name) {
       foreach ($class in $ClassAllowed) {
         $strClass = $ClassToStr[$class]
-        $time     = $p.($strClass)
+        $time = $p.($strClass)
 
-        if ($time -notin 0,'',$null) {
+        if ($time -notin 0, '', $null) {
           $classlist.$strClass = ($time / $TimePlayed)
         }
       }
@@ -175,7 +178,7 @@ function Table-ClassInfo {
         $out += "$(($c.Name).PadRight(4)) $(('{0:P0}' -f $c.Value).PadLeft(3))|"
       }
       
-      return $out -replace '\|$',''
+      return $out -replace '\|$', ''
     }
   }
 }
@@ -184,90 +187,90 @@ function Table-ClassInfo {
 function weapSN {
   
   switch ($args[0]) {
-    ''              { 'NULL'  }
+    '' { 'NULL' }
     #common
-    'info_tfgoal'   { 'laser' }
-    'supershotgun'  { 'ssg'   }
-    'shotgun'       { 'sg'    }
+    'info_tfgoal' { 'laser' }
+    'supershotgun' { 'ssg' }
+    'shotgun' { 'sg' }
     'normalgrenade' { 'hgren' }
-    'grentimer'     { 'hgren' }
-    'axe'           { 'axe'   }
-    'spike'         { 'ng'    }
-    'nailgun'       { 'ng'    }
+    'grentimer' { 'hgren' }
+    'axe' { 'axe' }
+    'spike' { 'ng' }
+    'nailgun' { 'ng' }
     
     #7/2/23 - New inflictor/weaps??
-    'grenade grenadegrenade'   { 'hgren' }
-    'red grenadegrenade'       { 'gl'    }
-    'mirv grenadegrenade'      { 'mirv'  }
-    'mirvlet grenadegrenade'   { 'mirv'  }
-    'napalm grenadegrenade'    { 'napalm'}
-    'shock grenadegrenade'     { 'shock' }
-    'emp grenadegrenade'       { 'emp'   }
-    'flash grenadegrenade'     { 'flash' }
+    'grenade grenadegrenade' { 'hgren' }
+    'red grenadegrenade' { 'gl' }
+    'mirv grenadegrenade' { 'mirv' }
+    'mirvlet grenadegrenade' { 'mirv' }
+    'napalm grenadegrenade' { 'napalm' }
+    'shock grenadegrenade' { 'shock' }
+    'emp grenadegrenade' { 'emp' }
+    'flash grenadegrenade' { 'flash' }
 
     #23/2/23 - Newby changes v2
-    'incendiarylauncher'       { 'incen' }
-    'napalmgrenade'            { 'napalm' }
-    'glgrenade'                { 'gl' }
+    'incendiarylauncher' { 'incen' }
+    'napalmgrenade' { 'napalm' }
+    'glgrenade' { 'gl' }
 
     #scout
-    'flashgrenade'  { 'flash' }
+    'flashgrenade' { 'flash' }
     
     #sold
-    'proj_rocket'    { 'rl'    }
-    'rocketlauncher' { 'rl'    }
-    'shockgrenade'   { 'shock' }
+    'proj_rocket' { 'rl' }
+    'rocketlauncher' { 'rl' }
+    'shockgrenade' { 'shock' }
 
     #demo 
-    'detpack'           { 'detp' }
-    'pipebomb'          { 'pipe' }
-    'pipebomblauncher'  { 'pipe' }
-    'grenade'           { 'gl'   }
-    'grenadelauncher'   { 'gl'   }
+    'detpack' { 'detp' }
+    'pipebomb' { 'pipe' }
+    'pipebomblauncher' { 'pipe' }
+    'grenade' { 'gl' }
+    'grenadelauncher' { 'gl' }
     'mirvsinglegrenade' { 'mirv' }
-    'mirvgrenade'       { 'mirv' }
+    'mirvgrenade' { 'mirv' }
 
     #medic
-    'medikit'       { 'bio'  }
-    'superspike'    { 'sng'  }
-    'supernailgun'  { 'sng'  }
+    'medikit' { 'bio' }
+    'superspike' { 'sng' }
+    'supernailgun' { 'sng' }
 
     #hwg
-    'proj_bullet'   { 'cann' }
+    'proj_bullet' { 'cann' }
     'assaultcannon' { 'cann' }
 
     #pyro
-    'pyro_rocket'   { 'incen' }
-    'incendiary'    { 'incen' }
-    'flamethrower'  { 'flame'  }
-    'fire'          { 'fire'  }
-    'flamerflame'   { 'flame' }
+    'pyro_rocket' { 'incen' }
+    'incendiary' { 'incen' }
+    'flamethrower' { 'flame' }
+    'fire' { 'fire' }
+    'flamerflame' { 'flame' }
     
     #spy - knife
-    'proj_tranq'    { 'tranq' }
-    'tranquilizer'  { 'tranq' }
+    'proj_tranq' { 'tranq' }
+    'tranquilizer' { 'tranq' }
 
     #eng
-    'spanner'       { 'spann'}
-    'empgrenade'    { 'emp'  }
-    'ammobox'       { 'emp'  }
-    'sentrygun'     { 'sent' }
-    'railslug'      { 'rail' }
-    'railgun'       { 'rail' }
+    'spanner' { 'spann' }
+    'empgrenade' { 'emp' }
+    'ammobox' { 'emp' }
+    'sentrygun' { 'sent' }
+    'railslug' { 'rail' }
+    'railgun' { 'rail' }
     'building_dispenser' { 'disp' }
     'building_sentrygun' { 'sent' }
-    'build_timer'        { 'sent' }
+    'build_timer' { 'sent' }
 
     #remove underscore to avoid token key issues.
-    default         { $args[0] -replace '[_ ]','-' }
+    default { $args[0] -replace '[_ ]', '-' }
   }
 }
 
 #Summary table funcitons
 function attOrDef {
   if ($args[0] -lt 1 -or $args[0] -gt 2) { return '' }
-  elseif ($args[0] -eq $args[1]) { return 'Att'}
-  else { return 'Def'} 
+  elseif ($args[0] -eq $args[1]) { return 'Att' }
+  else { return 'Def' } 
 }
 function arrFindPlayer {
   param( 
@@ -302,27 +305,27 @@ function arrSummaryTable-UpdatePlayer {
 
     #if player round update, else setup object
     if ($playerpos -lt 0) {
-        $obj = [PSCustomObject]@{
-            Name   = $player
-            KPM    = $null
-            KD     = $null
-            Kills  = 0
-            Death  = 0
-            TKill  = 0
-            Dmg    = 0
-            DPM    = $null
-            FlagCap  = 0
-            FlagTake = 0
-            FlagTime = 0
-            FlagStop = 0
-            Win  = 0
-            Draw = 0
-            Loss = 0
-            TimePlayed = 0
-            Classes = ''
-        }
-        $playerpos = $table.Value.Length
-        $table.Value += $obj
+      $obj = [PSCustomObject]@{
+        Name       = $player
+        KPM        = $null
+        KD         = $null
+        Kills      = 0
+        Death      = 0
+        TKill      = 0
+        Dmg        = 0
+        DPM        = $null
+        FlagCap    = 0
+        FlagTake   = 0
+        FlagTime   = 0
+        FlagStop   = 0
+        Win        = 0
+        Draw       = 0
+        Loss       = 0
+        TimePlayed = 0
+        Classes    = ''
+      }
+      $playerpos = $table.Value.Length
+      $table.Value += $obj
     }
 
     ($table.Value)[$playerpos].Kills += $kills
@@ -340,7 +343,7 @@ function arrSummaryTable-SetPlayerProperty {
   )
 
   process {
-    if (!$Value) { $Value = 1}
+    if (!$Value) { $Value = 1 }
     $playerpos = (arrFindPlayer -Table $table -Player $player)
     if ($playerpos -gt -1 -and $value -gt 0) { ($table.Value)[$playerpos].$property += $value }
   }
@@ -357,28 +360,28 @@ function arrClassTable-UpdatePlayer {
 
   process {
     if ($Class -in $ClassAllowed) { $Class = $ClassToStr[$Class] }
-    if ($Class -notin $ClassAllowedStr) { return}
+    if ($Class -notin $ClassAllowedStr) { return }
     
-    if ($round)  { $playerpos = (arrFindPlayer -Table $Table -Player $Player -Round $round) }
-    else         { $playerpos = (arrFindPlayer -Table $Table -Player $Player) }
+    if ($round) { $playerpos = (arrFindPlayer -Table $Table -Player $Player -Round $round) }
+    else { $playerpos = (arrFindPlayer -Table $Table -Player $Player) }
 
     #Setup object if plyaer not found
     if ($playerpos -lt 0) {
       $obj = [PSCustomObject]@{
-        Name = $Player
-        Round= 0
-        Sco  = 0
-        Sold = 0
-        Demo = 0
-        Med  = 0
-        HwG  = 0
-        Pyro = 0
-        Spy  = 0
-        Eng  = 0
-        SG   = 0
+        Name  = $Player
+        Round = 0
+        Sco   = 0
+        Sold  = 0
+        Demo  = 0
+        Med   = 0
+        HwG   = 0
+        Pyro  = 0
+        Spy   = 0
+        Eng   = 0
+        SG    = 0
       }
 
-      if ($round)  { $obj.Round = $round }
+      if ($round) { $obj.Round = $round }
       $playerpos = $table.Value.Length
       $table.Value += $obj
     } 
@@ -400,30 +403,31 @@ function arrFindPlayer-WeaponTable {
 }
 
 function arrWeaponTable-UpdatePlayer {
-  param( [Parameter(Mandatory=$true)][string]$Name,
-         [Parameter(Mandatory=$true)][string]$PlayerClass,
-         [Parameter(Mandatory=$true)]        $Round,
-         [Parameter(Mandatory=$true)][string]$Weapon,
-         [Parameter(Mandatory=$true)]        $Class, 
-         [Parameter(Mandatory=$true)][string]$Property, 
-         $Value, 
-         [switch]$Increment
-       )
+  param( [Parameter(Mandatory = $true)][string]$Name,
+    [Parameter(Mandatory = $true)][string]$PlayerClass,
+    [Parameter(Mandatory = $true)]        $Round,
+    [Parameter(Mandatory = $true)][string]$Weapon,
+    [Parameter(Mandatory = $true)]        $Class, 
+    [Parameter(Mandatory = $true)][string]$Property, 
+    $Value, 
+    [switch]$Increment
+  )
 
   $pos = arrFindPlayer-WeaponTable -Name $Name -Round $Round -Weapon $Weapon -Class $Class -PlayerClass $PlayerClass
   if ($pos -lt 0) {
-    $obj = [pscustomobject]@{ Name=$Name
-                              PlayerClass=$PlayerClass
-                              Team=''
-                              Round=[int]$Round
-                              Weapon=$Weapon
-                              Class=[int]$Class
-                              Kills=0
-                              Death=0
-                              Dmg=0
-                              DmgTaken=0
-                              AttackCount=0
-                              DmgCount=0 }
+    $obj = [pscustomobject]@{ Name = $Name
+      PlayerClass                  = $PlayerClass
+      Team                         = ''
+      Round                        = [int]$Round
+      Weapon                       = $Weapon
+      Class                        = [int]$Class
+      Kills                        = 0
+      Death                        = 0
+      Dmg                          = 0
+      DmgTaken                     = 0
+      AttackCount                  = 0
+      DmgCount                     = 0 
+    }
 
     $script:arrWeaponTable += $obj
     $pos = $script:arrWeaponTable.Length - 1 
@@ -431,35 +435,35 @@ function arrWeaponTable-UpdatePlayer {
   
   if ($Increment -and !$Value) { $Value = [int]1 }
   if ($Increment) { $script:arrWeaponTable[$pos].$Property += [int]$Value }
-  else            { $script:arrWeaponTable[$pos].$Property  = $Value }
+  else { $script:arrWeaponTable[$pos].$Property = $Value }
 }
 
 
 function arrPlayerTable-UpdatePlayer {
-  param( [Parameter(Mandatory=$true)][string]$Name,
-         [Parameter(Mandatory=$true)]        $Round,
-         [Parameter(Mandatory=$true)][string]$Property, 
-         $Value, 
-         [switch]$Increment
-       )
+  param( [Parameter(Mandatory = $true)][string]$Name,
+    [Parameter(Mandatory = $true)]        $Round,
+    [Parameter(Mandatory = $true)][string]$Property, 
+    $Value, 
+    [switch]$Increment
+  )
 
   $pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $Name -Round $Round
   if ($pos -lt 0) {
-    $obj = $obj = [pscustomobject]@{ Name=$Name
-      Team=''
-      Round=[int]$Round
-      Kills=0
-      Death=0
-      TKill=0
-      Dmg=0
-      DmgTaken=0
-      DmgTeam=0
-      FlagCap=0
-      FlagDrop=0
-      FlagTake=0
-      FlagThrow=0
-      FlagTime=0
-      FlagStop=0
+    $obj = $obj = [pscustomobject]@{ Name = $Name
+      Team                                = ''
+      Round                               = [int]$Round
+      Kills                               = 0
+      Death                               = 0
+      TKill                               = 0
+      Dmg                                 = 0
+      DmgTaken                            = 0
+      DmgTeam                             = 0
+      FlagCap                             = 0
+      FlagDrop                            = 0
+      FlagTake                            = 0
+      FlagThrow                           = 0
+      FlagTime                            = 0
+      FlagStop                            = 0
     }
 
     $script:arrPlayerTable += $obj
@@ -468,17 +472,17 @@ function arrPlayerTable-UpdatePlayer {
   
   if ($Increment -and !$Value) { $Value = [int]1 }
   if ($Increment) { $script:arrPlayerTable[$pos].$Property += $Value }
-  else            { $script:arrPlayerTable[$pos].$Property  = $Value }
+  else { $script:arrPlayerTable[$pos].$Property = $Value }
 }
 #end Summary table functions
 
 function GenerateVersusHtmlInnerTable {
-  param([ref]$VersusTable,$Player,$Round)
+  param([ref]$VersusTable, $Player, $Round)
 
   switch ($Round) {
-    '1'     { $refTeam = [ref]$arrTeamRnd1 }
-    '2'     { $refTeam = [ref]$arrTeamRnd2 }
-    default { $refTeam = [ref]$arrTeam    }
+    '1' { $refTeam = [ref]$arrTeamRnd1 }
+    '2' { $refTeam = [ref]$arrTeamRnd2 }
+    default { $refTeam = [ref]$arrTeam }
   }
 
   $tbl = ''
@@ -493,10 +497,12 @@ function GenerateVersusHtmlInnerTable {
     if ($o -eq $player) {
       #$hoverText = "<b>Self-affliction</b><br>$player`: $kills"
       $colour = 'Amber'
-    } elseif ($refTeam.Value.$Player -eq $refTeam.Value.$o) {
+    }
+    elseif ($refTeam.Value.$Player -eq $refTeam.Value.$o) {
       #$hoverText = "<b>Friendly fire</b><br> $player`: $kills <br>$o`: $killsOpponent"
       $colour = 'Orange'
-    } else {
+    }
+    else {
       #$hoverText = "<b>Head to Head</b><br>$player`: $kills <br>$o`: $killsOpponent"
       $colour = 'Green'
     }
@@ -507,72 +513,95 @@ function GenerateVersusHtmlInnerTable {
     #</td>"
 
     $subtotal[$count2] = $kills + $subtotal[$count2]
-    $count2 +=1
+    $count2 += 1
   }
 
   return $tbl
 }
 
 function GenerateSummaryHtmlTable {
-  param([switch]$Attack,[switch]$Defence)
+  param([switch]$Attack, [switch]$Defence)
   
   $count = 1
   $tableHeader = "<table id=`"summary$(if ($Defence) { 'Defence' } else { 'Attack' })`" style=""width:600px;display:inline-table""><thead><tr><th>#</th><th>Player</th><th>Team</th><th title='Kills per minute'>KPM</th><th title='Kill-death ratio'>K/D</th><th title='Kills'>Kills</th><th title='Deaths'>Dth</th><th title='Team kills'>TK</h><th title='Damage'>Dmg</th><th title='Damage per miunte'>DPM</h>"
   if ($Attack) { $tableHeader += "<th title='Flag Captures'>Caps</th><th title='Flag pickups'>Take</th><th title='Time flag held'>Carry</th>" }
-  else         { $tableHeader += "<th title='Killed flag carrier'>FlagStop</th>" }
+  else { $tableHeader += "<th title='Killed flag carrier'>FlagStop</th>" }
   $tableHeader += "<th>Time</th>"
   $table = ''
   $subtotal = @(1..8 | foreach { 0 })
 
   foreach ($p in $playerList) {
-    if ($Defence) { $rnd = if ($arrTeam.$p -match '^2') { '1' } else { '2' }}
-    else          { $rnd = if ($arrTeam.$p -match '^1') { '1' } else { '2' }} 
-
-    $player = ($arrPlayerTable | Where-Object { $_.Name -EQ $p -and (($_.Team -match '^1' -and $_.Round -eq $rnd) -or ($_.Team -match '^2' -and $_.Round -eq $rnd))})
-
-
-    $team = $arrTeam.$p
-    $kills = $player.Kills
-    $timePlayed  = ((Get-Variable "arrTimeClassRnd$rnd").Value.Keys | Where-Object { $_ -like "$($p -replace '[\[\]]','`$&')_*" }  |  foreach { (Get-Variable "arrTimeClassRnd$rnd").Value.$_ } | Measure-Object -Sum).Sum
-    $kpm   = $kills / ($timePlayed/60)
-    $death = $player.Death
-    $kd    = if ($death) { $kills / $death } else { '-' }
-    $tkill = $player.TKill
-    $dmg   = $player.Dmg
-    $dpm   = $dmg / ($timePlayed/60)
-
-    $flagCap     = $player.FlagCap
-    $flagTake    = $player.FlagTake
-    $flagTime    = $player.FlagTime
-    $flagStop    = $player.FlagStop
-    $table +=  "<tr class=`"$(teamColorCode $team)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td>$('{0:0.00}' -f $kpm)</td><td>$('{0:0.00}' -f $kd)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td><td>$($dmg)</td><td>$('{0:0}' -f $dpm)</td>"
-    
-    if ($Attack) { $table += "<td>$($flagCap)</td><td>$($flagTake)</td><td>$(Format-MinSec $flagTime)</td>" }
-    else         { $table += "<td>$($flagStop)</td>" }
-      
-    $table += "<td>$(Format-MinSec ([int]$timePlayed))</td>"
-    #$table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $rnd -Player $p)</div></td>"
-    $table += "<td id=`"ClassColumn`">$(getPlayerClasses -Round $rnd -Player $p)</td>"
-    $table += "</tr>`n"
-    
-    $subtotal[0] += $kills; $subtotal[1] += $death; $subtotal[2] += $tkill;$subtotal[3] += $dmg;$subtotal[4] = ''
-    if ($Attack) {  
-      $subtotal[5] += $flagCap; $subtotal[6] += $flagTake; $subtotal[7] += $FlagTime
-    } else {
-      $subtotal[5] += $flagStop; $subtotal[6] = $null; $subtotal[7] = $null
+    if ($Defence) { 
+      if ($arrTeam.$p -eq '1&2') { 
+        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>None</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
+        $count += 1
+        continue 
+      } elseif ($arrTeam.$p -eq '2&1') {
+        $rnds = @(1, 2)
+      } else {
+        $rnds = if ($arrTeam.$p -match '^.*2$') { '1' } else { '2' }
+      }
     }
-    $count += 1 
+    else { 
+      if ($arrTeam.$p -eq '2&1') { 
+        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td><None/td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
+        $count += 1
+        continue 
+      } elseif ($arrTeam.$p -eq '1&2') {
+        $rnds = @(1, 2)
+      } else {
+        $rnds = if ($arrTeam.$p -match '^1.*$') { '1' } else { '2' }
+      }
+    } 
+  
+    foreach ($rnd in $rnds) {      
+      $player = ($arrPlayerTable | Where-Object { $_.Name -EQ $p -and (($_.Team -match '^1' -and $_.Round -eq $rnd) -or ($_.Team -match '^2' -and $_.Round -eq $rnd)) })
+      if ($lastPlayer -eq $player.Name) { $count = $count - 1 }
+
+      $team = (Get-Variable "arrTeamRnd$rnd").Value.$p
+      $kills = $player.Kills
+      $timePlayed = ((Get-Variable "arrTimeClassRnd$rnd").Value.Keys | Where-Object { $_ -like "$($p -replace '[\[\]]','`$&')_*" }  |  foreach { (Get-Variable "arrTimeClassRnd$rnd").Value.$_ } | Measure-Object -Sum).Sum
+      $kpm = $kills / ($timePlayed / 60)
+      $death = $player.Death
+      $kd = if ($death) { $kills / $death } else { '-' }
+      $tkill = $player.TKill
+      $dmg = $player.Dmg
+      $dpm = $dmg / ($timePlayed / 60)
+
+      $flagCap = $player.FlagCap
+      $flagTake = $player.FlagTake
+      $flagTime = $player.FlagTime
+      $flagStop = $player.FlagStop
+
+      $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td>$('{0:0.00}' -f $kpm)</td><td>$('{0:0.00}' -f $kd)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td><td>$($dmg)</td><td>$('{0:0}' -f $dpm)</td>"
+    
+      if ($Attack) { $table += "<td>$($flagCap)</td><td>$($flagTake)</td><td>$(Format-MinSec $flagTime)</td>" }
+      else { $table += "<td>$($flagStop)</td>" }
+      
+      $table += "<td>$(Format-MinSec ([int]$timePlayed))</td>"
+      #$table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $rnd -Player $p)</div></td>"
+      $table += "<td id=`"ClassColumn`">$(getPlayerClasses -Round $rnd -Player $p)</td>"
+      $table += "</tr>`n"
+    
+      $subtotal[0] += $kills; $subtotal[1] += $death; $subtotal[2] += $tkill; $subtotal[3] += $dmg; $subtotal[4] = ''
+      if ($Attack) {  
+        $subtotal[5] += $flagCap; $subtotal[6] += $flagTake; $subtotal[7] += $FlagTime
+      } else {
+        $subtotal[5] += $flagStop; $subtotal[6] = $null; $subtotal[7] = $null
+      }
+      $count += 1
+      $lastPlayer = $player.Name
+    }
   }
 
   $tableHeader += "<th id=`"ClassColumn`">Classes</th></tr></thead>`n"
-
   $table += '<tfoot><tr id="TotalRow"><td colspan=5 align=right padding=2px><b>Total:</b></td>'
 
   if ($Attack) { $subtotal[7] = Format-MinSec $subtotal[7] }
   foreach ($st in $subtotal) { if ($st -eq $null) { break }; $table += "<td>$($st)</td>" }
   $table += '</tr></tfoot>'
 
-  $ret  = $tableHeader      
+  $ret = $tableHeader      
   $ret += $table            
   $ret += "</table>`n"
 
@@ -584,9 +613,9 @@ function GenerateFragHtmlTable {
   param([string]$Round)
 
   switch ($Round) {
-    '1'     { $refTeam = [ref]$arrTeamRnd1; $refVersus = [ref]$arrFragVersusRnd1 }
-    '2'     { $refTeam = [ref]$arrTeamRnd2; $refVersus = [ref]$arrFragVersusRnd2 }
-    default { $refTeam = [ref]$arrTeam;     $refVersus = [ref]$arrFragVersus     }
+    '1' { $refTeam = [ref]$arrTeamRnd1; $refVersus = [ref]$arrFragVersusRnd1 }
+    '2' { $refTeam = [ref]$arrTeamRnd2; $refVersus = [ref]$arrFragVersusRnd2 }
+    default { $refTeam = [ref]$arrTeam; $refVersus = [ref]$arrFragVersus }
   }
   
   $count = 1
@@ -599,11 +628,11 @@ function GenerateFragHtmlTable {
     $team = $refTeam.Value.$p
     #$team  = ($arrPlayerTable | Where { $_.Name -eq $p -and (!$Round -or $_.Round -eq $Round) } `
     #                          | %{ $_.Team} | Sort-Object -Unique) -join '&'
-    $kills = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round)} | Measure-Object Kills -Sum).Sum
-    $death = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round)} | Measure-Object Death -Sum).Sum
-    $tkill = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round)} | Measure-Object TKill -Sum).Sum
+    $kills = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round) } | Measure-Object Kills -Sum).Sum
+    $death = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round) } | Measure-Object Death -Sum).Sum
+    $tkill = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round) } | Measure-Object TKill -Sum).Sum
     
-    $table +=  "<tr class=`"$(teamColorCode $team)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td>"
+    $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td>"
 
     $table += GenerateVersusHtmlInnerTable -VersusTable $refVersus -Player $p -Round $Round
 
@@ -631,9 +660,9 @@ function GenerateDmgHtmlTable {
   param([string]$Round)
 
   switch ($Round) {
-    '1'     { $refTeam = [ref]$arrTeamRnd1; $refVersus = [ref]$arrDmgVersusRnd1 }
-    '2'     { $refTeam = [ref]$arrTeamRnd2; $refVersus = [ref]$arrDmgVersusRnd2 }
-    default { $refTeam = [ref]$arrTeam;     $refVersus = [ref]$arrDmgVersus     }
+    '1' { $refTeam = [ref]$arrTeamRnd1; $refVersus = [ref]$arrDmgVersusRnd1 }
+    '2' { $refTeam = [ref]$arrTeamRnd2; $refVersus = [ref]$arrDmgVersusRnd2 }
+    default { $refTeam = [ref]$arrTeam; $refVersus = [ref]$arrDmgVersus }
   }
 
   $count = 1
@@ -643,8 +672,8 @@ function GenerateDmgHtmlTable {
 
   foreach ($p in $playerList) {
     $tableHeader += "<th>$($count)</th>"
-    $dmg = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round)} | Measure-Object Dmg -Sum).Sum
-    $table +=  "<tr class=`"$(teamColorCode $refTeam.Value.$p)`"><td>$($count)</td><td>$($p)</td><td>$($refTeam.Value.$p)</td><td>$($dmg)</td>"
+    $dmg = ($arrPlayerTable | Where { $_.Name -EQ $p -and (!$Round -or $_.Round -eq $Round) } | Measure-Object Dmg -Sum).Sum
+    $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($refTeam.Value.$p)</td><td>$($dmg)</td>"
 
     $table += GenerateVersusHtmlInnerTable -VersusTable $refVersus -Player $p -Round $Round
 
@@ -667,18 +696,18 @@ function GenerateDmgHtmlTable {
 }
 
 #Text Based stats initialized - not reset after each file
-$script:arrSummaryAttTable   = @()
-$script:arrSummaryDefTable   = @()
+$script:arrSummaryAttTable = @()
+$script:arrSummaryDefTable = @()
 $script:arrClassTimeAttTable = @()
 $script:arrClassTimeDefTable = @()
 $script:arrClassFragAttTable = @()
 $script:arrClassFragDefTable = @()
-$script:arrResultTable       = @()
+$script:arrResultTable = @()
 
 $jsonFileCount = 0
 foreach ($jsonFile in $inputFile) {
   # Enure JSON files with [ at start and ] (not added in log files)
-  $txt = (Get-Content ($jsonFile.FullName  -replace '\[','`[' -replace '\]','`]'))
+  $txt = (Get-Content ($jsonFile.FullName -replace '\[', '`[' -replace '\]', '`]'))
   if ($txt[0] -notmatch '^\[.*') {
     $txt[0] = "[$($txt[0])"
     $txt[$txt.count - 1] = "$($txt[$txt.count - 1])]"
@@ -689,8 +718,8 @@ foreach ($jsonFile in $inputFile) {
   if (!($jsonFile.Exists)) { Write-Host "ERROR: File not found - $($jsonFile.FullName)"; return }
 
   # Out file with same-name.html - remove pesky [] braces.
-  $outFileStr = ($jsonFile.FullName) -replace '\.json$',''  #-replace '`?(\[|\])','')
-  $json = ((Get-Content -Path ($jsonFile.FullName  -replace '\[','`[' -replace '\]','`]') -Raw) | ConvertFrom-Json)
+  $outFileStr = ($jsonFile.FullName) -replace '\.json$', ''  #-replace '`?(\[|\])','')
+  $json = ((Get-Content -Path ($jsonFile.FullName -replace '\[', '`[' -replace '\]', '`]') -Raw) | ConvertFrom-Json)
   $jsonFileCount++
   Write-Host "Input File$(if ($inputFile.Length -gt 1) { " ($jsonFileCount/$($inputFile.Length))" } ): $($jsonFile.Name)"
 
@@ -699,15 +728,15 @@ foreach ($jsonFile in $inputFile) {
   else { $script:round1EndTime = 600 }
 
   # Leaving as HashTable, used for HTML display only 
-  $script:arrFragVersus     = @{}
+  $script:arrFragVersus = @{}
   $script:arrFragVersusRnd1 = @{}
   $script:arrFragVersusRnd2 = @{}
-  $script:arrDmgVersus     = @{}
+  $script:arrDmgVersus = @{}
   $script:arrDmgVersusRnd1 = @{}
   $script:arrDmgVersusRnd2 = @{}
   
   # Used for some HTML->Awards only
-  $script:arrKilledClass     = @{}
+  $script:arrKilledClass = @{}
   $script:arrKilledClassRnd1 = @{}
   $script:arrKilledClassRnd2 = @{}
 
@@ -718,27 +747,27 @@ foreach ($jsonFile in $inputFile) {
   $script:arrTimeClassRnd2 = @{}
 
   # Tracking teams via below and then updating arrPlayerTable after JSON parsing -Worth changing?
-  $script:arrTeam     = @{}
+  $script:arrTeam = @{}
   $script:arrTeamRnd1 = @{}
   $script:arrTeamRnd2 = @{}
   
   $script:arrResult = @{}
   
   # Leaving as HashTable, used for HTML display only 
-  $script:arrFragMin     = @{}
-  $script:arrDmgMin      = @{} 
-  $script:arrDeathMin    = @{} 
-  $script:arrFlagCapMin   = @{}
-  $script:arrFlagDropMin  = @{}
-  $script:arrFlagTookMin  = @{}  
+  $script:arrFragMin = @{}
+  $script:arrDmgMin = @{} 
+  $script:arrDeathMin = @{} 
+  $script:arrFlagCapMin = @{}
+  $script:arrFlagDropMin = @{}
+  $script:arrFlagTookMin = @{}  
   $script:arrFlagThrowMin = @{}
-  $script:arrFlagStopMin  = @{}
+  $script:arrFlagStopMin = @{}
 
   # Table Arrays - PS Format-Table friendly
   $script:arrAttackDmgTracker = @{} #Json parsing helper (AttackCount + Dmg Count)
-  $script:arrWeaponTable      = @()
-  $script:arrPlayerTable      = @()
-  $script:arrClassTimeTable   = @()
+  $script:arrWeaponTable = @()
+  $script:arrPlayerTable = @()
+  $script:arrClassTimeTable = @()
 
   ###
   # Process the JSON into above arrays (created 'Script' to be readable by all functions)
@@ -749,27 +778,27 @@ foreach ($jsonFile in $inputFile) {
   $prevItem = ''
 
   ForEach ($item in $json) {
-    $type    = $item.type
-    $kind    = $item.kind
+    $type = $item.type
+    $kind = $item.kind
 
     #Remove any underscores for _ tokens used in Keys 
-    $player  = $item.player -replace '_','.' -replace '\s$','.' -replace '\$','§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})','' 
-    $target  = $item.target -replace '_','.' -replace '\s$','.' -replace '\$','§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})','' 
+    $player = $item.player -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', '' 
+    $target = $item.target -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', '' 
     
-    $p_team  = $item.playerTeam
-    $t_team  = $item.targetTeam
-    $class   = $item.playerClass
-    $classNoSG = $class -replace '10','9'
+    $p_team = $item.playerTeam
+    $t_team = $item.targetTeam
+    $class = $item.playerClass
+    $classNoSG = $class -replace '10', '9'
     $t_class = $item.targetClass
-    $dmg     = [math]::Round($item.damage,0)
+    $dmg = [math]::Round($item.damage, 0)
     #Shorten and fix multiple names on weapons  
-    $weap    = (weapSN $item.inflictor)
+    $weap = (weapSN $item.inflictor)
 
     #Setup time blocks for per minute scoring
-    $time    = $item.time
-    if ($time -notin '',$null -and [math]::Ceiling($time/60) -gt $timeBlock) {
+    $time = $item.time
+    if ($time -notin '', $null -and [math]::Ceiling($time / 60) -gt $timeBlock) {
       #new time block found, update the time block
-      $timeBlock = [math]::Ceiling($time/60)
+      $timeBlock = [math]::Ceiling($time / 60)
     }
 
     ###
@@ -777,28 +806,30 @@ foreach ($jsonFile in $inputFile) {
     ###
 
     #try fix building kills/deaths
-    if ($t_class -eq 0 -and $target -in '','build.timer' -and $weap -ne 'worldSpawn') {  
+    if ($t_class -eq 0 -and $target -in '', 'build.timer' -and $weap -ne 'worldSpawn') {  
       $potentialEng = $arrTimeTrack.keys -match '.*_lastClass$'
       $potentialEng = $potentialEng | foreach { if ($arrTimeTrack.$_ -eq 9) { ($_ -split '_')[0] } }
 
       # If only 1 eng found fix it, else forget it
-      if ($potentialEng -notin '',$null -and $potentialEng.Count -eq 1 ) {
+      if ($potentialEng -notin '', $null -and $potentialEng.Count -eq 1 ) {
         $target = ($potentialEng -split '_')[0]
-        $t_class  = 10
-      } else { continue }
+        $t_class = 10
+      }
+      else { continue }
     }          
     elseif ($weap -eq 'sent') { $class = 10 }
     # Do this before Keys are made# dodgey... Try find out who a gas grenade owner is
     elseif ($class -eq '8' -and $weap -eq 'worldspawn') { 
-      if ($type -in 'damageDone','kill') {
+      if ($type -in 'damageDone', 'kill') {
         $potentialSpies = $arrTimeTrack.keys -match '.*_lastClass$'
         $potentialSpies = $potentialSpies | foreach { if ($arrTimeTrack.$_ -eq 8) { ($_ -split '_')[0] } }
 
         # If only 1 spy found fix it, else forget it
-        if ($potentialSpies.Count -eq 1 -and $potentialSpies -notin '',$null) { 
+        if ($potentialSpies.Count -eq 1 -and $potentialSpies -notin '', $null) { 
           $player = ($potentialSpies -split '_')[0]
           $weap = 'gas'
-        } else { continue }
+        }
+        else { continue }
       } 
     }
 
@@ -806,43 +837,47 @@ foreach ($jsonFile in $inputFile) {
     if ($p_team -and $t_team -and $p_team -eq $t_team -and $weap -ne 'laser') { $weap += '-ff' }
 
     # change weapon to suidcide for self kills
-    if ($player -and $player -eq $target) { $weap  = 'suicide' }
+    if ($player -and $player -eq $target) { $weap = 'suicide' }
     
-    $key       = "$($player)_$($target)"
-    $keyTime   = "$($timeBlock)_$($player)"
+    $key = "$($player)_$($target)"
+    $keyTime = "$($timeBlock)_$($player)"
     #$keyTimeT  = "$($timeBlock)_$($target)"
     $keyClassK = "$($player)_$($class)_$($t_class)"
-    $keyWeap   = "$($player)_$($class)_$($weap)"
+    $keyWeap = "$($player)_$($class)_$($weap)"
     #$keyWeapT  = "$($target)_$($class)_$($weap)" 
     
 
     # 19/12/21 New Attack/DmgDone stats in object/array format for PS Tables.
-    if ($type -in 'attack','damageDone' -and $player -and $weap -and $class -gt 0 `
+    if ($type -in 'attack', 'damageDone' -and $player -and $weap -and $class -gt 0 `
         -and ($type -eq 'attack' -or $p_team -ne $t_team -or $player -ne $target)) { 
 
       switch ($type) {
-        'attack'      { if ($arrAttackDmgTracker.$keyWeap -eq -1) {
-                          # damageDone registered before attack
-                          $arrAttackDmgTracker.Remove($keyWeap)
-                        } elseif ($arrAttackDmgTracker.$keyWeap -gt 0) {
-                          # attack registered - no dmg done found since
-                          $arrAttackDmgTracker.Remove($keyWeap)
-                        }
-                        arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'AttackCount' -Increment
-                      }
-        'damageDone'  { <# To avoid multi-hits: No item existing = No DmgCount added #>
-                        if ($p_team -ne $t_team) {
-                          if (!$arrAttackDmgTracker.$keyWeap) { 
-                            #Damage not registered, no attack yet found
-                            $arrAttackDmgTracker.$keyWeap = -1
-                            arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'DmgCount'   -Increment
-                          } elseif (!$arrAttackDmgTracker.$keyWeap -gt 0) {
-                            #Attack has been registered prior to damangeDone
-                            arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'DmgCount'   -Increment
-                            $arrAttackDmgTracker.Remove($keyWeap) 
-                          }
-                        }
-                      }
+        'attack' {
+          if ($arrAttackDmgTracker.$keyWeap -eq -1) {
+            # damageDone registered before attack
+            $arrAttackDmgTracker.Remove($keyWeap)
+          }
+          elseif ($arrAttackDmgTracker.$keyWeap -gt 0) {
+            # attack registered - no dmg done found since
+            $arrAttackDmgTracker.Remove($keyWeap)
+          }
+          arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'AttackCount' -Increment
+        }
+        'damageDone' {
+          <# To avoid multi-hits: No item existing = No DmgCount added #>
+          if ($p_team -ne $t_team) {
+            if (!$arrAttackDmgTracker.$keyWeap) { 
+              #Damage not registered, no attack yet found
+              $arrAttackDmgTracker.$keyWeap = -1
+              arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'DmgCount'   -Increment
+            }
+            elseif (!$arrAttackDmgTracker.$keyWeap -gt 0) {
+              #Attack has been registered prior to damangeDone
+              arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'DmgCount'   -Increment
+              $arrAttackDmgTracker.Remove($keyWeap) 
+            }
+          }
+        }
       }
     }
     
@@ -852,36 +887,38 @@ foreach ($jsonFile in $inputFile) {
       $round += 1
       $prevItem = '-1'
       
-      if ($arrTrackTime.flagPlayer -notin $null,'') {
+      if ($arrTrackTime.flagPlayer -notin $null, '') {
         arrPlayerTable-UpdatePlayer -Name $arrTrackTime.flagPlayer -Round $round -Property 'FlagTime' -Value ($round1EndTime - $arrTimeTrack.flagTook) -Increment
-        $arrTrackTime.flagTook   = 0
+        $arrTrackTime.flagTook = 0
         $arrTrackTime.flagPlayer = ''
       }
 
       #Finalise Rnd1 Class times from the tracker.
       foreach ($p in $arrTeam.Keys) { 
         arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $arrTimeTrack."$($p)_lastClass" -Round $round `
-                                                                -Value ($round1EndTime - $arrTimeTrack."$($p)_lastChange") -Increment
-        $arrTimeClass."$($p)_$($arrTimeTrack."$($p)_lastClass")"     += $round1EndTime - $arrTimeTrack."$($p)_lastChange"
+          -Value ($round1EndTime - $arrTimeTrack."$($p)_lastChange") -Increment
+        $arrTimeClass."$($p)_$($arrTimeTrack."$($p)_lastClass")" += $round1EndTime - $arrTimeTrack."$($p)_lastChange"
         $arrTimeClassRnd1."$($p)_$($arrTimeTrack."$($p)_lastClass")" += $round1EndTime - $arrTimeTrack."$($p)_lastChange"
-        $arrTimeTrack."$($p)_lastClass"  = ''
+        $arrTimeTrack."$($p)_lastClass" = ''
         $arrTimeTrack."$($p)_lastChange" = $round1EndTime
       }
-    } else {
-      if ($type -in 'playerStart','changeClass' <#-or $weap -like 'worldspawn*'#>) { continue }
+    }
+    else {
+      if ($type -in 'playerStart', 'changeClass' <#-or $weap -like 'worldspawn*'#>) { continue }
       # Class tracking - Player and Target
-      foreach ($pc in @(@($player,$classNoSG),@($target,$t_class -replace '10','9'))) {
+      foreach ($pc in @(@($player, $classNoSG), @($target, $t_class -replace '10', '9'))) {
         if ($pc[0] -match '^(\s)*$') { continue }	  
         #This is making Rnd1 class bleed to Rnd2...
         #if ($type -eq 'changeClass') {  $lastClass = $class; $class = $item.nextClass; $class; $lastclass }
-        $lastClass  = $arrTimeTrack."$($pc[0])_lastClass"
+        $lastClass = $arrTimeTrack."$($pc[0])_lastClass"
         if ($lastClass -match '^(\s)*$') { $lastClass = $pc[1] }
     
         $lastChange = $arrTimeTrack."$($pc[0])_lastChange"	 
-        if ($lastChange -in '',$null) { 
+        if ($lastChange -in '', $null) { 
           if ((($round1EndTime * $round) - $round1EndTime + $time) -lt 30) { 
             $lastChange = ($round1EndTime * $round) - $round1EndTime
-          } else { $lastChange = $time }
+          }
+          else { $lastChange = $time }
         }
       
         $lastChangeDiff = $time - $lastChange
@@ -889,14 +926,14 @@ foreach ($jsonFile in $inputFile) {
         if ($pc[1] -in $ClassAllowed) { 
           #Record time 
           #if ($arrTimeTrack."$($pc[0])_lastClass" -gt 0)  { 
-            arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $pc[0] -Class $lastClass -Round $round -Value $lastChangeDiff -Increment 
-         # }
+          arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $pc[0] -Class $lastClass -Round $round -Value $lastChangeDiff -Increment 
+          # }
           $arrTimeClass."$($pc[0])_$($lastClass)" += $lastChangeDiff
           if ($round -eq 1) { $arrTimeClassRnd1."$($pc[0])_$($lastClass)" += $lastChangeDiff } 
           else { $arrTimeClassRnd2."$($pc[0])_$($lastClass)" += $lastChangeDiff }
     
           #Update tracker after stuff is tallied
-          $arrTimeTrack."$($pc[0])_lastClass"  = $pc[1]
+          $arrTimeTrack."$($pc[0])_lastClass" = $pc[1]
           $arrTimeTrack."$($pc[0])_lastChange" = $time
         }
       }
@@ -916,25 +953,25 @@ foreach ($jsonFile in $inputFile) {
 
       'teamScores' {
         # For the final team score message
-        $arrResult.team1Score  = $item.team1Score
-        $arrResult.team2Score  = $item.team2Score
+        $arrResult.team1Score = $item.team1Score
+        $arrResult.team2Score = $item.team2Score
         $arrResult.winningTeam = $item.winningTeam
-        $arrResult.time        = $time
+        $arrResult.time = $time
 
         # Note - Add +10 points when Team1 wins to avoid a Draw being compared to a Win.
         switch ($arrResult.winningTeam) {
-          '0'     { $arrResult.winRating = 0;                                                          $arrResult.winRatingDesc = 'Nobody wins' }
-          '1'     { $arrResult.winRating = 1 - ($arrResult.team2Score / ($arrResult.team1Score + 10)); $arrResult.winRatingDesc = "Wins by $($item.team1Score - $item.team2Score) points" }
+          '0' { $arrResult.winRating = 0; $arrResult.winRatingDesc = 'Nobody wins' }
+          '1' { $arrResult.winRating = 1 - ($arrResult.team2Score / ($arrResult.team1Score + 10)); $arrResult.winRatingDesc = "Wins by $($item.team1Score - $item.team2Score) points" }
           default { $arrResult.winRating = (($round1EndTime * 2) - $arrResult.time ) / $round1EndTime; $arrResult.winRatingDesc = "$("{0:m\:ss}" -f ([timespan]::fromseconds(($round1EndTime * 2) - $arrResult.time))) mins left" }
         }
       }
 
       'death' {
-        $arrDeathMin.$keyTime    += 1
+        $arrDeathMin.$keyTime += 1
         #record sg deahts in class table only i.e.e Class 10/SG.
-        if ($player  -ne '' -and $class -ne 0) {
+        if ($player -ne '' -and $class -ne 0) {
           arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'Death' -Increment
-          if ($item.attacker -in 'world','') {
+          if ($item.attacker -in 'world', '') {
             if ($weap -ne 'laser') { $weap = 'world' }
             arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'Death' -Increment
           }
@@ -948,32 +985,35 @@ foreach ($jsonFile in $inputFile) {
     
 
     #team tracking
-    if ($p_team -notin $null,'' -and $p_team -gt 0 -and $class -gt 0 -and $type -notin 'damageTaken' -and $weap -notlike 'worldspawn*') {
+    if ($p_team -notin $null, '' -and $p_team -gt 0 -and $class -gt 0 -and $type -notin 'damageTaken' -and $weap -notlike 'worldspawn*') {
       if ($player -eq 'world') { $weap; $item }
-      if ($arrTeam.$player -in '',$null) {
+      if ($arrTeam.$player -in '', $null) {
         #Initialise team info when null
         $arrTeam.$player = "$p_team"
-      } elseif ($p_team -notin ($arrTeam.$player -split '&')) {
+      }
+      elseif ($p_team -notin ($arrTeam.$player -split '&')) {
         #Else if team not in list add it
         $arrTeam.$player = "$($arrTeam.$player)&$($p_team)"
       }
 
       #Do the same for Rnd1 / Rnd2
       switch ($round) {
-        '1'     {
-          if ($arrTeamRnd1.$player -in '',$null) {
+        '1' {
+          if ($arrTeamRnd1.$player -in '', $null) {
             #Initialise team info when null
             $arrTeamRnd1.$player = "$p_team"
-          } elseif ($p_team -notin ($arrTeamRnd1.$player -split '&')) {
+          }
+          elseif ($p_team -notin ($arrTeamRnd1.$player -split '&')) {
             #Else if team not in list add it
             $arrTeamRnd1.$player = "$($arrTeamRnd1.$player)&$($p_team)"
           }
         }
         default {
-          if ($arrTeamRnd2.$player -in '',$null) {
+          if ($arrTeamRnd2.$player -in '', $null) {
             #Initialise team info when null
             $arrTeamRnd2.$player = "$p_team"
-          } elseif ($p_team -notin ($arrTeamRnd2.$player -split '&')) {
+          }
+          elseif ($p_team -notin ($arrTeamRnd2.$player -split '&')) {
             #Else if team not in list add it
             $arrTeamRnd2.$player = "$($arrTeamRnd2.$player)&$($p_team)"
           }
@@ -986,21 +1026,22 @@ foreach ($jsonFile in $inputFile) {
     # Frag and damage counter, + flags + scores + result + weap kills/deaths
     switch ($type) { 
       'kill' {    
-        if ($player -ne $target -and $player -notin $null,'') {
+        if ($player -ne $target -and $player -notin $null, '') {
           #make sure player did not killed himself and has a name
           if ($p_team -eq $t_team) {
             #team kill recorded, not a normal kill
             arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'TKill' -Increment
-          } else {
+          }
+          else {
             #Record the normal kill
             arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'Kills' -Increment
             arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'Kills' -Increment
 
             $arrKilledClass.$keyClassK += 1
-            $arrFragMin.$keyTime    += 1
+            $arrFragMin.$keyTime += 1
 
             switch ($round) {
-              '1'     { $arrKilledClassRnd1.$keyClassK += 1 }
+              '1' { $arrKilledClassRnd1.$keyClassK += 1 }
               default { $arrKilledClassRnd2.$keyClassK += 1 }
             }
           }
@@ -1009,10 +1050,10 @@ foreach ($jsonFile in $inputFile) {
         #track all weap deaths on targets AND all versus kills (to see self/team kills in table). Exclude sentry death for player totals.
         #dont track SG deaths except in the class and weapons stats. 
         if ($t_class -ne '10') {
-          if ($player -notin $null,'') {
-            $arrFragVersus.$key       += 1
+          if ($player -notin $null, '') {
+            $arrFragVersus.$key += 1
             switch ($round) {
-              '1'     { $arrFragVersusRnd1.$key += 1 }
+              '1' { $arrFragVersusRnd1.$key += 1 }
               default { $arrFragVersusRnd2.$key += 1 }
             }
 
@@ -1032,8 +1073,9 @@ foreach ($jsonFile in $inputFile) {
             arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class   -Round $round -Weapon $weap -Class $class -Property 'Dmg' -Value $dmg -Increment
             arrWeaponTable-UpdatePlayer -Name $target -PlayerClass $t_class -Round $round -Weapon $weap -Class $class -Property 'DmgTaken' -Value $dmg  -Increment
 
-            $arrDmgMin.$keyTime    += $dmg
-          } elseif ($player) {
+            $arrDmgMin.$keyTime += $dmg
+          }
+          elseif ($player) {
             #team dmg
             arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'DmgTeam' -Value $dmg -Increment
           }
@@ -1041,7 +1083,7 @@ foreach ($jsonFile in $inputFile) {
         #record all damage including self/team in versus table
         $arrDmgVersus.$key += $dmg
         switch ($round) {
-          '1'     { $arrDmgVersusRnd1.$key += $dmg }
+          '1' { $arrDmgVersusRnd1.$key += $dmg }
           default { $arrDmgVersusRnd2.$key += $dmg }
         }
       }
@@ -1049,24 +1091,25 @@ foreach ($jsonFile in $inputFile) {
       'fumble' {
         arrPlayerTable-UpdatePlayer -Name $arrTimeTrack.flagPlayer -Round $round -Property 'FlagTime' -Value ($time - $arrTimeTrack.flagTook) -Increment
         $arrTimeTrack.'flagPlayer' = ''
-        $arrTimeTrack.'flagTook'   = 0
+        $arrTimeTrack.'flagTook' = 0
         
         arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'FlagDrop' -Increment
         $arrFlagDropMin.$keyTime += 1
 
         # work out if death or throw
         if ($prevItem.attacker -and $item.team -ne $prevItem.attackerTeam -and $prevItem.type -eq 'death' -and $prevItem.player -eq $player -and 
-            $prevItem.time -eq $time -and $prevItem.kind -ne 'self') {
+          $prevItem.time -eq $time -and $prevItem.kind -ne 'self') {
           arrPlayerTable-UpdatePlayer -Name $prevItem.attacker -Round $round -Property 'FlagStop' -Increment
           $arrFlagStopMin."$($timeBlock)_$($prevItem.attacker)" += 1
-        } elseif ($prevItem.kind -ne 'self') { 
+        }
+        elseif ($prevItem.kind -ne 'self') { 
           arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'FlagThrow' -Increment
           $arrFlagThrowMin.$keyTime += 1 
         }
       }
 
       'pickup' {
-        $arrTimeTrack.flagTook   = $time
+        $arrTimeTrack.flagTook = $time
         $arrTimeTrack.flagPlayer = $player
         arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'FlagTake' -Increment
         $arrFlagTookMin.$keyTime += 1
@@ -1079,17 +1122,18 @@ foreach ($jsonFile in $inputFile) {
 
   #Close the arrTimeTrack flag + class stats a
   $arrTimeTrack.flagPlayer = ''
-  $arrTimeTrack.flagTook    = 0
+  $arrTimeTrack.flagTook = 0
 
   foreach ($p in $arrTeam.Keys) {
     $lastClass = $arrTimeTrack."$($p)_lastClass"
-    $key       = "$($p)_$($lastClass)"
+    $key = "$($p)_$($lastClass)"
      
     arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $lastClass -Round $round -Value ($time - $arrTimeTrack."$($p)_lastChange")
-    $arrTimeClass."$($p)_$($lastClass)"     += $time - $arrTimeTrack."$($p)_lastChange"
-    if ($arrTeamRnd2.$p -notin '',$null) {
+    $arrTimeClass."$($p)_$($lastClass)" += $time - $arrTimeTrack."$($p)_lastChange"
+    if ($arrTeamRnd2.$p -notin '', $null) {
       $arrTimeClassRnd2.$key += $time - $arrTimeTrack."$($p)_lastChange"
-    } else {
+    }
+    else {
       $arrTimeClassRnd2.Remove($key)
     }
   }
@@ -1109,9 +1153,11 @@ foreach ($jsonFile in $inputFile) {
       foreach ($c in $ClassAllowedStr) {
         if ($p.$c -lt 10) {
           $p.$c = 0
-        } elseif ($p.$c -gt $round1Endtime) {
+        }
+        elseif ($p.$c -gt $round1Endtime) {
           $p.$c = $round1EndTime
-        } elseif ($p.$c -in ($round1EndTime-15)..$round1EndTime -and $totalTime -lt $round1EndTime) {
+        }
+        elseif ($p.$c -in ($round1EndTime - 15)..$round1EndTime -and $totalTime -lt $round1EndTime) {
           $p.$c = $round1EndTime
         }
       }
@@ -1120,14 +1166,14 @@ foreach ($jsonFile in $inputFile) {
 
   arrClassTimeTable-Cleanup ([ref]$arrClassTimeTable)
   #cleanup class times less that 10 seconds
-  $arrTimeClass     = timeClassCleanup $arrTimeClass
+  $arrTimeClass = timeClassCleanup $arrTimeClass
   $arrTimeClassRnd1 = timeClassCleanup $arrTimeClassRnd1
   $arrTimeClassRnd2 = timeClassCleanup $arrTimeClassRnd2
 
   ######
   #Create Ordered Player List 
   #####
-  $playerList  = ($arrTeam.GetEnumerator()| Sort-Object -Property Value,Name).Key
+  $playerList = ($arrTeam.GetEnumerator() | Sort-Object -Property Value, Name).Key
 
   #######
   # Add Team Info to tables and sort by Round/Team/Name
@@ -1135,21 +1181,21 @@ foreach ($jsonFile in $inputFile) {
 
   foreach ($i in $arrWeaponTable) {
     switch ($i.Round) { 
-      1 { $i.Team = $arrTeamRnd1.($i.Name)   }
-      2 { $i.Team = $arrTeamRnd2.($i.Name)   }
+      1 { $i.Team = $arrTeamRnd1.($i.Name) }
+      2 { $i.Team = $arrTeamRnd2.($i.Name) }
       default { $i.Team = $arrTeam.($i.Name) }
     }
   }
-  $arrWeaponTable = $arrWeaponTable | Sort-Object Round,Team,Name
+  $arrWeaponTable = $arrWeaponTable | Sort-Object Round, Team, Name
 
   foreach ($i in $arrPlayerTable) {
     switch ($i.Round) { 
-      1 { $i.Team = $arrTeamRnd1.($i.Name)   }
-      2 { $i.Team = $arrTeamRnd2.($i.Name)   }
+      1 { $i.Team = $arrTeamRnd1.($i.Name) }
+      2 { $i.Team = $arrTeamRnd2.($i.Name) }
       default { $i.Team = $arrTeam.($i.Name) }
     }
   }
-  $arrPlayerTable = $arrPlayerTable | Sort-Object Round,Team,Name                                   
+  $arrPlayerTable = $arrPlayerTable | Sort-Object Round, Team, Name                                   
   
   if (!$TextOnly) {
     ###
@@ -1158,40 +1204,41 @@ foreach ($jsonFile in $inputFile) {
 
     #create variables here, min/max values to be generated for awardAtt* + awardDef* (exclude *versus)
     Remove-Variable -Name award*
-    $script:awardAttKills   = @{}
-    $script:awardAttDeath   = @{}
-    $script:awardAttDmg     = @{}
+    $script:awardAttKills = @{}
+    $script:awardAttDeath = @{}
+    $script:awardAttDmg = @{}
     $script:awardAttDmgTaken = @{}
     $script:awardAttDmgTeam = @{}
-    $script:awardAttKD      = @{}
-    $script:awardAttTKill   = @{}
-    $script:awardAttDmgPerKill  = @{}
+    $script:awardAttKD = @{}
+    $script:awardAttTKill = @{}
+    $script:awardAttDmgPerKill = @{}
     $script:awardAttKillsVersus = @{}
-    $script:awardAttFlagCap  = @{}
+    $script:awardAttFlagCap = @{}
     $script:awardAttFlagTook = @{}
     $script:awardAttFlagTime = @{}
 
-    $script:awardDefKills    = @{}
-    $script:awardDefDeath    = @{}
-    $script:awardDefDmg      = @{}
+    $script:awardDefKills = @{}
+    $script:awardDefDeath = @{}
+    $script:awardDefDmg = @{}
     $script:awardDefDmgTaken = @{}
-    $script:awardDefDmgTeam  = @{}
-    $script:awardDefKD       = @{}
-    $script:awardDefTKill    = @{}
-    $script:awardDefDmgPerKill  = @{}
+    $script:awardDefDmgTeam = @{}
+    $script:awardDefKD = @{}
+    $script:awardDefTKill = @{}
+    $script:awardDefDmgPerKill = @{}
     $script:awardDefKillsVersus = @{}
 
     function awardScaler {
       if ($arrResult.WinningTeam -eq 2) {
         return [math]::Floor($args[0] * (1 + $arrResult.WinRating))
-      } else { return $args[0] }
+      }
+      else { return $args[0] }
     }
 
     function GetArrTimeTotal {
       #p1 = round, p2 = player
       switch ($args[0]) {
-        '2'     { $arrTime = $arrTimeClassRnd2 }
-        '1'     { $arrTime = $arrTimeClassRnd1 }
+        '2' { $arrTime = $arrTimeClassRnd2 }
+        '1' { $arrTime = $arrTimeClassRnd1 }
         default { $arrTime = $arrTimeClass }
       }
       (($arrTime.keys -match "^$($args[1] -replace $regExReplaceFix)_[1-9]$" | foreach { $arrTime.$_ } ) | Measure-Object -Sum).Sum
@@ -1199,8 +1246,8 @@ foreach ($jsonFile in $inputFile) {
 
     #Attack - Rnd1=T1 and Rnd2=T2 - Get Player list and get required Data sets
     # Teams sorted in order, i.e. 1&2 = Att 2x, 2&1 = Def 2x.
-    $script:playerListAttRnd1 = ($arrTeamRnd1.Keys | foreach { if ($arrTeamRnd1.$_ -match '^(1|1&2)$' -and (GetArrTimeTotal 1 $_) -gt  $round1EndTime  - 60) { $_ } })
-    $script:playerListAttRnd2 = ($arrTeamRnd2.Keys | foreach { if ($arrTeamRnd2.$_ -match '^(2|1&2)$' -and (GetArrTimeTotal 2 $_) -gt  ($arrResult.time - $round1EndTime - 60)) { $_ } })
+    $script:playerListAttRnd1 = ($arrTeamRnd1.Keys | foreach { if ($arrTeamRnd1.$_ -match '^(1|1&2)$' -and (GetArrTimeTotal 1 $_) -gt $round1EndTime - 60) { $_ } })
+    $script:playerListAttRnd2 = ($arrTeamRnd2.Keys | foreach { if ($arrTeamRnd2.$_ -match '^(2|1&2)$' -and (GetArrTimeTotal 2 $_) -gt ($arrResult.time - $round1EndTime - 60)) { $_ } })
 
     ## Generate Attack/Def Tables, e.g. for att Rnd1 = Team1 attack + Rnd2 = Team2 attack
     $count = 1
@@ -1212,7 +1259,8 @@ foreach ($jsonFile in $inputFile) {
 
         if ($arrResult.WinningTeam -eq 2) {
           $scaler = 1 / $arrResult.winRating
-        } else { $scaler = 1 }
+        }
+        else { $scaler = 1 }
         $pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $p -Round $count
 
         $awardAttFlagCap.Add( $p, $arrPlayerTable[$pos].FlagCap)
@@ -1228,7 +1276,8 @@ foreach ($jsonFile in $inputFile) {
           $awardAttDmgTeam.Add(  $p, $arrPlayerTable[$pos].DmgTeam)
           $awardAttTkill.Add($p, $arrPlayerTable[$pos].TKill)
           $awardAttKD.Add(   $p, ($arrPlayerTable[$pos].Kills - $arrPlayerTable[$pos].Death) )
-        } else {
+        }
+        else {
           $awardAttKills.Add($p, (awardScaler $arrPlayerTable[$pos].Kills ))
           $awardAttDeath.Add($p, (awardScaler $arrPlayerTable[$pos].Death))
           $awardAttDmg.Add(  $p, (awardScaler $arrPlayerTable[$pos].Dmg))
@@ -1238,7 +1287,7 @@ foreach ($jsonFile in $inputFile) {
 
           $awardAttKD.Add(   $p, (awardScaler ($arrPlayerTable[$pos].Kills - $arrPlayerTable[$pos].Death)) )
         }
-        if ($arrPlayerTable[$pos].Kills -notin $null,'','0') { $awardAttDmgPerKill.Add($p, [math]::Round($arrPlayerTable[$pos].Dmg / $arrPlayerTable[$pos].Kills) ) }
+        if ($arrPlayerTable[$pos].Kills -notin $null, '', '0') { $awardAttDmgPerKill.Add($p, [math]::Round($arrPlayerTable[$pos].Dmg / $arrPlayerTable[$pos].Kills) ) }
       }
       $count += 1
     }
@@ -1246,7 +1295,7 @@ foreach ($jsonFile in $inputFile) {
 
     #defence - Rnd2=T2 and Rnd2=T1 - Get Player list and get required Data sets
     ## Generate Attack/Def Tables, e.g. for att Rnd1 = Team2 def + Rnd2 = Team1 def
-    $script:playerListDefRnd1 = ($arrTeamRnd1.Keys | foreach { if ($arrTeamRnd1.$_ -match '^(2|2&1)$' -and (GetArrTimeTotal 1 $_) -gt $round1EndTime  - 60) { $_ } })
+    $script:playerListDefRnd1 = ($arrTeamRnd1.Keys | foreach { if ($arrTeamRnd1.$_ -match '^(2|2&1)$' -and (GetArrTimeTotal 1 $_) -gt $round1EndTime - 60) { $_ } })
     $script:playerListDefRnd2 = ($arrTeamRnd2.Keys | foreach { if ($arrTeamRnd2.$_ -match '^(1|2&1)$' -and (GetArrTimeTotal 2 $_) -gt $arrResult.time - $round1EndTime - 60) { $_ } })
 
     $count = 1
@@ -1264,7 +1313,8 @@ foreach ($jsonFile in $inputFile) {
           $awardDefDmgTeam.Add(  $p, $arrPlayerTable[$pos].DmgTeam)
           $awardDefTkill.Add($p, $arrPlayerTable[$pos].TKill)
           $awardDefKD.Add(   $p, ($arrPlayerTable[$pos].Kills - $arrPlayerTable[$pos].Death) )
-        } else {
+        }
+        else {
           $awardDefKills.Add($p, (awardScaler $arrPlayerTable[$pos].Kills ))
           $awardDefDeath.Add($p, (awardScaler $arrPlayerTable[$pos].Death))
           $awardDefDmg.Add(  $p, (awardScaler $arrPlayerTable[$pos].Dmg))
@@ -1274,7 +1324,7 @@ foreach ($jsonFile in $inputFile) {
 
           $awardDefKD.Add(   $p, (awardScaler ($arrPlayerTable[$pos].Kills - $arrPlayerTable[$pos].Death)) )
         }
-        if ($arrPlayerTable[$pos].Kills -notin $null,'','0') { $awardDefDmgPerKill.Add($p, [math]::Round($arrPlayerTable[$pos].Dmg / $arrPlayerTable[$pos].Kills) ) }
+        if ($arrPlayerTable[$pos].Kills -notin $null, '', '0') { $awardDefDmgPerKill.Add($p, [math]::Round($arrPlayerTable[$pos].Dmg / $arrPlayerTable[$pos].Kills) ) }
 
       }
       $count += 1
@@ -1299,9 +1349,9 @@ foreach ($jsonFile in $inputFile) {
     $tkAvg = ($awardDefTKill.Values   | Measure-Object -Average).Average
     $tdAvg = ($awardDefDmgTeam.Values | Measure-Object -Average).Average
     $awardDefMagoo = @{}
-    foreach ($p in $awardDefTKill.Keys)   { $awardDefMagoo.$p += $awardDefTKill.$p / $tkAvg }
-    foreach ($p in $awardDefDmgTeam.Keys) { $awardDefMagoo.$p = [Math]::Round(($awardDefMagoo.$p + ($awardDefDmgTeam.$p / $tdAvg))/2,2) }
-    Remove-Variable tkAvg,tdAvg
+    foreach ($p in $awardDefTKill.Keys) { $awardDefMagoo.$p += $awardDefTKill.$p / $tkAvg }
+    foreach ($p in $awardDefDmgTeam.Keys) { $awardDefMagoo.$p = [Math]::Round(($awardDefMagoo.$p + ($awardDefDmgTeam.$p / $tdAvg)) / 2, 2) }
+    Remove-Variable tkAvg, tdAvg
 
 
     # Repeatable function for Killed Class Lookup
@@ -1309,8 +1359,8 @@ foreach ($jsonFile in $inputFile) {
       # p1 = att/def p2 = regex
       $htOut = @{}
       switch ($args[0]) {
-        'Att'   { $plRnd1 = $playerListAttRnd1; $plRnd2 = $playerListAttRnd2 }
-        'Def'   { $plRnd1 = $playerListDefRnd1; $plRnd2 = $playerListDefRnd2 }
+        'Att' { $plRnd1 = $playerListAttRnd1; $plRnd2 = $playerListAttRnd2 }
+        'Def' { $plRnd1 = $playerListDefRnd1; $plRnd2 = $playerListDefRnd2 }
         Default { return }
       }
 
@@ -1333,13 +1383,13 @@ foreach ($jsonFile in $inputFile) {
       return $htOut
     }
 
-    $awardAttKilledDemo  = (awardFromKilledClass 'Att' '.*_4$')
-    $awardDefKilledSold  = (awardFromKilledClass 'Def' '.*_3$')
+    $awardAttKilledDemo = (awardFromKilledClass 'Att' '.*_4$')
+    $awardDefKilledSold = (awardFromKilledClass 'Def' '.*_3$')
     $awardDefKilledLight = (awardFromKilledClass 'Def' '.*_(1|5|8|9)$')
     $awardAttKilledHeavy = (awardFromKilledClass 'Att' '.*_(3|4|6|7)$')
     $awardDefKilledHeavy = (awardFromKilledClass 'Def' '.*_(3|4|6|7)$')
-    $awardAttLightKills  = (awardFromKilledClass 'Att' '.*_(1|5|8|9)_.*$')
-    $awardAttKilledSG    = (awardFromKilledClass 'Att' '.*_10$')
+    $awardAttLightKills = (awardFromKilledClass 'Att' '.*_(1|5|8|9)_.*$')
+    $awardAttKilledSG = (awardFromKilledClass 'Att' '.*_10$')
 
 
     #####
@@ -1348,23 +1398,23 @@ foreach ($jsonFile in $inputFile) {
     ######
     #attack
     ####
-    foreach ($v in (Get-Variable 'award*' -Exclude '*_*','awardsHtml')) {
+    foreach ($v in (Get-Variable 'award*' -Exclude '*_*', 'awardsHtml')) {
       Set-Variable -Name  "$($v.Name)_Max" -Value (($v.Value).Values | Measure-Object -Maximum).Maximum
       Set-Variable -Name  "$($v.Name)_Min" -Value (($v.Value).Values | Measure-Object -Minimum).Minimum
     }
 
     function addTokenToString {
-      if ($args[0] -in $null,'') { $args[1] }
+      if ($args[0] -in $null, '') { $args[1] }
       elseif ($args[1] -notin ($args[0] -split ', ')) { "$($args[0]), $($args[1])" }
       else { $args[0] }
     }
 
     # Get the Names of each Max/Min award table
     foreach ($p in $PlayerList) {
-      foreach ($vlist in @((Get-Variable 'award*_Max' -Exclude '*Versus*'),(Get-Variable 'award*_Min' -Exclude '*Versus*'))) {    
+      foreach ($vlist in @((Get-Variable 'award*_Max' -Exclude '*Versus*'), (Get-Variable 'award*_Min' -Exclude '*Versus*'))) {    
         foreach ($v in $vlist) {
           $arrayName = ($v.Name -Split '_')[0]
-          $name  = "$($v.Name)Name"
+          $name = "$($v.Name)Name"
           $value = $v.Value[1]
           if (Test-Path "variable:$($name)") { $leader = Get-Variable $name -ValueOnly }
           else { $leader = '' }
@@ -1376,54 +1426,56 @@ foreach ($jsonFile in $inputFile) {
 
     # Most Frag  on a player 
     $attMax = ''
-    $awardAttPlayerFrag_MaxName   = ''
+    $awardAttPlayerFrag_MaxName = ''
     $awardAttPlayerFrag_Victim = ''
-    $awardAttPlayerFrag_Value  = ''
+    $awardAttPlayerFrag_Value = ''
     $defMax = ''
-    $awardDefPlayerFrag_MaxName   = ''
+    $awardDefPlayerFrag_MaxName = ''
     $awardDefPlayerFrag_Victim = ''
-    $awardDefPlayerFrag_Value  = ''
+    $awardDefPlayerFrag_Value = ''
 
     $count = 1
     ### Frag versus statistics
-    foreach ($array in @($arrFragVersusRnd1,$arrFragVersusRnd2)) {
+    foreach ($array in @($arrFragVersusRnd1, $arrFragVersusRnd2)) {
       foreach ($item in $array.keys) {
         #player/target
         $pt = $item -split '_'
         switch ($count) {
-          1       { $pl = $playerListAttRnd1; $value = $array.$item }
+          1 { $pl = $playerListAttRnd1; $value = $array.$item }
           default { $pl = $playerListAttRnd2; $value = awardScaler $array.$item }
         }
 
         if ($pt[0] -ne $pt[1] -and $pt[0] -in $pl) {  
-          if ($max -eq '' -or  $value -ge $attMax) {
+          if ($max -eq '' -or $value -ge $attMax) {
             if ($value -eq $attMax) {
               $awardAttPlayerFrag_MaxName = (addTokenToString $awardAttPlayerFrag_MaxName $pt[0])
-              $awardAttPlayerFrag_Victim  = (addTokenToString $awardAttPlayerFrag_Victim  $pt[1])
-            } else {
+              $awardAttPlayerFrag_Victim = (addTokenToString $awardAttPlayerFrag_Victim  $pt[1])
+            }
+            else {
               $awardAttPlayerFrag_MaxName = $pt[0]
               $awardAttPlayerFrag_Victim = $pt[1]
             }
-            $awardAttPlayerFrag_Value  = $value
+            $awardAttPlayerFrag_Value = $value
             $attMax = $value
           }
         }
 
         switch ($count) {
-          1       { $pl = $playerListDefRnd1 }
+          1 { $pl = $playerListDefRnd1 }
           default { $pl = $playerListDefRnd2 }
         }
 
         if ($pt[0] -ne $pt[1] -and $pt[0] -in $pl) {  
-          if ($max -eq '' -or  $value -ge $defMax) {
+          if ($max -eq '' -or $value -ge $defMax) {
             if ($value -eq $defMax) {
               $awardDefPlayerFrag_MaxName = (addTokenToString $awardDefPlayerFrag_MaxName $pt[0])
-              $awardDefPlayerFrag_Victim  = (addTokenToString $awardDefPlayerFrag_Victim  $pt[1])
-            } else {
-              $awardDefPlayerFrag_MaxName = $pt[0]
-              $awardDefPlayerFrag_Victim  = $pt[1]
+              $awardDefPlayerFrag_Victim = (addTokenToString $awardDefPlayerFrag_Victim  $pt[1])
             }
-            $awardDefPlayerFrag_Value  = $value
+            else {
+              $awardDefPlayerFrag_MaxName = $pt[0]
+              $awardDefPlayerFrag_Victim = $pt[1]
+            }
+            $awardDefPlayerFrag_Value = $value
             $defMax = $value
           } 
         }
@@ -1433,54 +1485,56 @@ foreach ($jsonFile in $inputFile) {
 
     # Most Dmg  on a player 
     $attMax = ''
-    $awardAttPlayerDmg_MaxName   = ''
+    $awardAttPlayerDmg_MaxName = ''
     $awardAttPlayerDmg_Victim = ''
-    $awardAttPlayerDmg_Value  = ''
+    $awardAttPlayerDmg_Value = ''
     $defMax = ''
-    $awardDefPlayerDmg_MaxName   = ''
+    $awardDefPlayerDmg_MaxName = ''
     $awardDefPlayerDmg_Victim = ''
-    $awardDefPlayerDmg_Value  = ''
+    $awardDefPlayerDmg_Value = ''
 
     $count = 1
     ### Damage versus statistics
-    foreach ($array in @($arrDmgVersusRnd1,$arrDmgVersusRnd2)) {
+    foreach ($array in @($arrDmgVersusRnd1, $arrDmgVersusRnd2)) {
       foreach ($item in $array.keys) {
         #player/target
         $pt = $item -split '_'
         switch ($count) {
-          1       { $pl = $playerListAttRnd1; $value = $array.$item }
+          1 { $pl = $playerListAttRnd1; $value = $array.$item }
           default { $pl = $playerListAttRnd2; $value = awardScaler $array.$item }
         }
 
         if ($pt[0] -ne $pt[1] -and $pt[0] -in $pl) {  
-          if ($max -eq '' -or  $value -ge $attMax) {
+          if ($max -eq '' -or $value -ge $attMax) {
             if ($value -eq $attMax) {
               $awardAttPlayerDmg_MaxName = (addTokenToString $awardAttPlayerDmg_MaxName   $pt[0])
-              $awardAttPlayerDmg_Victim  = (addTokenToString $awardAttPlayerDmg_Victim $pt[1])
-            } else {
+              $awardAttPlayerDmg_Victim = (addTokenToString $awardAttPlayerDmg_Victim $pt[1])
+            }
+            else {
               $awardAttPlayerDmg_MaxName = $pt[0]
               $awardAttPlayerDmg_Victim = $pt[1]
             }
-            $awardAttPlayerDmg_Value  = $value
+            $awardAttPlayerDmg_Value = $value
             $attMax = $value
           }
         }
 
         switch ($count) {
-          1       { $pl = $playerListDefRnd1 }
+          1 { $pl = $playerListDefRnd1 }
           default { $pl = $playerListDefRnd2 }
         }
 
         if ($pt[0] -ne $pt[1] -and $pt[0] -in $pl) {  
-          if ($max -eq '' -or  $value -ge $defMax) {
+          if ($max -eq '' -or $value -ge $defMax) {
             if ($value -eq $defMax) {
               $awardDefPlayerDmg_MaxName = (addTokenToString $awardDefPlayerDmg_MaxName $pt[0])
-              $awardDefPlayerDmg_Victim  = (addTokenToString $awardDefPlayerDmg_Victim  $pt[1])
-            } else {
-              $awardDefPlayerDmg_MaxName = $pt[0]
-              $awardDefPlayerDmg_Victim  = $pt[1]
+              $awardDefPlayerDmg_Victim = (addTokenToString $awardDefPlayerDmg_Victim  $pt[1])
             }
-            $awardDefPlayerDmg_Value  = $value
+            else {
+              $awardDefPlayerDmg_MaxName = $pt[0]
+              $awardDefPlayerDmg_Victim = $pt[1]
+            }
+            $awardDefPlayerDmg_Value = $value
             $defMax = $value
           } 
 
@@ -1497,10 +1551,10 @@ foreach ($jsonFile in $inputFile) {
       # p1 = att/def #p2 = names
       if ($arrResult.winningTeam -lt 2) { return $args[1] }
       
-      $players = $args[1] -split', '
+      $players = $args[1] -split ', '
       switch ($args[0]) {
-        'Att'     { $pl = $playerListAttRnd2 }
-        default   { $pl = $playerListDefRnd2 }
+        'Att' { $pl = $playerListAttRnd2 }
+        default { $pl = $playerListDefRnd2 }
       }
 
       $outNames = ''
@@ -1519,6 +1573,7 @@ foreach ($jsonFile in $inputFile) {
     <h3>The Attackers</h3>
     <table id=`"awardAttack`">
    <thead><tr><th>Award</h>            <th>Winner</th>                          <th>Description</th></tr> </thead>
+   <tbody>
     <tr><td>Commando</td>        <td align=center width=150px class=$(teamColorCodeByName $awardAttKills_MaxName)>$(awardScaleCaveat 'Att' $awardAttKills_MaxName)</td>      <td>Most kills ($($awardAttKills_Max))</td></tr>
     <tr><td>Rambo</td>           <td align=center width=150px class=$(teamColorCodeByName $awardAttDmg_MaxName)>$(awardScaleCaveat 'Att' $awardAttDmg_MaxName)</td>        <td>Most damage ($($awardAttDmg_Max))</td></tr>
     <tr><td>Golden Hands</td>    <td align=center width=150px class=$(teamColorCodeByName $awardAttFlagCap_MaxName)>$($awardAttFlagCap_MaxName)</td>    <td>Most caps ($($awardAttFlagCap_Max))</td></tr>
@@ -1532,10 +1587,11 @@ foreach ($jsonFile in $inputFile) {
     <tr><td>Buck shot</td>       <td align=center width=150px class=$(teamColorCodeByName $awardAttDmgPerKill_MaxName)>$($awardAttDmgPerKill_MaxName)</td>                        <td>Most Damage per kill ($($awardAttDmgPerKill_Max))</td></tr>
     <tr><td>Predator</td>        <td align=center width=150px class=$(teamColorCodeByName $awardAttPlayerFrag_MaxName)>$(awardScaleCaveat 'Att' $awardAttPlayerFrag_MaxName)</td> <td>Most kills on a defender ($($awardAttPlayerFrag_Value) on $($awardAttPlayerFrag_Victim))</td></tr>
     <tr><td>Hulk Smash</td>      <td align=center width=150px class=$(teamColorCodeByName $awardAttPlayerDmg_MaxName)>$(awardScaleCaveat 'Att' $awardAttPlayerDmg_MaxName)</td>  <td>Most damage on a defender ($($awardAttPlayerDmg_Value) on $($awardAttPlayerDmg_Victim))</td></tr>
+    </tbody>
     "
 
     if ($arrResult.winningTeam -eq 2) {
-    $awardsHtml += "<tr><td colspan=3 align=right><i>*Team2 scaled: Only $('{0:p0}' -f [math]::Round((1 - $arrResult.winRating),2)) of Rnd2 played</i></td></tr>`n"
+      $awardsHtml += "<tr><td colspan=3 align=right><i>*Team2 scaled: Only $('{0:p0}' -f [math]::Round((1 - $arrResult.winRating),2)) of Rnd2 played</i></td></tr>`n"
     }
 
     $awardsHtml += "</table></div>
@@ -1543,6 +1599,7 @@ foreach ($jsonFile in $inputFile) {
     <h3>The Defenders</h3>
     <table id=`"awardDefence`">
     <thead><tr><th>Award</h>                <th>Winner</th>                                                  <th>Description</th></tr> </thead>
+    <tbody>
     <tr><td>Slaughterhouse</td>      <td align=center width=150px class=$(teamColorCodeByName $awardDefKills_MaxName)>$(awardScaleCaveat 'Def' $awardDefKills_MaxName)</td>      <td>Most kills ($($awardDefKills_Max))</td></tr>
     <tr><td>Terminator</td>          <td align=center width=150px class=$(teamColorCodeByName $awardDefKD_MaxName)>$(awardScaleCaveat 'Def' $awardDefKD_MaxName)</td>         <td>Kills-death rank ($($awardDefKD_Max))</td></tr>
     <tr><td>Juggernaut</td>          <td align=center width=150px class=$(teamColorCodeByName $awardDefDmg_MaxName)>$(awardScaleCaveat 'Def' $awardDefDmg_MaxName)</td>        <td>Most damage ($($awardDefDmg_Max))</td></tr>
@@ -1555,7 +1612,8 @@ foreach ($jsonFile in $inputFile) {
     <tr><td>No quarter</td>          <td align=center width=150px class=$(teamColorCodeByName $awardDefDmgPerKill_MinName)>$($awardDefDmgPerKill_MinName)</td>                        <td>Lowest damage per kill ($($awardDefDmgPerKill_Min))</td></tr>
     <tr><td>Attention whore</td>     <td align=center width=150px class=$(teamColorCodeByName $awardDefDmgAll_MaxName)>$(awardScaleCaveat 'Def' $awardDefDmgAll_MaxName)</td>     <td>Most damage given + taken ($($awardDefDmgAll_Max))</td></tr>
     <tr><td>Shy Guy</td>             <td align=center width=150px class=$(teamColorCodeByName $awardDefDmgTaken_MinName)>$(awardScaleCaveat 'Def' $awardDefDmgTaken_MinName)</td>   <td>Lowest damage taken ($($awardDefDmgTaken_Min))</td></tr>
-    <tr><td>Mr Magoo</td>            <td align=center width=150px class=$(teamColorCodeByName $awardDefMagoo_MaxName)>$($awardDefMagoo_MaxName)</td>      <td>Team Kill/Damage above avg ($('{0:p0}' -f $awardDefMagoo_Max))</td></tr>`n"
+    <tr><td>Mr Magoo</td>            <td align=center width=150px class=$(teamColorCodeByName $awardDefMagoo_MaxName)>$($awardDefMagoo_MaxName)</td>      <td>Team Kill/Damage above avg ($('{0:p0}' -f $awardDefMagoo_Max))</td></tr>
+    </tbody>`n"
 
     if ($arrResult.winningTeam -eq 2) {
       $awardsHtml += "<tr><td colspan=3 align=right><i>*Team1 scaled: Only $('{0:p0}' -f [math]::Round((1 - $arrResult.winRating),2)) of Rnd2 played</i></td></tr>`n"
@@ -1567,7 +1625,7 @@ foreach ($jsonFile in $inputFile) {
     ###
 
 
-<#$ccGrey   = '#F1F1F1'
+    <#$ccGrey   = '#F1F1F1'
 $ccAmber  = '#FFD900'
 $ccOrange = '#FFB16C'
 $ccGreen  = '#96FF8F'
@@ -1575,15 +1633,15 @@ $ccBlue   = '#87ECFF'
 $ccRed    = '#FF8080'
 $ccPink   = '#FA4CFF'#>
 
-$ccGrey   = 'cellGrey'
-$ccAmber  = 'cellAmber'
-$ccOrange = 'cellOrange'
-$ccGreen  = 'cellGreen'
-$ccBlue   = 'rowTeam1'
-$ccRed    = 'rowTeam2'
-$ccPink   = 'rowTeamBoth'
+    $ccGrey = 'cellGrey'
+    $ccAmber = 'cellAmber'
+    $ccOrange = 'cellOrange'
+    $ccGreen = 'cellGreen'
+    $ccBlue = 'rowTeam1'
+    $ccRed = 'rowTeam2'
+    $ccPink = 'rowTeamBoth'
 
-<#        <style>
+    <#        <style>
         body { font-family: calibri; color:white; background-color:rgb(56, 75, 94);}
 
         th { background-color: rgb(19, 37, 56);}
@@ -1626,8 +1684,8 @@ $ccPink   = 'rowTeamBoth'
     <tr><td class=`"$(teamColorCode $arrResult.winningTeam)`">"  
 
     switch ($arrResult.winningTeam) {
-      '0'     { $htmlOut += "DRAW! "                                  }
-      default { $htmlOut += "TEAM $($arrResult.winningTeam) WINS! "   }
+      '0' { $htmlOut += "DRAW! " }
+      default { $htmlOut += "TEAM $($arrResult.winningTeam) WINS! " }
     }
 
     $htmlOut += "</td><td>Team1: $($arrResult.team1Score) vs Team2: $($arrResult.team2Score)</td><td>$('{0:p0}' -f $arrResult.winRating) ($($arrResult.winRatingDesc))</td></tr>`n</table>`n"  
@@ -1680,7 +1738,7 @@ $ccPink   = 'rowTeamBoth'
     
     foreach ($min in 1..$timeBlock) { 
       $tableHeader += "<th>$($min)</th>" 
-      if ($min -in $timeBlock,([math]::Floor($round1EndTime / 60))) { 
+      if ($min -in $timeBlock, ([math]::Floor($round1EndTime / 60))) { 
         $tableHeader += "<th>Total</th>" 
       }
     }
@@ -1694,21 +1752,22 @@ $ccPink   = 'rowTeamBoth'
       $kills = ($arrPlayerTable | Where Name -eq $p | Measure Kills -Sum).Sum
       $death = ($arrPlayerTable | Where Name -eq $p | Measure Death -Sum).Sum
       $tKill = ($arrPlayerTable | Where Name -eq $p | Measure TKill -Sum).Sum
-      $table +=  "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($kills)</td><td>$($death)</td><td>$($tKill)</td>"
+      $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($kills)</td><td>$($death)</td><td>$($tKill)</td>"
       
       $count2 = 0  
       foreach ($min in 1..$timeBlock) {
         $key = "$($min)_$($p)"
         $kills = $arrFragMin.$key
-        $dth   = $arrDeathMin.$key
-        if ($kills -in '',$null -and $dth -in '',$null) { 
-          $value  = ''
+        $dth = $arrDeathMin.$key
+        if ($kills -in '', $null -and $dth -in '', $null) { 
+          $value = ''
           $cellCC = nullValueColorCode
-        } else {
+        }
+        else {
           $cellCC = $ccGreen
           if ($kills -lt $dth) { $cellCC = $ccAmber }
           if ($kills -eq '' -or $kills -lt 1) { $kills = '0'; $cellCC = $ccOrange }
-          if ($dth   -eq '' -or $dth   -lt 1) { $dth   = '0' }
+          if ($dth -eq '' -or $dth -lt 1) { $dth = '0' }
 
           $value = "$($kills)/$($dth)"
         }
@@ -1719,11 +1778,12 @@ $ccPink   = 'rowTeamBoth'
         $subtotalDth[$count2] += $dth
 
 
-        if ($min -in $timeBlock,([math]::Floor($round1EndTime / 60))) {
+        if ($min -in $timeBlock, ([math]::Floor($round1EndTime / 60))) {
           #rnd total
-          if ($min -le ([math]::Floor($round1EndTime / 60)))  {
+          if ($min -le ([math]::Floor($round1EndTime / 60))) {
             $round = 1            
-          } else {
+          }
+          else {
             $round = 2
           }
           $kills = ($arrPlayerTable | Where { $_.Name -eq $p -and $_.Round -eq $round } | Measure Kills -Sum).Sum
@@ -1742,7 +1802,7 @@ $ccPink   = 'rowTeamBoth'
     foreach ($st in $subtotalFrg) { 
       $table += "<td>$([int]$subtotalFrg[$count])/$([int]$subtotaldth[$count])</td>"
       $count += 1 
-      if ($count -in $timeBlock,([math]::Floor($round1EndTime / 60))) { $table += "<td></td>" }
+      if ($count -in $timeBlock, ([math]::Floor($round1EndTime / 60))) { $table += "<td></td>" }
     }
     $table += "</tr></tfoot>`n"
 
@@ -1760,13 +1820,13 @@ $ccPink   = 'rowTeamBoth'
     $subtotalDmg = @(1..$timeBlock | foreach { 0 } )
     $count = 1
 
-    $tableHeader = $tableHeader -replace '>Kills<','>Dmg<'
+    $tableHeader = $tableHeader -replace '>Kills<', '>Dmg<'
 
     foreach ($p in $playerList) {
-      $dmg   = ($arrPlayerTable | Where Name -eq $p | Measure Dmg -Sum).Sum
+      $dmg = ($arrPlayerTable | Where Name -eq $p | Measure Dmg -Sum).Sum
       $death = ($arrPlayerTable | Where Name -eq $p | Measure Death -Sum).Sum
       $tKill = ($arrPlayerTable | Where Name -eq $p | Measure TKill -Sum).Sum
-      $table +=  "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($dmg)</td><td>$($death)</td><td>$($tKill)</td>"
+      $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($dmg)</td><td>$($death)</td><td>$($tKill)</td>"
       
       $count2 = 0  
       foreach ($min in 1..$timeBlock) {
@@ -1778,18 +1838,19 @@ $ccPink   = 'rowTeamBoth'
 
         $subtotalDmg[$count2] += $dmg
 
-        if ($min -in $timeBlock,([math]::Floor($round1EndTime / 60))) {
+        if ($min -in $timeBlock, ([math]::Floor($round1EndTime / 60))) {
           #rnd total
-          if ($min -le ([math]::Floor($round1EndTime / 60)))  {
+          if ($min -le ([math]::Floor($round1EndTime / 60))) {
             $round = 1
-          } else {
+          }
+          else {
             $round = 2
           }
-          $dmg   = ($arrPlayerTable | Where { $_.Name -eq $p -and $_.Round -eq $round } | Measure Dmg -Sum).Sum
+          $dmg = ($arrPlayerTable | Where { $_.Name -eq $p -and $_.Round -eq $round } | Measure Dmg -Sum).Sum
           $table += "<td>$($dmg)</td>"
         }
 
-        $count2 +=1
+        $count2 += 1
       }
 
       $table += "</tr>`n"
@@ -1803,7 +1864,7 @@ $ccPink   = 'rowTeamBoth'
       $table += "<td>$($subtotalDmg[$count])</td>"
       $count += 1
 
-      if ($count -in $timeBlock,([math]::Floor($round1EndTime / 60))) { $table += "<td></td>" }
+      if ($count -in $timeBlock, ([math]::Floor($round1EndTime / 60))) { $table += "<td></td>" }
     }
     $table += "</tr></tfoot>`n"
 
@@ -1827,13 +1888,13 @@ $ccPink   = 'rowTeamBoth'
     $tableHeader += "</tr></thead>`n"
 
     $count = 1
-    $subtotalCap   = @(1..$timeBlock | foreach { 0 } )
-    $subtotalTook  = @(1..$timeBlock | foreach { 0 } )
+    $subtotalCap = @(1..$timeBlock | foreach { 0 } )
+    $subtotalTook = @(1..$timeBlock | foreach { 0 } )
     $subtotalThrow = @(1..$timeBlock | foreach { 0 } )
 
     foreach ($p in $playerList) {    
       #$pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $p 
-      $table +=  "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td>
+      $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td>
                     <td>$(($arrPlayerTable | Where Name -EQ $p | Measure FlagCap   -Sum).Sum)</td>
                     <td>$(($arrPlayerTable | Where Name -EQ $p | Measure FlagTake  -Sum).Sum)</td>
                     <td>$(($arrPlayerTable | Where Name -EQ $p | Measure FlagThrow -Sum).Sum)</td>
@@ -1844,32 +1905,34 @@ $ccPink   = 'rowTeamBoth'
       $count2 = 0
       foreach ($min in 1..$timeBlock) {
         $key = "$($min)_$($p)"
-        $cap    = $arrFlagCapMin.$key
-        $took   = $arrFlagTookMin.$key
-        $throw  = $arrFlagThrowMin.$key
-        $stop   = $arrFlagStopMin.$key
+        $cap = $arrFlagCapMin.$key
+        $took = $arrFlagTookMin.$key
+        $throw = $arrFlagThrowMin.$key
+        $stop = $arrFlagStopMin.$key
 
-        if ($cap -in '',$null -and $took -in '',$null) { 
-          if ($Stop -notin '',$null) {
+        if ($cap -in '', $null -and $took -in '', $null) { 
+          if ($Stop -notin '', $null) {
             $value = $stop
             $cellCC = $ccAmber
-          } else {
-            $value  = ''
+          }
+          else {
+            $value = ''
             $cellCC = nullValueColorCode
           }
-        } else {
-          $subtotalCap[$count2]  += $cap
-          if ($took -in '',$null) { $took = 0 }
+        }
+        else {
+          $subtotalCap[$count2] += $cap
+          if ($took -in '', $null) { $took = 0 }
           $subtotalTook[$count2] += $Took
-          if ($throw -in '',$null) { $throw = 0 }
+          if ($throw -in '', $null) { $throw = 0 }
           $subtotalThrow[$count2] += $Throw
           $cellCC = $ccGreen
-          if ($cap  -in '',$null) { $cap =  '0'; $cellCC = $ccOrange }
+          if ($cap -in '', $null) { $cap = '0'; $cellCC = $ccOrange }
           $value = "$($cap)/$($Took)/$($throw)"
         }
 
         $table += "<td class=`"$($cellCC)`">$($value)</td>"
-        $count2 +=1
+        $count2 += 1
       }
 
       $table += "</tr>`n"
@@ -1888,7 +1951,7 @@ $ccPink   = 'rowTeamBoth'
     $htmlOut += $table
     $htmlOut += "</table>`n"
 
-    Remove-Variable cellCC,value,took,cap,key,subtotalCap,subtotalTook
+    Remove-Variable cellCC, value, took, cap, key, subtotalCap, subtotalTook
 
     ###
     # Class related tables....
@@ -1914,23 +1977,24 @@ $ccPink   = 'rowTeamBoth'
 
     foreach ($p in $playerList) { 
       $kills = ($arrPlayerTable | Where Name -eq $p | Measure Kills -sum).Sum
-      $table +=  "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($kills)</td>"
+      $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($kills)</td>"
 
       $count2 = 0
       foreach ($o in ($ClassAllowedwithSG)) {
         $key = "$($p)_$($o)"
         $kills = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $o } | Measure-Object Kills -Sum).Sum
-        $dth   = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.PlayerClass -eq $o } | Measure-Object Death -Sum).Sum
+        $dth = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.PlayerClass -eq $o } | Measure-Object Death -Sum).Sum
         
         if ($kills + $dth -gt 0) {
           $table += "<td>$($kills)/$($dth)</td>"
-        } else {
+        }
+        else {
           $table += "<td class=`"$ccGrey`"></td>"
         }
 
         $subtotalFrg[$count2] += $kills
         $subtotalDth[$count2] += $dth
-        $count2 +=1
+        $count2 += 1
       }
 
       $table += "</tr>`n"
@@ -1960,12 +2024,12 @@ $ccPink   = 'rowTeamBoth'
 
     $count = 1
     foreach ($p in $playerList) {
-        $table +=  "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td>"
+      $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td>"
         
       foreach ($r in 1..2) {
         $pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $p -Round $r
-        if ($arrPlayerTable[$pos].Death -in 0,'',$null) { $kd = 'n/a' }
-        else { $kd = [math]::Round( $arrPlayerTable[$pos].Kills / $arrPlayerTable[$pos].Death ,2) }
+        if ($arrPlayerTable[$pos].Death -in 0, '', $null) { $kd = 'n/a' }
+        else { $kd = [math]::Round( $arrPlayerTable[$pos].Kills / $arrPlayerTable[$pos].Death , 2) }
 
         $table += "<td>$($kd)</td>"
 
@@ -1973,12 +2037,12 @@ $ccPink   = 'rowTeamBoth'
         foreach ($o in $classAllowed) {
           $key = "$($p)_$($o)"
         
-          if ((Get-Variable "arrTimeClassRnd$r").Value.$key -in '',$null -or $kd -eq 'n/a') { $time = '' }
+          if ((Get-Variable "arrTimeClassRnd$r").Value.$key -in '', $null -or $kd -eq 'n/a') { $time = '' }
           else { $time = "{0:m\:ss}" -f [timespan]::FromSeconds((Get-Variable "arrTimeClassRnd$r").Value.$key) }
 
           if ($time) { $table += "<td>$($time)</td>" }
-          else       { $table += "<td class=`"$ccGrey`"></td>" }
-          $count2 +=1
+          else { $table += "<td class=`"$ccGrey`"></td>" }
+          $count2 += 1
         }
       }
       $table += "</tr>`n"
@@ -1998,7 +2062,7 @@ $ccPink   = 'rowTeamBoth'
 
     $count = 1
     $table = ''
-    $tableHeader =  "<table id=`"weaponStats$count`"><tr><th colspan=`"2`"></th><th colspan=`"6`">Rnd1</th><th colspan=`"6`">Rnd2</th></tr>"
+    $tableHeader = "<table id=`"weaponStats$count`"><tr><th colspan=`"2`"></th><th colspan=`"6`">Rnd1</th><th colspan=`"6`">Rnd2</th></tr>"
     $tableHeader += "<tr><th>Weapon</th><th>Class</th><th>Shots</th><th>Hit%</th><th>Kills</th><th>Dmg</th><th>Dth</th><th>DmgT</th><th>Shots</th><th>Hit%</th><th>Kills</th><th>Dmg</th><th>Dth</th><th>DmgT</th></tr>`n"
 
     $divCol = 1
@@ -2016,7 +2080,7 @@ $ccPink   = 'rowTeamBoth'
       $htmlOut += "<hr><h4>$($p)</h4>"
 
       $pClassKeys = @()
-      $totalTime  = 0
+      $totalTime = 0
       $classStats = ''
       $pClassKeys = $arrTimeClassRnd1.Keys | foreach { if ($_ -match "^$($p -replace $regExReplaceFix)_[1-9]`$") { $_ } } 
       foreach ($i in $pClassKeys) { $totalTime += $arrTimeClassRnd1.$i }
@@ -2025,7 +2089,7 @@ $ccPink   = 'rowTeamBoth'
       $htmlOut += "<b>Rnd1:</b> $($classStats) | " 
 
       $pClassKeys = @()
-      $totalTime  = 0
+      $totalTime = 0
       $classStats = ''
       $pClassKeys = $arrTimeClassRnd2.Keys | foreach { if ($_ -match "^$($p -replace $regExReplaceFix)_[1-9]`$") { $_ } } 
 
@@ -2036,39 +2100,39 @@ $ccPink   = 'rowTeamBoth'
       Remove-Variable pClassKeys, totalTime, classStats
 
       $playerStats = ''
-      $lastClass   = ''
-      $totKill  = @(0,0,0)
-      $totDmg   = @(0,0,0)
-      $totDth   = @(0,0,0)
-      $totDmgTk = @(0,0,0)
-      $foundFF  = 0
+      $lastClass = ''
+      $totKill = @(0, 0, 0)
+      $totDmg = @(0, 0, 0)
+      $totDth = @(0, 0, 0)
+      $totDmgTk = @(0, 0, 0)
+      $foundFF = 0
 
-      $allWeapKeys  = $arrWeaponTable | Where { $_.Name -eq $p -and $_.Weapon -notmatch '^(world|suicide|.*-ff)$'} `
-                                      | Group-Object Class,Weapon `
-                                      | %{ $_.Group | Select Class,Weapon -First 1 } `
-                                      | Sort-Object Class,Weapon
-      $allWeapKeys += $arrWeaponTable | Where { $_.Name -eq $p -and $_.Weapon -match '^(world|suicide|.*-ff)$'} `
-                                      | Group-Object Class,Weapon `
-                                      | %{ $_.Group | Select Class,Weapon -First 1 } `
-                                      | Sort-Object Class,Weapon
+      $allWeapKeys = $arrWeaponTable | Where { $_.Name -eq $p -and $_.Weapon -notmatch '^(world|suicide|.*-ff)$' } `
+      | Group-Object Class, Weapon `
+      | % { $_.Group | Select Class, Weapon -First 1 } `
+      | Sort-Object Class, Weapon
+      $allWeapKeys += $arrWeaponTable | Where { $_.Name -eq $p -and $_.Weapon -match '^(world|suicide|.*-ff)$' } `
+      | Group-Object Class, Weapon `
+      | % { $_.Group | Select Class, Weapon -First 1 } `
+      | Sort-Object Class, Weapon
 
       foreach ($w in $allWeapKeys) {
         if ($w.Class -eq 10) { $class = 9 }
-        else                 { $class = $w.Class}
+        else { $class = $w.Class }
         $weapon = $w.Weapon
 
-        $objRnd1 = [PSCustomObject]@{ Name=$p; Class=$class; Kills=0; Dmg=0; Death=0; DmgTaken=0; AttackCount=0; HitPercent=''; pos=1 }
-        $objRnd2 = [PSCustomObject]@{ Name=$p; Class=$class; Kills=0; Dmg=0; Death=0; DmgTaken=0; AttackCount=0; HitPercent=''; pos=2 }
+        $objRnd1 = [PSCustomObject]@{ Name = $p; Class = $class; Kills = 0; Dmg = 0; Death = 0; DmgTaken = 0; AttackCount = 0; HitPercent = ''; pos = 1 }
+        $objRnd2 = [PSCustomObject]@{ Name = $p; Class = $class; Kills = 0; Dmg = 0; Death = 0; DmgTaken = 0; AttackCount = 0; HitPercent = ''; pos = 2 }
         
-        foreach ($o in @($objRnd1,$objRnd2)) {
+        foreach ($o in @($objRnd1, $objRnd2)) {
           $o.Kills = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object Kills -Sum).Sum
-          $o.Dmg   = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object Dmg -Sum).Sum
+          $o.Dmg = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object Dmg -Sum).Sum
           $o.Death = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object Death -Sum).Sum
-          $o.DmgTaken    = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object DmgTaken -Sum).Sum
+          $o.DmgTaken = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object DmgTaken -Sum).Sum
           $o.AttackCount = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object AttackCount -Sum).Sum
           
           if ($o.AttackCount -gt 0) {
-            $o.HitPercent  = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object DmgCount -Sum).Sum / $o.AttackCount
+            $o.HitPercent = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $w.Class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon } | Measure-Object DmgCount -Sum).Sum / $o.AttackCount
           }
         }    
 
@@ -2077,26 +2141,27 @@ $ccPink   = 'rowTeamBoth'
             $playerStats += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td colspan=2 align=right><b>$($ClassToStr[$lastClass]) Totals:</b></td>
                               <td></td><td></td><td>$(nullValueAsBlank $totKill[0])</td><td>$(nullValueAsBlank $totDmg[0])</td><td>$(nullValueAsBlank $totDth[0])</td><td>$(nullValueAsBlank $totDmgTk[0])</td>
                               <td></td><td></td><td>$(nullValueAsBlank $totKill[1])</td><td>$(nullValueAsBlank $totDmg[1])</td><td>$(nullValueAsBlank $totDth[1])</td><td>$(nullValueAsBlank $totDmgTk[1])</td></tr>"
-                              #<td></td><td></td><td>$(nullValueAsBlank $totKill[2])</td><td>$(nullValueAsBlank $totDmg[2])</td><td>$(nullValueAsBlank $totDth[2])</td><td>$(nullValueAsBlank $totDmgTk[2])</td></tr>"
+            #<td></td><td></td><td>$(nullValueAsBlank $totKill[2])</td><td>$(nullValueAsBlank $totDmg[2])</td><td>$(nullValueAsBlank $totDth[2])</td><td>$(nullValueAsBlank $totDmgTk[2])</td></tr>"
           }
           
           if ($weapon -match '(world|suicide|-ff)$') { $foundFF++ }
           
           $lastClass = $class
-          $totKill  = @(0,0,0)
-          $totDmg   = @(0,0,0)
-          $totDth   = @(0,0,0)
-          $totDmgTk = @(0,0,0)
+          $totKill = @(0, 0, 0)
+          $totDmg = @(0, 0, 0)
+          $totDth = @(0, 0, 0)
+          $totDmgTk = @(0, 0, 0)
         }
 
-        $totKill[0]  += [double]$objRnd1.Kills;    $totKill[1]  += [double]$objRnd2.Kills;    $totKill[2]  = ([double]$totKill[0]  + [double]$totKill[1])
-        $totDmg[0]   += [double]$objRnd1.Dmg;      $totDmg[1]   += [double]$objRnd2.Dmg;      $totDmg[2]   = ([double]$totDmg[0]   + [double]$totDmg[1])  
-        $totDth[0]   += [double]$objRnd1.Death;    $totDth[1]   += [double]$objRnd2.Death;    $totDth[2]   = ([double]$totDth[0]   + [double]$totDth[1])
+        $totKill[0] += [double]$objRnd1.Kills; $totKill[1] += [double]$objRnd2.Kills; $totKill[2] = ([double]$totKill[0] + [double]$totKill[1])
+        $totDmg[0] += [double]$objRnd1.Dmg; $totDmg[1] += [double]$objRnd2.Dmg; $totDmg[2] = ([double]$totDmg[0] + [double]$totDmg[1])  
+        $totDth[0] += [double]$objRnd1.Death; $totDth[1] += [double]$objRnd2.Death; $totDth[2] = ([double]$totDth[0] + [double]$totDth[1])
         $totDmgTk[0] += [double]$objRnd1.DmgTaken; $totDmgTk[1] += [double]$objRnd2.DmgTaken; $totDmgTk[2] = ([double]$totDmgTk[0] + [double]$totDmgTk[1])
         
         if ($weapon -match '^(world|suicide|.*-ff$)') {
           $ccNormOrSuicide = $ccAmber
-        } else {
+        }
+        else {
           $ccNormOrSuicide = $ccOrange
         }
 
@@ -2126,7 +2191,7 @@ $ccPink   = 'rowTeamBoth'
                             <td class=`"$(nullValueColorCode ($objRnd2.Dmg) $ccGreen)`">$(nullValueAsBlank $objRnd2.Dmg)</td>
                             <td class=`"$(nullValueColorCode ($objRnd2.Death) $ccNormOrSuicide)`">$(nullValueAsBlank $objRnd2.Death)</td>
                             <td class=`"$(nullValueColorCode ($objRnd2.DmgTaken) $ccNormOrSuicide)`">$(nullValueAsBlank $objRnd2.DmgTaken)</td></tr>`n"
-                          <# Removed Sub totals - too large
+        <# Removed Sub totals - too large
                             <td class=`"$(nullValueColorCode $subTotalShot    $ccGreen)`">$(nullValueAsBlank $subTotalShot)</td>
                             <td class=`"$(nullValueColorCode $subTotalHit   $ccGreen)`">$('{0:P0}' -f (nullValueAsBlank $subTotalHit))</td>
                             <td class=`"$(nullValueColorCode $subTotalKill  $ccGreen)`">$(nullValueAsBlank $subTotalKill)</td>
@@ -2141,7 +2206,7 @@ $ccPink   = 'rowTeamBoth'
       $playerStats += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td colspan=2 align=right><b>$($lastClass) Totals:</b></td>
                       <td></td><td></td><td>$(nullValueAsBlank $totKill[0])</td><td>$(nullValueAsBlank $totDmg[0])</td><td>$(nullValueAsBlank $totDth[0])</td><td>$(nullValueAsBlank $totDmgTk[0])</td>
                       <td></td><td></td><td>$(nullValueAsBlank $totKill[1])</td><td>$(nullValueAsBlank $totDmg[1])</td><td>$(nullValueAsBlank $totDth[1])</td><td>$(nullValueAsBlank $totDmgTk[1])</td></tr>`n"
-                      #<td></td><td></td><td>$(nullValueAsBlank $totKill[2])</td><td>$(nullValueAsBlank $totDmg[2])</td><td>$(nullValueAsBlank $totDth[2])</td><td>$(nullValueAsBlank $totDmgTk[2])</td></tr>`n"
+      #<td></td><td></td><td>$(nullValueAsBlank $totKill[2])</td><td>$(nullValueAsBlank $totDmg[2])</td><td>$(nullValueAsBlank $totDth[2])</td><td>$(nullValueAsBlank $totDmgTk[2])</td></tr>`n"
 
       $htmlOut += $tableHeader       
       $htmlOut += $playerStats       
@@ -2165,14 +2230,14 @@ $ccPink   = 'rowTeamBoth'
 
   ## Object/Table for Text-base Summaries
   $arrResultTable += [pscustomobject]@{ 
-                         Match      = $jsonFile.BaseName -replace '_blue_vs_red.*',''
-                         Winner = switch ($arrResult.winningTeam) { '0' { "Draw" }; "1" { "Team1" }; "2" { "Team2" } } 
-                         Rating = $arrResult.winRating
-                         Score1 = $arrResult.team1Score
-                         Score2 = $arrResult.team2Score
-                         Team1 = ($playerlist | ForEach-Object { if ($arrTeam.$_ -match "1") { $_ } }) -join ','
-                         Team2 = ($playerlist | ForEach-Object { if ($arrTeam.$_ -match "2") { $_ } }) -join ','
-                       }
+    Match  = $jsonFile.BaseName -replace '_blue_vs_red.*', ''
+    Winner = switch ($arrResult.winningTeam) { '0' { "Draw" }; "1" { "Team1" }; "2" { "Team2" } } 
+    Rating = $arrResult.winRating
+    Score1 = $arrResult.team1Score
+    Score2 = $arrResult.team2Score
+    Team1  = ($playerlist | ForEach-Object { if ($arrTeam.$_ -match "1") { $_ } }) -join ','
+    Team2  = ($playerlist | ForEach-Object { if ($arrTeam.$_ -match "2") { $_ } }) -join ','
+  }
 
   foreach ($p in $playerList) {
     #Data that is seperated by round - work out whos att and def.
@@ -2186,13 +2251,13 @@ $ccPink   = 'rowTeamBoth'
         elseif ($aod -eq 'Def') { $refSummary = ([ref]$arrSummaryDefTable); $refClassTime = ([ref]$arrClassTimeDefTable); $refClassFrag = ([ref]$arrClassFragDefTable) }
 
         arrSummaryTable-UpdatePlayer -table $refSummary -player $p  -kills ([int]$arrPlayerTable[$pos].Kills)  `
-                                                                    -death ([int]$arrPlayerTable[$pos].Death) `
-                                                                    -tkill ([int]$arrPlayerTable[$pos].TKill)
+          -death ([int]$arrPlayerTable[$pos].Death) `
+          -tkill ([int]$arrPlayerTable[$pos].TKill)
         arrSummaryTable-SetPlayerProperty -table $refSummary -player $p -property 'Dmg' -value ([double]$arrPlayerTable[$pos].Dmg)
   
         foreach ($i in $ClassAllowedWithSG) {
           $key = "$($p)_$($i)"
-          $time  = [int](Get-Variable "arrTimeClassRnd$round").Value.$key
+          $time = [int](Get-Variable "arrTimeClassRnd$round").Value.$key
           $kills = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $i -and $_.Round -eq $round } | Measure-Object Kills -Sum).Sum
           $class = ($ClassToStr[$i])
           
@@ -2211,7 +2276,7 @@ $ccPink   = 'rowTeamBoth'
     #Data that are not divded up by round
     switch ($arrResult.winningTeam) {
       { $_ -eq '0' -or 
-        $arrTeam.$p -match "[1-2]&[1-2]"}  { 
+        $arrTeam.$p -match "[1-2]&[1-2]" } { 
         arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'Draw'
         arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryDefTable) -player $p -property 'Draw'
       }
@@ -2235,20 +2300,20 @@ $ccPink   = 'rowTeamBoth'
 
 #Value Per Minute
 function Table-CalculateVPM {
-  param($Value,$TimePlayed,$Round)
+  param($Value, $TimePlayed, $Round)
   
   if ($Value -eq 0) { return $null }
-  if ($Round -in '',$null) { $Round = 2 }
+  if ($Round -in '', $null) { $Round = 2 }
 
   if (!$TimePlayed) { return '' }
-  return [math]::Round($Value / ($TimePlayed/60),$Round)
+  return [math]::Round($Value / ($TimePlayed / 60), $Round)
 }
 
 $textOut = ''
 $textOut += "###############"
 $textOut += "`n   Game Log "
 $textOut += "`n###############"
-$textOut += $arrResultTable | Format-Table Match,Winner,@{L='Rating';E={'{0:P0}' -f $_.Rating}},Score1,Team1,Score2,Team2 -Wrap | Out-String
+$textOut += $arrResultTable | Format-Table Match, Winner, @{L = 'Rating'; E = { '{0:P0}' -f $_.Rating } }, Score1, Team1, Score2, Team2 -Wrap | Out-String
 
 $textOut += "`n##############$(if ($jsonFileCount -gt 1) { "##############" })"
 $textOut += "`n FINAL TOTALS $(if ($jsonFileCount -gt 1) { " - $jsonFileCount games" })"
@@ -2258,15 +2323,15 @@ $textOut += "`nAttack Summary`n"
 # Update the Attack Table into presentation format
 foreach ($i in $arrSummaryAttTable) {
   $i.KPM = Table-CalculateVPM $i.Kills $i.TimePlayed
-  if ($i.Death) { $i.KD  = [math]::Round($i.Kills / $i.Death,2) }
+  if ($i.Death) { $i.KD = [math]::Round($i.Kills / $i.Death, 2) }
   $i.DPM = Table-CalculateVPM $i.Dmg $i.TimePlayed 0
-  $i.Classes    = (Table-ClassInfo ([ref]$arrClassTimeAttTable) $i.Name $i.TimePlayed)
-  $i.FlagTime   = "{0:m\:ss}" -f [timespan]::FromSeconds( $i.FlagTime )
+  $i.Classes = (Table-ClassInfo ([ref]$arrClassTimeAttTable) $i.Name $i.TimePlayed)
+  $i.FlagTime = "{0:m\:ss}" -f [timespan]::FromSeconds( $i.FlagTime )
   $i.TimePlayed = Format-MinSec $i.TimePlayed
 }
 
-$textOut += $arrSummaryAttTable | Format-Table Name,KPM,KD,Kills,Death,TKill,@{L='Dmg';E={ '{0:n0}' -f $_.Dmg } },@{L='DPM';E={ '{0:n0}' -f $_.DPM } },@{L='FlagCap';E={ '{0:n0}' -f $_.FlagCap } },@{L='FlagTake';E={ '{0:n0}' -f $_.FlagTake } },FlagTime,TimePlayed,Classes | Out-String
-                                   <# OLD - See presentation format above
+$textOut += $arrSummaryAttTable | Format-Table Name, KPM, KD, Kills, Death, TKill, @{L = 'Dmg'; E = { '{0:n0}' -f $_.Dmg } }, @{L = 'DPM'; E = { '{0:n0}' -f $_.DPM } }, @{L = 'FlagCap'; E = { '{0:n0}' -f $_.FlagCap } }, @{L = 'FlagTake'; E = { '{0:n0}' -f $_.FlagTake } }, FlagTime, TimePlayed, Classes | Out-String
+<# OLD - See presentation format above
                                    @{Label='KPM';Expression={ Table-CalculateVPM $_.Kills $_.TimePlayed }},@{Label='K/D';Expression={ [math]::Round($_.Kills / $_.Death,2) }}, ` 
                                    Kills,Death,TKill,Dmg, `
                                    @{Label='DPM';Expression={ Table-CalculateVPM $_.Dmg $_.TimePlayed 0 }}, `
@@ -2279,15 +2344,15 @@ $textOut += $arrSummaryAttTable | Format-Table Name,KPM,KD,Kills,Death,TKill,@{L
 # Update the Def Table into presentation format
 foreach ($j in $arrSummaryDefTable) {
   $j.KPM = Table-CalculateVPM $j.Kills $j.TimePlayed
-  $j.KD  = [math]::Round($j.Kills / $j.Death,2)
+  $j.KD = [math]::Round($j.Kills / $j.Death, 2)
   $j.DPM = Table-CalculateVPM $j.Dmg $j.TimePlayed 0
-  $j.Classes    = (Table-ClassInfo ([ref]$arrClassTimeDefTable) $j.Name $j.TimePlayed)
+  $j.Classes = (Table-ClassInfo ([ref]$arrClassTimeDefTable) $j.Name $j.TimePlayed)
   $j.TimePlayed = Format-MinSec $j.TimePlayed
 }
 
 $textOut += "Defence Summary`n"
-$textOut += $arrSummaryDefTable | Format-Table Name,KPM,KD,Kills,Death,TKill,@{L='Dmg';E={ '{0:n0}' -f $_.Dmg } },@{L='DPM';E={ '{0:n0}' -f $_.DPM } },@{L='FlagStop';E={ '{0:n0}' -f $_.FlagStop } },Win,Draw,Loss,TimePlayed,Classes | Out-String
-                                   <# OLD - See presentation format above
+$textOut += $arrSummaryDefTable | Format-Table Name, KPM, KD, Kills, Death, TKill, @{L = 'Dmg'; E = { '{0:n0}' -f $_.Dmg } }, @{L = 'DPM'; E = { '{0:n0}' -f $_.DPM } }, @{L = 'FlagStop'; E = { '{0:n0}' -f $_.FlagStop } }, Win, Draw, Loss, TimePlayed, Classes | Out-String
+<# OLD - See presentation format above
                                    @{Label='KPM';Expression={ Table-CalculateVPM $_.Kills $_.TimePlayed }},@{Label='K/D';Expression={ [math]::Round($_.Kills / $_.Death,2) }}, `
                                    Kills,Death,TKill,Dmg, `
                                    @{Label='DPM';Expression={ Table-CalculateVPM $_.Dmg $_.TimePlayed 0 }}, `
@@ -2297,28 +2362,28 @@ $textOut += $arrSummaryDefTable | Format-Table Name,KPM,KD,Kills,Death,TKill,@{L
                                 | Out-String#>
 
 $textOut += "Class Kills / KPM Summary - Attack`n"
-$textOut += $arrClassFragAttTable  | Format-Table Name,Sco,@{L='KPM';E={ Table-CalculateVPM $_.Sco ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sco  }}, `
-                                      Sold, @{L='KPM';E={ Table-CalculateVPM $_.Sold ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sold }}, `
-                                      Demo, @{L='KPM';E={ Table-CalculateVPM $_.Demo ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Demo }}, `
-                                      Med,  @{L='KPM';E={ Table-CalculateVPM $_.Med  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Med  }}, `
-                                      HwG,  @{L='KPM';E={ Table-CalculateVPM $_.HwG  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).HwG  }}, `
-                                      Pyro, @{L='KPM';E={ Table-CalculateVPM $_.Pyro ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Pyro }}, `
-                                      Spy,  @{L='KPM';E={ Table-CalculateVPM $_.Spy  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Spy  }}, `
-                                      Eng,  @{L='KPM';E={ Table-CalculateVPM $_.Eng  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Eng  }}, `
-                                      SG,   @{L='KPM';E={ Table-CalculateVPM $_.SG   ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Eng  }}  `
-                                   | Out-String
+$textOut += $arrClassFragAttTable  | Format-Table Name, Sco, @{L = 'KPM'; E = { Table-CalculateVPM $_.Sco ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sco } }, `
+  Sold, @{L = 'KPM'; E = { Table-CalculateVPM $_.Sold ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sold } }, `
+  Demo, @{L = 'KPM'; E = { Table-CalculateVPM $_.Demo ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Demo } }, `
+  Med, @{L = 'KPM'; E = { Table-CalculateVPM $_.Med  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Med } }, `
+  HwG, @{L = 'KPM'; E = { Table-CalculateVPM $_.HwG  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).HwG } }, `
+  Pyro, @{L = 'KPM'; E = { Table-CalculateVPM $_.Pyro ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Pyro } }, `
+  Spy, @{L = 'KPM'; E = { Table-CalculateVPM $_.Spy  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Spy } }, `
+  Eng, @{L = 'KPM'; E = { Table-CalculateVPM $_.Eng  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Eng } }, `
+  SG, @{L = 'KPM'; E = { Table-CalculateVPM $_.SG   ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Eng } }  `
+| Out-String
    
 $textOut += "Class Kills / KPM Summary - Defence`n"
-$textOut += $arrClassFragDefTable  | Format-Table Name,Sco,@{L='KPM';E={ Table-CalculateVPM $_.Sco ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Sco  }}, `
-                                      Sold, @{L='KPM';E={ Table-CalculateVPM $_.Sold ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Sold }}, `
-                                      Demo, @{L='KPM';E={ Table-CalculateVPM $_.Demo ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Demo }}, `
-                                      Med,  @{L='KPM';E={ Table-CalculateVPM $_.Med  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Med  }}, `
-                                      HwG,  @{L='KPM';E={ Table-CalculateVPM $_.HwG  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).HwG  }}, `
-                                      Pyro, @{L='KPM';E={ Table-CalculateVPM $_.Pyro ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Pyro }}, `
-                                      Spy,  @{L='KPM';E={ Table-CalculateVPM $_.Spy  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Spy  }}, `
-                                      Eng,  @{L='KPM';E={ Table-CalculateVPM $_.Eng  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng  }}, `
-                                      SG,   @{L='KPM';E={ Table-CalculateVPM $_.SG   ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng  }}  `
-                                   | Out-String
+$textOut += $arrClassFragDefTable  | Format-Table Name, Sco, @{L = 'KPM'; E = { Table-CalculateVPM $_.Sco ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Sco } }, `
+  Sold, @{L = 'KPM'; E = { Table-CalculateVPM $_.Sold ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Sold } }, `
+  Demo, @{L = 'KPM'; E = { Table-CalculateVPM $_.Demo ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Demo } }, `
+  Med, @{L = 'KPM'; E = { Table-CalculateVPM $_.Med  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Med } }, `
+  HwG, @{L = 'KPM'; E = { Table-CalculateVPM $_.HwG  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).HwG } }, `
+  Pyro, @{L = 'KPM'; E = { Table-CalculateVPM $_.Pyro ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Pyro } }, `
+  Spy, @{L = 'KPM'; E = { Table-CalculateVPM $_.Spy  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Spy } }, `
+  Eng, @{L = 'KPM'; E = { Table-CalculateVPM $_.Eng  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng } }, `
+  SG, @{L = 'KPM'; E = { Table-CalculateVPM $_.SG   ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng } }  `
+| Out-String
 
 
 <# Moved class time to % in summary table.
@@ -2347,35 +2412,35 @@ $textOut += $arrClassTimeDefTable | Format-Table Name, `
 #>
 
 if (!$NoStatJson) {
-  $textJsonOut  = ([PSCustomObject]@{Matches='';SummaryAttack='';SummaryDefence='';ClassFragAttack='';ClassFragDefence='';ClassTimeAttack='';ClassTimeDefence=''})
-  $textJsonOut.Matches = @($arrResultTable | Select-Object Match,Winner,@{L='Rating';E={'{0:P0}' -f $_.Rating}},Score1,Team1,Score2,Team2)
+  $textJsonOut = ([PSCustomObject]@{Matches = ''; SummaryAttack = ''; SummaryDefence = ''; ClassFragAttack = ''; ClassFragDefence = ''; ClassTimeAttack = ''; ClassTimeDefence = '' })
+  $textJsonOut.Matches = @($arrResultTable | Select-Object Match, Winner, @{L = 'Rating'; E = { '{0:P0}' -f $_.Rating } }, Score1, Team1, Score2, Team2)
 
   $textJsonOut.SummaryAttack = ($arrSummaryAttTable)  #  | Select-Object -Property Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes)
   $textJsonOut.SummaryDefence = ($arrSummaryDefTable) #  | Select-Object -Property Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes)
 
   $textJsonOut.ClassFragAttack = ($arrClassFragAttTable  | Select-Object -Property Name, `
-                                                                                    Sco,  @{L='KPM1';E={ Table-CalculateVPM $_.Sco ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sco  }}, `
-                                                                                    Sold, @{L='KPM3';E={ Table-CalculateVPM $_.Sold ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sold }}, `
-                                                                                    Demo, @{L='KPM4';E={ Table-CalculateVPM $_.Demo ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Demo }}, `
-                                                                                    Med,  @{L='KPM5';E={ Table-CalculateVPM $_.Med  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Med  }}, `
-                                                                                    HwG,  @{L='KPM6';E={ Table-CalculateVPM $_.HwG  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).HwG  }}, `
-                                                                                    Pyro, @{L='KPM7';E={ Table-CalculateVPM $_.Pyro ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Pyro }}, `
-                                                                                    Spy,  @{L='KPM8';E={ Table-CalculateVPM $_.Spy  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Spy  }}, `
-                                                                                    Eng,  @{L='KPM9';E={ Table-CalculateVPM $_.Eng  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Eng  }}, `
-                                                                                    SG,   @{L='KPM0';E={ Table-CalculateVPM $_.SG   ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Eng  }})
+      Sco, @{L = 'KPM1'; E = { Table-CalculateVPM $_.Sco ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sco } }, `
+      Sold, @{L = 'KPM3'; E = { Table-CalculateVPM $_.Sold ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sold } }, `
+      Demo, @{L = 'KPM4'; E = { Table-CalculateVPM $_.Demo ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Demo } }, `
+      Med, @{L = 'KPM5'; E = { Table-CalculateVPM $_.Med  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Med } }, `
+      HwG, @{L = 'KPM6'; E = { Table-CalculateVPM $_.HwG  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).HwG } }, `
+      Pyro, @{L = 'KPM7'; E = { Table-CalculateVPM $_.Pyro ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Pyro } }, `
+      Spy, @{L = 'KPM8'; E = { Table-CalculateVPM $_.Spy  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Spy } }, `
+      Eng, @{L = 'KPM9'; E = { Table-CalculateVPM $_.Eng  ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Eng } }, `
+      SG, @{L = 'KPM0'; E = { Table-CalculateVPM $_.SG   ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Eng } })
   $textJsonOut.ClassFragDefence = ($arrClassFragDefTable | Select-Object -Property Name, `
-                                                                                    Sco,  @{L='KPM1';E={ Table-CalculateVPM $_.Sco ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Sco  }}, `
-                                                                                    Sold, @{L='KPM3';E={ Table-CalculateVPM $_.Sold ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Sold }}, `
-                                                                                    Demo, @{L='KPM4';E={ Table-CalculateVPM $_.Demo ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Demo }}, `
-                                                                                    Med,  @{L='KPM5';E={ Table-CalculateVPM $_.Med  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Med  }}, `
-                                                                                    HwG,  @{L='KPM6';E={ Table-CalculateVPM $_.HwG  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).HwG  }}, `
-                                                                                    Pyro, @{L='KPM7';E={ Table-CalculateVPM $_.Pyro ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Pyro }}, `
-                                                                                    Spy,  @{L='KPM8';E={ Table-CalculateVPM $_.Spy  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Spy  }}, `
-                                                                                    Eng,  @{L='KPM9';E={ Table-CalculateVPM $_.Eng  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng  }}, `
-                                                                                    SG,   @{L='KPM0';E={ Table-CalculateVPM $_.SG   ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng  }})
+      Sco, @{L = 'KPM1'; E = { Table-CalculateVPM $_.Sco ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Sco } }, `
+      Sold, @{L = 'KPM3'; E = { Table-CalculateVPM $_.Sold ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Sold } }, `
+      Demo, @{L = 'KPM4'; E = { Table-CalculateVPM $_.Demo ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Demo } }, `
+      Med, @{L = 'KPM5'; E = { Table-CalculateVPM $_.Med  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Med } }, `
+      HwG, @{L = 'KPM6'; E = { Table-CalculateVPM $_.HwG  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).HwG } }, `
+      Pyro, @{L = 'KPM7'; E = { Table-CalculateVPM $_.Pyro ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Pyro } }, `
+      Spy, @{L = 'KPM8'; E = { Table-CalculateVPM $_.Spy  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Spy } }, `
+      Eng, @{L = 'KPM9'; E = { Table-CalculateVPM $_.Eng  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng } }, `
+      SG, @{L = 'KPM0'; E = { Table-CalculateVPM $_.SG   ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng } })
 
-  $textJsonOut.ClassTimeAttack =  ($arrClassTimeAttTable  | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng)
-  $textJsonOut.ClassTimeDefence = ($arrClassTimeDefTable | Select-Object -Property Name,Sco,Sold,Demo,Med,HwG,Pyro,Spy,Eng)
+  $textJsonOut.ClassTimeAttack = ($arrClassTimeAttTable  | Select-Object -Property Name, Sco, Sold, Demo, Med, HwG, Pyro, Spy, Eng)
+  $textJsonOut.ClassTimeDefence = ($arrClassTimeDefTable | Select-Object -Property Name, Sco, Sold, Demo, Med, HwG, Pyro, Spy, Eng)
 
   ($textJsonOut | ConvertTo-Json) | Out-File -LiteralPath "$($outFileStr)_stats.json" -Encoding utf8
   Write-Host "JSON stats saved: $($outFileStr)_stats.json"
@@ -2385,13 +2450,14 @@ Write-Host "`n"
 Write-Host $textOut
 
 if ($TextSave) {
-    if ($jsonFileCount -eq 1) {
-      $TextFileStr = "$outFileStr.txt"
-    } else {   
-      $TextFileStr = "$($inputfile[0].Directory.FullName)\FO_Stats_Summary-$($jsonFileCount)games-$('{0:yyMMdd_HHmmss}' -f (Get-Date)).txt"
-    }
-    $textOut | Out-File -LiteralPath $TextFileStr -Encoding utf8
-    Write-Host "Text stats saved: $TextFileStr"
+  if ($jsonFileCount -eq 1) {
+    $TextFileStr = "$outFileStr.txt"
+  }
+  else {   
+    $TextFileStr = "$($inputfile[0].Directory.FullName)\FO_Stats_Summary-$($jsonFileCount)games-$('{0:yyMMdd_HHmmss}' -f (Get-Date)).txt"
+  }
+  $textOut | Out-File -LiteralPath $TextFileStr -Encoding utf8
+  Write-Host "Text stats saved: $TextFileStr"
 }
 
 
@@ -2408,7 +2474,7 @@ $arrWeaponTable | `  # | Where { ($_.AttackCount + $_.DmgCount) -GT 0 }  `
                       @{L='DmgPerAtt';E={ '{0,5:n1}' -f ($_.Dmg / $_.AttackCount) }}, `
                       @{L='DmgPerHit';E={ '{0,5:n1}' -f ($_.Dmg / $_.DmgCount) }} -GroupBy Round
  #>
- <# Testing New arrClassTimeTable.... the Att/Def is more accurate for some reason
+<# Testing New arrClassTimeTable.... the Att/Def is more accurate for some reason
  $arrClassTimetable | FT *,@{L='Total';E={ $_.Sco + $_.Sold + $_.Demo + $_.Hwg + $_.Med + $_.Pyro + $_.Spy + $_.Eng  }}
  # These use the original hash table....
  $arrClassTimeAttTable | FT *,@{L='Total';E={ $_.Sco + $_.Sold + $_.Demo + $_.Hwg + $_.Med + $_.Pyro + $_.Spy + $_.Eng  }}

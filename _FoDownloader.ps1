@@ -62,10 +62,10 @@ param (
 if ($Demos) { $AwsUrl = 'https://fortressone-demos.s3.amazonaws.com/' }
 else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
 
-$OCEPaths = @('sydney/','melbourne/','sydney-gz/','snoozer/')
-$USPaths  = @('california/','coach/','dallas/','dallas2/','iowa/','phoenix/','virginia/','miami/')
-$EUPaths  = @('dublin/','ireland/','stockholm/')
-$IntPaths = @('bahrain/','guam/','mumbai/','nz/','timbuktu/','tokyo/')
+$OCEPaths = @('sydney/','melbourne/')
+$USPaths  = @('california/','dallas/','virginia/','miami/')
+$EUPaths  = @('ireland/','stockholm/')
+$IntPaths = @('bahrain/','guam/','mumbai/','tokyo/')
 
 if     ($Region -eq 'ALL') { $LatestPaths = $OCEPaths + $USPaths + $EUPaths + $IntPaths }
 elseif ($Region -eq 'US')  { $LatestPaths = $USPaths  }
