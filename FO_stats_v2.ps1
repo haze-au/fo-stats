@@ -511,8 +511,9 @@ function GenerateVersusHtmlInnerTable {
     # Java Scirpt implemented
     #$tbl += "<td class=`"$(actionColorCode $refTeam.Value $player $o)`"><div class=`"VersusHover`">$($kills)<span class=`"VersusHoverText$colour`">$hoverText</span></div>
     #</td>"
-
-    $subtotal[$count2] = $kills + $subtotal[$count2]
+    if ($player -ne $o) { 
+      $subtotal[$count2] = $kills + $subtotal[$count2]
+    }
     $count2 += 1
   }
 
@@ -533,23 +534,27 @@ function GenerateSummaryHtmlTable {
   foreach ($p in $playerList) {
     if ($Defence) { 
       if ($arrTeam.$p -eq '1&2') { 
-        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>None</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
+        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>None</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
         $count += 1
         continue 
-      } elseif ($arrTeam.$p -eq '2&1') {
+      }
+      elseif ($arrTeam.$p -eq '2&1') {
         $rnds = @(1, 2)
-      } else {
+      }
+      else {
         $rnds = if ($arrTeam.$p -match '^.*2$') { '1' } else { '2' }
       }
     }
     else { 
       if ($arrTeam.$p -eq '2&1') { 
-        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td><None/td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
+        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>None</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
         $count += 1
         continue 
-      } elseif ($arrTeam.$p -eq '1&2') {
+      }
+      elseif ($arrTeam.$p -eq '1&2') {
         $rnds = @(1, 2)
-      } else {
+      }
+      else {
         $rnds = if ($arrTeam.$p -match '^1.*$') { '1' } else { '2' }
       }
     } 
@@ -586,7 +591,8 @@ function GenerateSummaryHtmlTable {
       $subtotal[0] += $kills; $subtotal[1] += $death; $subtotal[2] += $tkill; $subtotal[3] += $dmg; $subtotal[4] = ''
       if ($Attack) {  
         $subtotal[5] += $flagCap; $subtotal[6] += $flagTake; $subtotal[7] += $FlagTime
-      } else {
+      }
+      else {
         $subtotal[5] += $flagStop; $subtotal[6] = $null; $subtotal[7] = $null
       }
       $count += 1
