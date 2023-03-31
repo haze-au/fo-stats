@@ -250,15 +250,14 @@ function Generate-DailyStatsHTML {
     param([array]$JSON)
     
     $htmlBody  = '<div class=row><div class=column><h2>Match Log</h2>'
-    $htmlBody += ($JSON.Matches       | Sort-Object Name   | ConvertTo-Html -Fragment ) -replace '<table>','<table id="MatchLog">' -replace '<tbody><tr><th>','<thead><tr><th><tbody>' -replace '</th></tr>','</th></tr></thead>'
+    $htmlBody += ($JSON.Matches       | Sort-Object Name   | ConvertTo-Html -Fragment ) -replace '<table>','<table id="MatchLog">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'
     $htmlBody += '<h2>Attack Summary</h2>'
-    $htmlBody += ($JSON.SummaryAttack  | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="AttackSummary">'
+    $htmlBody += ($JSON.SummaryAttack  | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="AttackSummary">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'        
     $htmlBody += '<h2>Defence Summary</h2>'
-    $htmlBody += ($JSON.SummaryDefence | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name  | ConvertTo-Html -Fragment)  -replace '<table>','<table id="DefenceSummary">'
     $htmlBody += '<h2>Class Kills - Attack</h2>'
-    $htmlBody += ($JSON.ClassFragAttack | Sort-Object Name | ConvertTo-Html -Fragment)   -replace '<table>','<table id="ClassKillsAttack">' -replace '<tbody><tr><th>','<thead><tr><th><tbody>' -replace '</th></tr>','</th></tr></thead>'
+    $htmlBody += ($JSON.ClassFragAttack | Sort-Object Name | ConvertTo-Html -Fragment)   -replace '<table>','<table id="ClassKillsAttack">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'
     $htmlBody += '<h2>Class Kills - Defence</h2>'
-    $htmlBody += ($JSON.ClassFragDefence | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="ClassKillsDefence">' -replace '<tbody><tr><th>','<thead><tr><th><tbody>' -replace '</th></tr>','</th></tr></thead>'
+    $htmlBody += ($JSON.ClassFragDefence | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="ClassKillsDefence">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'
     $htmlBody += '</div></div><div class=row><div class=column style="width:580">'
     $htmlBody += '<h2>Class Time - Attack</h2>'
     $htmlBody += ($JSON.ClassTimeAttack | Select-Object Name, `
@@ -269,7 +268,7 @@ function Generate-DailyStatsHTML {
                                         @{L='HwG' ; E={Format-MinSec $_.HwG}}, `
                                         @{L='Pyro'; E={Format-MinSec $_.Pyro}}, `
                                         @{L='Spy' ; E={Format-MinSec $_.Spy}}, `
-                                        @{L='Eng' ; E={Format-MinSec $_.Eng}}  | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="ClassTimeAttack">' -replace '<tbody><tr><th>','<thead><tr><th><tbody>' -replace '</th></tr>','</th></tr></thead>'
+                                        @{L='Eng' ; E={Format-MinSec $_.Eng}}  | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="ClassTimeAttack">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'
     $htmlBody += '</div><div class=column style="width:580"> '
     $htmlBody += '<h2>Class Time - Defence</h2>'
     $htmlBody += ($JSON.ClassTimeDefence | Select-Object Name, `
@@ -280,51 +279,16 @@ function Generate-DailyStatsHTML {
                                         @{L='HwG' ; E={Format-MinSec $_.HwG}}, `
                                         @{L='Pyro'; E={Format-MinSec $_.Pyro}}, `
                                         @{L='Spy' ; E={Format-MinSec $_.Spy}}, `
-                                        @{L='Eng' ; E={Format-MinSec $_.Eng}}  | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="ClassTimeDefence">' -replace '<tbody><tr><th>','<thead><tr><th><tbody>' -replace '</th></tr>','</th></tr></thead>'
+                                        @{L='Eng' ; E={Format-MinSec $_.Eng}}  | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="ClassTimeDefence">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'
     $htmlBoyd += '</div></div>'
 
     $htmlHeader = @"
-    <style>
-     body {
-            font-family: Verdana, Arial, Geneva, Helvetica, sans-serif;
-            font-size: 12px;
-            color: black;
-        }
-        table, td, th {
-            border-color: black;
-            border-style: solid;
-            font-family: Verdana, Arial, Geneva, Helvetica, sans-serif;
-            font-size: 11px;
-        }
-        table {
-            border-width: 0 0 1px 1px;
-            border-spacing: 0;
-            border-collapse: collapse;
-        }
-        tr:nth-child(odd){
-            background-color: lightgrey;
-        }
-        td, th {
-            margin: 0;
-            padding: 4px;
-            border-width: 1px 1px 0 0;
-            text-align: left;
-        }
-        th {
-            color: white;
-            background-color: black;
-            font-weight: bold;
-        }
-        div {
-          padding-top: 1px;
-          padding-right: 5px;
-          padding-bottom: 1x;
-          padding-left: 1px;
-        }
-
-    </style>
-    <script src="tablesort.min.js"></script>
-    <script src="tablesort.number.min.js"></script>
+    <link rel="stylesheet" href="fo_daily.css">
+    <link rel="stylesheet" href="../../fo_daily.css">
+    <link rel="stylesheet" href="http://haze.fortressone.org/.css/fo_daily.css">
+    <script src="http://haze.fortressone.org/.css/fo_daily.js"></script>
+    <script src="http://haze.fortressone.org/.css/tablesort.min.js"></script>
+    <script src="http://haze.fortressone.org/.css/tablesort.number.min.js"></script>
 
 "@
     $htmlPost += '<script>fo_daily_post();</script>'
