@@ -788,8 +788,8 @@ foreach ($jsonFile in $inputFile) {
     $kind = $item.kind
 
     #Remove any underscores for _ tokens used in Keys 
-    $player = $item.player -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', '' 
-    $target = $item.target -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', '' 
+    $player = $item.player -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
+    $target = $item.target -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
     
     $p_team = $item.playerTeam
     $t_team = $item.targetTeam
