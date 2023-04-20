@@ -11,6 +11,7 @@ param([switch]$ForceBatch,
       [string]$FilterPath,
       [ValidateSet('ALL','US','EU','OCE','INT')]
               $Region,
+      [string]$GenerateHTML,
       [string]$OutFile )
 
 if ($ForceBatch) { $doBatch = $true }
@@ -152,8 +153,8 @@ function processFoStatsJSON {
           $CurrentJson.$array[$pos].FlagTake  += $p.FlagTake * $removeModifier
           $CurrentJson.$array[$pos].FlagCap   += $p.FlagCap * $removeModifier
           $CurrentJson.$array[$pos].Win   += $p.Win * $removeModifier
-          $CurrentJson.$array[$pos].Loss  += $p.Draw * $removeModifier
-          $CurrentJson.$array[$pos].Draw  += $p.Loss * $removeModifier
+          $CurrentJson.$array[$pos].Loss  += $p.Loss * $removeModifier
+          $CurrentJson.$array[$pos].Draw  += $p.Draw * $removeModifier
 
           if ($RemoveMatch) {
             $CurrentJson.$array[$pos].TimePlayed = Sum-MinSec -MinSec1 $CurrentJson.$array[$pos].TimePlayed -MinSec2 ($p.TimePlayed) -Deduct
@@ -254,6 +255,7 @@ function Generate-DailyStatsHTML {
     $htmlBody += '<h2>Attack Summary</h2>'
     $htmlBody += ($JSON.SummaryAttack  | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="AttackSummary">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'        
     $htmlBody += '<h2>Defence Summary</h2>'
+    $htmlBody += ($JSON.SummaryDefence  | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="DefenceSummary">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'        
     $htmlBody += '<h2>Class Kills - Attack</h2>'
     $htmlBody += ($JSON.ClassFragAttack | Sort-Object Name | ConvertTo-Html -Fragment)   -replace '<table>','<table id="ClassKillsAttack">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'
     $htmlBody += '<h2>Class Kills - Defence</h2>'
@@ -296,6 +298,11 @@ function Generate-DailyStatsHTML {
     return (ConvertTo-Html -Body $htmlBody -Head $htmlHeader -PostContent $htmlPost)
 } # end Generate HTML
 
+if ($GenerateHTML) {
+  Generate-DailyStatsHTML -JSON (Get-Content $GenerateHTML -Raw | ConvertFrom-Json) | Out-File ($GenerateHTML -replace '.json$','.html')
+  write-host "Generated HTML:- $GenerateHTML"
+  return
+}
 
 if ($RemoveMatch) {
   if (!$FromJson) { Write-Host '-FromJson required'; return}
