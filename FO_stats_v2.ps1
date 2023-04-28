@@ -968,7 +968,7 @@ foreach ($jsonFile in $inputFile) {
         switch ($arrResult.winningTeam) {
           '0' { $arrResult.winRating = 0; $arrResult.winRatingDesc = 'Nobody wins' }
           '1' { $arrResult.winRating = 1 - ($arrResult.team2Score / ($arrResult.team1Score + 10)); $arrResult.winRatingDesc = "Wins by $($item.team1Score - $item.team2Score) points" }
-          default { $arrResult.winRating = (($round1EndTime * 2) - $arrResult.time ) / $round1EndTime; $arrResult.winRatingDesc = "$("{0:m\:ss}" -f ([timespan]::fromseconds(($round1EndTime * 2) - $arrResult.time))) mins left" }
+          default { $arrResult.winRating = (($round1EndTime * 2) - $arrResult.time) / $round1EndTime; $arrResult.winRatingDesc = "$("{0:m\:ss}" -f ([timespan]::fromseconds(($round1EndTime * 2) - $arrResult.time))) mins left" }
         }
       }
 
@@ -1235,7 +1235,8 @@ foreach ($jsonFile in $inputFile) {
 
     function awardScaler {
       if ($arrResult.WinningTeam -eq 2) {
-        return [math]::Floor($args[0] * (1 + (1-$arrResult.WinRating)))
+        $playedPercent = ($arrResult.time - $round1EndTime) / $round1EndTime
+        return [math]::Floor($args[0] / $playedPercent)
       }
       else { return $args[0] }
     }
