@@ -1,4 +1,4 @@
-{"type": "gameStart", "map": "ff-destroy3", "numPlayers": 8, "numTeams": 2, "time": 0, "demo": "2023-06-20-13-13-14_[ff-destroy3]_blue_vs_red.mvd", "gameTimeStamp": "2023-06-20T13:13:24.189Z"},
+﻿[{"type": "gameStart", "map": "ff-destroy3", "numPlayers": 8, "numTeams": 2, "time": 0, "demo": "2023-06-20-13-13-14_[ff-destroy3]_blue_vs_red.mvd", "gameTimeStamp": "2023-06-20T13:13:24.189Z"},
 {"type": "playerStart", "player": "slappa", "classtime": 0, "time": 0, "gameTimeStamp": "2023-06-20T13:13:24.189Z"},
 {"type": "playerStart", "player": "hue.isma", "classtime": 0, "time": 0, "gameTimeStamp": "2023-06-20T13:13:24.189Z"},
 {"type": "playerStart", "player": "hue.muca", "classtime": 0, "time": 0, "gameTimeStamp": "2023-06-20T13:13:24.189Z"},
@@ -12943,4 +12943,4 @@
 {"type": "changeClass", "player": "twi-", "playerClass": 5, "nextClass": 0, "team": 2, "timePlayed": 0, "time": 1200, "gameTimeStamp": "2023-06-20T13:13:24.189Z"},
 {"type": "changeClass", "player": "hue.carp", "playerClass": 4, "nextClass": 0, "team": 1, "timePlayed": 0, "time": 1200, "gameTimeStamp": "2023-06-20T13:13:24.189Z"},
 {"type": "teamScores", "team1Score": 100, "team2Score": 10, "team1Name": "blue", "team2Name": "red", "winningTeam": 1, "time": 1200, "gameTimeStamp": "2023-06-20T13:13:24.189Z"},
-{"type": "gameEnd", "time": 1200, "gameTimeStamp": "2023-06-20T13:13:24.189Z"}
+{"type": "gameEnd", "time": 1200, "gameTimeStamp": "2023-06-20T13:13:24.189Z"}]

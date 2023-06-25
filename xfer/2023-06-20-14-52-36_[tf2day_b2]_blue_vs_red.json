@@ -1,4 +1,4 @@
-{"type": "gameStart", "map": "tf2day_b2", "numPlayers": 8, "numTeams": 2, "time": 0, "demo": "2023-06-20-14-52-36_[tf2day_b2]_blue_vs_red.mvd", "gameTimeStamp": "2023-06-20T14:52:46.612Z"},
+﻿[{"type": "gameStart", "map": "tf2day_b2", "numPlayers": 8, "numTeams": 2, "time": 0, "demo": "2023-06-20-14-52-36_[tf2day_b2]_blue_vs_red.mvd", "gameTimeStamp": "2023-06-20T14:52:46.612Z"},
 {"type": "playerStart", "player": "slappa", "classtime": 0, "time": 0, "gameTimeStamp": "2023-06-20T14:52:46.612Z"},
 {"type": "playerStart", "player": "hz", "classtime": 0, "time": 0, "gameTimeStamp": "2023-06-20T14:52:46.612Z"},
 {"type": "playerStart", "player": "hue.wos!", "classtime": 0, "time": 0, "gameTimeStamp": "2023-06-20T14:52:46.612Z"},
@@ -4719,4 +4719,4 @@
 {"type": "changeClass", "player": "hue.muca", "playerClass": 1, "nextClass": 0, "team": 2, "timePlayed": 0, "time": 664, "gameTimeStamp": "2023-06-20T14:52:46.612Z"},
 {"type": "changeClass", "player": "hue.carp", "playerClass": 3, "nextClass": 0, "team": 2, "timePlayed": 0, "time": 664, "gameTimeStamp": "2023-06-20T14:52:46.612Z"},
 {"type": "teamScores", "team1Score": 0, "team2Score": 10, "team1Name": "blue", "team2Name": "red", "winningTeam": 2, "time": 664, "gameTimeStamp": "2023-06-20T14:52:46.612Z"},
-{"type": "gameEnd", "time": 664, "gameTimeStamp": "2023-06-20T14:52:46.612Z"}
+{"type": "gameEnd", "time": 664, "gameTimeStamp": "2023-06-20T14:52:46.612Z"}]

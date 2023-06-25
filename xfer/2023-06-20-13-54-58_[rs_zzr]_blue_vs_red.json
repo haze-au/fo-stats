@@ -1,4 +1,4 @@
-{"type": "gameStart", "map": "rs_zzr", "numPlayers": 8, "numTeams": 2, "time": 0, "demo": "2023-06-20-13-54-58_[rs_zzr]_blue_vs_red.mvd", "gameTimeStamp": "2023-06-20T13:55:08.259Z"},
+﻿[{"type": "gameStart", "map": "rs_zzr", "numPlayers": 8, "numTeams": 2, "time": 0, "demo": "2023-06-20-13-54-58_[rs_zzr]_blue_vs_red.mvd", "gameTimeStamp": "2023-06-20T13:55:08.259Z"},
 {"type": "playerStart", "player": "hz", "classtime": 0, "time": 0, "gameTimeStamp": "2023-06-20T13:55:08.259Z"},
 {"type": "playerStart", "player": "hue.wos!", "classtime": 0, "time": 0, "gameTimeStamp": "2023-06-20T13:55:08.259Z"},
 {"type": "playerStart", "player": "hue.muca", "classtime": 0, "time": 0, "gameTimeStamp": "2023-06-20T13:55:08.259Z"},
@@ -11988,4 +11988,4 @@
 {"type": "changeClass", "player": "(1)hue.carp", "playerClass": 3, "nextClass": 0, "team": 2, "timePlayed": 0, "time": 1047, "gameTimeStamp": "2023-06-20T13:55:08.259Z"},
 {"type": "changeClass", "player": "zel", "playerClass": 6, "nextClass": 0, "team": 1, "timePlayed": 0, "time": 1047, "gameTimeStamp": "2023-06-20T13:55:08.259Z"},
 {"type": "teamScores", "team1Score": 50, "team2Score": 60, "team1Name": "blue", "team2Name": "red", "winningTeam": 2, "time": 1047, "gameTimeStamp": "2023-06-20T13:55:08.259Z"},
-{"type": "gameEnd", "time": 1047, "gameTimeStamp": "2023-06-20T13:55:08.259Z"}
+{"type": "gameEnd", "time": 1047, "gameTimeStamp": "2023-06-20T13:55:08.259Z"}]
