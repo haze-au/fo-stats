@@ -231,6 +231,7 @@ if ($DailyBatch) {
   $DayFilterOCE = [datetime]::Parse('19:00') # Syd 6am
   $DayFilterUS  = [datetime]::Parse('14:00') # Cali 6am
   $DayFilterEU  = [datetime]::Parse('6:00')  # UTC time
+  $DayFilterINT = [datetime]::Parse('16:00') # Dead zone for all regions - 3am Syd
   
   #OCE 19-23 +1 day, 00-18 Same day, 13-18 6am grace period
   if     ([DateTime]::UtcNow.hour -in 19..23) { $DayReportOCE = $DayFilterOCE.AddDays(1)  } 
@@ -245,10 +246,14 @@ if ($DailyBatch) {
   #EU UTC time, 0-6 6am grace period
   if ([DateTime]::UtcNow.hour  -in 0..6) { $DayFilterEU  = $DayFilterEU.AddDays(-1) }
   $DayReportEU = $DayFilterEU
-  
+
+  # Interational cut-off, new days starts at 4pm
+  if ([DateTime]::UtcNow.hour -in 0..15) { $DayReportINT = $DayFilterINT.AddDays(-1) }
+
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportOCE).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportUS).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
+  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportINT.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/international/international_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportINT).json"
 }
 
 
