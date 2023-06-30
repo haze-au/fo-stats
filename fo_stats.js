@@ -295,7 +295,8 @@ function InsertDailyStatsURL() {
     var txt = '<hr><b>Server</b> : ' + '<a href="' + location + '/?C=N;O=D;P=*.html">' + location + '</a> | ';
     txt = txt + '<b>Daily stats</b> : <a href="http://haze.fortressone.org/_daily/north-america/?C=N;O=D;P=*.html" target="_blank">North-America</a> / '
     txt = txt + '<a href="http://haze.fortressone.org/_daily/oceania/?C=N;O=D;P=*.html" target="_blank">Oceania</a> / '
-    txt = txt + '<a href="http://haze.fortressone.org/_daily/europe/?C=N;O=D;P=*.html" target="_blank">Europe</a> | '
+    txt = txt + '<a href="http://haze.fortressone.org/_daily/europe/?C=N;O=D;P=*.html" target="_blank">Europe</a> / '
+    txt = txt + '<a href="http://haze.fortressone.org/_daily/international/?C=N;O=D;P=*.html" target="_blank">International</a> | '
     txt = txt + '<b>Raw JSON</b> : <a href="http://fortressone-stats.s3-website-ap-southeast-2.amazonaws.com/' + fopath + '" target="_blank">FO stats archive</a>'
     txt = txt + '<hr>'
     var anchor = document.getElementsByTagName('h1')[0].insertAdjacentHTML('afterEnd', txt);
