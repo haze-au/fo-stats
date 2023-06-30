@@ -290,14 +290,15 @@ function InsertDailyStatsURL() {
     var folders = window.location.pathname.split('/');
     var location = '/' + folders[folders.length - 3] + '/' + folders[folders.length - 2];
     let fopath = window.location.pathname;
-    fopath = fopath.substring(1).replace('.html', '.json');
+    fopath = fopath.substring(1).replace('.html', '');
 
     var txt = '<hr><b>Server</b> : ' + '<a href="' + location + '/?C=N;O=D;P=*.html">' + location + '</a> | ';
     txt = txt + '<b>Daily stats</b> : <a href="http://haze.fortressone.org/_daily/north-america/?C=N;O=D;P=*.html" target="_blank">North-America</a> / '
     txt = txt + '<a href="http://haze.fortressone.org/_daily/oceania/?C=N;O=D;P=*.html" target="_blank">Oceania</a> / '
     txt = txt + '<a href="http://haze.fortressone.org/_daily/europe/?C=N;O=D;P=*.html" target="_blank">Europe</a> / '
     txt = txt + '<a href="http://haze.fortressone.org/_daily/international/?C=N;O=D;P=*.html" target="_blank">International</a> | '
-    txt = txt + '<b>Raw JSON</b> : <a href="http://fortressone-stats.s3-website-ap-southeast-2.amazonaws.com/' + fopath + '" target="_blank">FO stats archive</a>'
+    txt = txt + '<b>Demo</b> : <a href="http://fortressone-demos.s3-ap-southeast-2.amazonaws.com/' + fopath + '.mvd.gz" target="_blank">MVD</a> | '
+    txt = txt + '<b>Archive</b> : <a href="http://fortressone-stats.s3-website-ap-southeast-2.amazonaws.com/' + fopath + '.json" target="_blank">JSON</a>'
     txt = txt + '<hr>'
     var anchor = document.getElementsByTagName('h1')[0].insertAdjacentHTML('afterEnd', txt);
 }
