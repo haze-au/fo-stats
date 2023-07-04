@@ -5,3 +5,10 @@ sudo apt update  && sudo apt install -y curl gnupg apt-transport-https
 curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-bullseye-prod bullseye main" > /etc/apt/sources.list.d/microsoft.list'
 sudo apt update && sudo apt install -y powershell
+
+---- Cron tab.
+# m h  dom mon dow   command
+1-59 * * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitMins 60 -DailyBatch
+0  0-15  * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 1  -DailyBatch
+0  17-23 * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 1  -DailyBatch
+0  16    * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 30
