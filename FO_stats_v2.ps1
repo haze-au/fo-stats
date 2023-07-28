@@ -561,7 +561,7 @@ function GenerateSummaryHtmlTable {
   
     foreach ($rnd in $rnds) {      
       $player = ($arrPlayerTable | Where-Object { $_.Name -EQ $p -and (($_.Team -match '^1' -and $_.Round -eq $rnd) -or ($_.Team -match '^2' -and $_.Round -eq $rnd)) })
-      if ($lastPlayer -eq $player.Name) { $count = $count - 1 }
+      if ($lastPlayer -ne $null -and $lastPlayer -eq $player.Name) { $count = $count - 1 }
 
       $team = (Get-Variable "arrTeamRnd$rnd").Value.$p
       $kills = $player.Kills
