@@ -64,11 +64,13 @@ else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
 
 $OCEPaths = @('sydney/','melbourne/')
 $USPaths  = @('california/','dallas/','virginia/','miami/')
-$EUPaths  = @('ireland/','stockholm/')
+$BRPaths  = @('saopaulo/','fortaleza/')
+$EUPaths  = @('ireland/','stockholm/','london/')
 $IntPaths = @('bahrain/','guam/','mumbai/','tokyo/')
 
-if     ($Region -eq 'ALL') { $LatestPaths = $OCEPaths + $USPaths + $EUPaths + $IntPaths }
+if     ($Region -eq 'ALL') { $LatestPaths = $OCEPaths + $USPaths + $EUPaths + $IntPaths + $BRPaths }
 elseif ($Region -eq 'US')  { $LatestPaths = $USPaths  }
+elseif ($Region -eq 'BR')  { $LatestPaths = $BRPaths  }
 elseif ($Region -eq 'EU')  { $LatestPaths = $EUPaths  }
 elseif ($Region -eq 'OCE') { $LatestPaths = $OCEPaths }
 elseif ($Region -eq 'INT') { $LatestPaths = $IntPaths }
@@ -243,6 +245,12 @@ if ($DailyBatch) {
   elseif ([DateTime]::UtcNow.hour  -in 0..7)   { $DayFilterUS = $DayFilterUS.AddDays(-1); $DayReportUS = $DayFilterUS }
   elseif ([DateTime]::UtcNow.hour  -in 8..13)  { $DayFilterUS = $DayFilterUS.AddDays(-1); $DayReportUS = $DayFilterUS }
   
+  #BR 14-23 same day, 0-7 +1 day, 8-14 6am grace period
+  if     ([DateTime]::UtcNow.hour  -in 18..23) { $DayReportBR = $DayFilterBR }
+  elseif ([DateTime]::UtcNow.hour  -in 0..12)   { $DayFilterBR = $DayFilterBR.AddDays(-1); $DayReportBR = $DayFilterBR }
+  elseif ([DateTime]::UtcNow.hour  -in 13..17)  { $DayFilterBR = $DayFilterBR.AddDays(-1); $DayReportBR = $DayFilterBR }
+
+
   #EU UTC time, 0-6 6am grace period
   if ([DateTime]::UtcNow.hour  -in 0..6) { $DayFilterEU  = $DayFilterEU.AddDays(-1) }
   $DayReportEU = $DayFilterEU
@@ -252,6 +260,7 @@ if ($DailyBatch) {
 
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportOCE).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportUS).json"
+  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterBR.ToString()  -Region BR  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportBR).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportINT.ToString() -Region INT -OutFile "$PSScriptRoot/_daily/international/international_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportINT).json"
 }

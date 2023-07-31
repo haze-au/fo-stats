@@ -74,8 +74,8 @@ function MakePerMinFragHover (strTable) {
                     kd = Number.parseFloat(kd).toFixed(2);
                 }
                 var rank = arrKD[0] - arrKD[1];
-	        var team = row.cells[2].innerText;
-                if (team.match("^.&.$")) { team = '0'; }
+	            var team = row.cells[2].innerText;
+                if (team.match("^.&.$") || team == '') { team = '0'; }
 
                 
                 var div = document.createElement('div');
@@ -143,6 +143,7 @@ function MakePlayerProfiles(strTable, kind) {
     for (var i = 0, row; row = table.getElementsByTagName('tbody')[0].rows[i]; i++) {
         let player = row.cells[0].innerText;
         let team = row.cells[2].innerText;
+        if (team == '') { continue }
 
         var plusRound2 = 0;
         if (kind == 'both') {
