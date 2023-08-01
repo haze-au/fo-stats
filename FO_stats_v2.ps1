@@ -1154,12 +1154,16 @@ foreach ($jsonFile in $inputFile) {
     }
   }
 
-  #remove any Class Times where timed played less that 10secs
+  #remove any Class Times where timed played less that 20secs
   function timeClassCleanup {
     $out = @{}
     $out2 = @{}
     foreach ($k in $args[0].keys) {
-      if ($args[0].$k -gt 10) { 
+      $pc  = ($k -split '_')
+      $kills = ($arrWeaponTable | Where-Object { $_.Name -eq $pc[0] -and $_.PlayerClass -eq $pc[1] -and $Round -match $args[1] } | Measure-Object Kills -Sum).Sum
+      $dmg   = ($arrWeaponTable | Where-Object { $_.Name -eq $pc[0] -and $_.PlayerClass -eq $pc[1] -and $Round -match $args[1] } | Measure-Object Dmg   -Sum).Sum
+
+      if ($args[0].$k -gt 20 -and $kills -ne 0 -and $dmg -ne 0) { 
         $out.$k = $args[0].$k
       } else {
         $out2.$k = $args[0].$k
@@ -1196,9 +1200,9 @@ foreach ($jsonFile in $inputFile) {
 
   arrClassTimeTable-Cleanup ([ref]$arrClassTimeTable)
   #cleanup class times less that 10 seconds
-  $arrTimeClass = timeClassCleanup $arrTimeClass
-  $arrTimeClassRnd1 = timeClassCleanup $arrTimeClassRnd1
-  $arrTimeClassRnd2 = timeClassCleanup $arrTimeClassRnd2
+  $arrTimeClass = timeClassCleanup $arrTimeClass .*
+  $arrTimeClassRnd1 = timeClassCleanup $arrTimeClassRnd1 1
+  $arrTimeClassRnd2 = timeClassCleanup $arrTimeClassRnd2 2
 
   ######
   #Create Ordered Player List 
