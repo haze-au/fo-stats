@@ -913,15 +913,19 @@ foreach ($jsonFile in $inputFile) {
       }
     }
     else {      
-      if ($type -eq 'playerStart' -or ($type -eq 'changeClass' -and $item.nextClass -ne 0) <#-or $weap -like 'worldspawn*'#>) { continue }
+      if ($type -eq 'playerStart') {
+        $arrTimeTrack."$($player)_lastClass" = '-1'
+        $arrTimeTrack."$($player)_lastChange" = $time
+
+      } elseif ($type -eq 'changeClass' -and $item.nextClass -ne 0)  { continue }
       # Class tracking - Player and Target
       foreach ($pc in @(@($player, $classNoSG), @($target, $t_class -replace '10', '9'))) {
         if ($pc[0] -match '^(\s)*$') { continue }	  
         #This is making Rnd1 class bleed to Rnd2...
         #if ($type -eq 'changeClass') {  $lastClass = $class; $class = $item.nextClass; $class; $lastclass }
         $lastClass = $arrTimeTrack."$($pc[0])_lastClass"
-        if ($lastClass -match '^(\s)*$') { $lastClass = $pc[1] }
-    
+        if ($lastClass -match '^(\s*|-1)$') { $lastClass = $pc[1] }
+        
         $lastChange = $arrTimeTrack."$($pc[0])_lastChange"	 
         if ($lastChange -in '', $null) { 
           if ((($round1EndTime * $round) - $round1EndTime + $time) -lt 30) { 
@@ -1158,12 +1162,13 @@ foreach ($jsonFile in $inputFile) {
   function timeClassCleanup {
     $out = @{}
     $out2 = @{}
+    
     foreach ($k in $args[0].keys) {
       $pc  = ($k -split '_')
       $kills = ($arrWeaponTable | Where-Object { $_.Name -eq $pc[0] -and $_.PlayerClass -eq $pc[1] -and $Round -match $args[1] } | Measure-Object Kills -Sum).Sum
       $dmg   = ($arrWeaponTable | Where-Object { $_.Name -eq $pc[0] -and $_.PlayerClass -eq $pc[1] -and $Round -match $args[1] } | Measure-Object Dmg   -Sum).Sum
 
-      if ($args[0].$k -gt 20 -and $kills -ne 0 -and $dmg -ne 0) { 
+      if ($args[0].$k -gt 20 -and ($kills -ne 0 -or $dmg -ne 0)) { 
         $out.$k = $args[0].$k
       } else {
         $out2.$k = $args[0].$k
