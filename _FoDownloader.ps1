@@ -36,8 +36,8 @@
 param (
   #AWS Result limit is 1000 files, so please filter to target your results
   [switch]$Demos,      #Demos instead of stats
-  [ValidateSet('ALL','US','EU','OCE','INT')]
-          $Region,     # All | US | EU | OCE | Int
+  [ValidateSet('ALL','US','BR','EU','OCE','INT')]
+          $Region,     # All | US | BR | EU | OCE | Int
   [string]$FilterPath, #Stats folder on repo, replicated locally, default='sydney/staging/' 
   [string]$FilterFile, #Filter the filenames from the XML results, use * for wildcards.
   [string]$OutFolder,  #Path of ouput JSON and HTML
