@@ -77,7 +77,6 @@ function MakePerMinFragHover (strTable) {
 	            var team = row.cells[2].innerText;
                 if (team.match("^.&.$") || team == '') { team = '0'; }
 
-                
                 var div = document.createElement('div');
                 div.innerHTML = strKD +
                                 '<span class="ClassHoverText' + team  + '">' +
