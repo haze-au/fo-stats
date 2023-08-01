@@ -139,7 +139,6 @@ function MakePlayerProfiles(strTable, kind) {
     var table = document.getElementById(strTable);
     var flagTable = document.getElementById("perMinFlag").getElementsByTagName('tbody')[0];
 
-
     for (var i = 0, row; row = table.getElementsByTagName('tbody')[0].rows[i]; i++) {
         let player = row.cells[0].innerText;
         let team = row.cells[2].innerText;

@@ -900,7 +900,8 @@ foreach ($jsonFile in $inputFile) {
       }
 
       #Finalise Rnd1 Class times from the tracker.
-      foreach ($p in $arrTeam.Keys) { 
+      foreach ($p in $arrTeam.Keys) {
+        if ($arrTimeTrack."$($p)_lastClass" -in '',$null) { continue }
         arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $arrTimeTrack."$($p)_lastClass" -Round $round `
           -Value ($round1EndTime - $arrTimeTrack."$($p)_lastChange") -Increment
         $arrTimeClass."$($p)_$($arrTimeTrack."$($p)_lastClass")" += $round1EndTime - $arrTimeTrack."$($p)_lastChange"
@@ -910,6 +911,11 @@ foreach ($jsonFile in $inputFile) {
       }
     }
     else {
+      if ($type -eq 'changeClass' -and $item.nextClass -eq 0) { 
+        $arrTimeTrack."$($player)_lastClass" = ''
+        $arrTimeTrack."$($player)_lastChange" = '' 
+      }
+
       if ($type -in 'playerStart', 'changeClass' <#-or $weap -like 'worldspawn*'#>) { continue }
       # Class tracking - Player and Target
       foreach ($pc in @(@($player, $classNoSG), @($target, $t_class -replace '10', '9'))) {
@@ -1131,6 +1137,8 @@ foreach ($jsonFile in $inputFile) {
   $arrTimeTrack.flagTook = 0
 
   foreach ($p in $arrTeam.Keys) {
+    if ($arrTimeTrack."$($p)_lastClass" -in '',$null) { continue }
+    
     $lastClass = $arrTimeTrack."$($p)_lastClass"
     $key = "$($p)_$($lastClass)"
      
