@@ -902,16 +902,18 @@ foreach ($jsonFile in $inputFile) {
       #Finalise Rnd1 Class times from the tracker.
       foreach ($p in $arrTeam.Keys) {
         if ($arrTimeTrack."$($p)_lastClass" -in '',$null) { continue }
+
+        $lastChangeDiff = $round1EndTime - $arrTimeTrack."$($p)_lastChange"
         arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $arrTimeTrack."$($p)_lastClass" -Round $round `
-          -Value ($round1EndTime - $arrTimeTrack."$($p)_lastChange") -Increment
-        $arrTimeClass."$($p)_$($arrTimeTrack."$($p)_lastClass")" += $round1EndTime - $arrTimeTrack."$($p)_lastChange"
-        $arrTimeClassRnd1."$($p)_$($arrTimeTrack."$($p)_lastClass")" += $round1EndTime - $arrTimeTrack."$($p)_lastChange"
+          -Value ($lastChangeDiff) -Increment
+        $arrTimeClass."$($p)_$($arrTimeTrack."$($p)_lastClass")" += $lastChangeDiff 
+        $arrTimeClassRnd1."$($p)_$($arrTimeTrack."$($p)_lastClass")" += $lastChangeDiff 
         $arrTimeTrack."$($p)_lastClass" = ''
         $arrTimeTrack."$($p)_lastChange" = $round1EndTime
       }
     }
     else {      
-      if ($type -in 'playerStart' <#-or $weap -like 'worldspawn*'#>) { continue }
+      if ($type -eq 'playerStart' -or ($type -eq 'changeClass' -and $item.nextClass -ne 0) <#-or $weap -like 'worldspawn*'#>) { continue }
       # Class tracking - Player and Target
       foreach ($pc in @(@($player, $classNoSG), @($target, $t_class -replace '10', '9'))) {
         if ($pc[0] -match '^(\s)*$') { continue }	  
@@ -1070,7 +1072,6 @@ foreach ($jsonFile in $inputFile) {
               default { $arrFragVersusRnd2.$key += 1 }
             }
 
-
             arrWeaponTable-UpdatePlayer -Name $target -PlayerClass $t_class -Round $round -Class $class -Weapon $weap -Property 'Death' -Increment
           }
         }
@@ -1156,7 +1157,21 @@ foreach ($jsonFile in $inputFile) {
   #remove any Class Times where timed played less that 10secs
   function timeClassCleanup {
     $out = @{}
-    foreach ($k in $args[0].keys) { if ($args[0].$k -gt 10) { $out.$k = $args[0].$k } }
+    $out2 = @{}
+    foreach ($k in $args[0].keys) {
+      if ($args[0].$k -gt 10) { 
+        $out.$k = $args[0].$k
+      } else {
+        $out2.$k = $args[0].$k
+      }
+    }
+
+    # Rolling up time into another class to report whole round times - ppl like to switch classes before round 2 early.
+    foreach ($k in $out2.keys) {
+      $p  = ($k -split '_')[0]
+      $k2 = ($out.keys -match "^$($p)_.*$")[0]
+      $out.$k2 = $out.$k2 + $out2.$k
+    }
     return $out
   }
 
