@@ -910,13 +910,8 @@ foreach ($jsonFile in $inputFile) {
         $arrTimeTrack."$($p)_lastChange" = $round1EndTime
       }
     }
-    else {
-      if ($type -eq 'changeClass' -and $item.nextClass -eq 0) { 
-        $arrTimeTrack."$($player)_lastClass" = ''
-        $arrTimeTrack."$($player)_lastChange" = '' 
-      }
-
-      if ($type -in 'playerStart', 'changeClass' <#-or $weap -like 'worldspawn*'#>) { continue }
+    else {      
+      if ($type -in 'playerStart' <#-or $weap -like 'worldspawn*'#>) { continue }
       # Class tracking - Player and Target
       foreach ($pc in @(@($player, $classNoSG), @($target, $t_class -replace '10', '9'))) {
         if ($pc[0] -match '^(\s)*$') { continue }	  
@@ -947,6 +942,12 @@ foreach ($jsonFile in $inputFile) {
           #Update tracker after stuff is tallied
           $arrTimeTrack."$($pc[0])_lastClass" = $pc[1]
           $arrTimeTrack."$($pc[0])_lastChange" = $time
+        }
+
+        if ($type -eq 'changeClass' -and $item.nextClass -eq 0) { 
+          $arrTimeTrack."$($player)_lastClass" = ''
+          $arrTimeTrack."$($player)_lastChange" = ''
+          break
         }
       }
     }
