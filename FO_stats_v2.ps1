@@ -916,11 +916,17 @@ foreach ($jsonFile in $inputFile) {
       if ($type -eq 'playerStart') {
         $arrTimeTrack."$($player)_lastClass" = '-1'
         $arrTimeTrack."$($player)_lastChange" = $time
-
       } elseif ($type -eq 'changeClass' -and $item.nextClass -ne 0)  { continue }
+
       # Class tracking - Player and Target
       foreach ($pc in @(@($player, $classNoSG), @($target, $t_class -replace '10', '9'))) {
-        if ($pc[0] -match '^(\s)*$') { continue }	  
+        if ($pc[0] -match '^(\s)*$') { continue }
+        
+        if ($round -eq 2 -and $arrTimeTrack."$($pc[0])_lastChange" -in '',$null -and $time -lt ($round1EndTime+20)) {
+          $arrTimeTrack."$($pc[0])_lastClass" = '-1'
+          $arrTimeTrack."$($pc[0])_lastChange" = $round1EndTime
+        }
+
         #This is making Rnd1 class bleed to Rnd2...
         #if ($type -eq 'changeClass') {  $lastClass = $class; $class = $item.nextClass; $class; $lastclass }
         $lastClass = $arrTimeTrack."$($pc[0])_lastClass"
