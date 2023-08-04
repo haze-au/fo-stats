@@ -1202,7 +1202,6 @@ foreach ($jsonFile in $inputFile) {
           foreach ($cl in $ClassAllowedStr) { 
             if ($cl -ne $cStr -and $p.$cl -gt 0) { 
               $p.$cl += $p.$cStr
-              write-host $p.Name $p.Round $cStr $p.$cStr $cl $p.$cl 
               break 
             } 
           }
