@@ -72,7 +72,7 @@ function getPlayerClasses {
   
   $pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $Player -Round $Round
   $filter = ($arrClassTimeTable  |  Where-Object { $_.Name -eq $Player -and ($Round -lt 1 -or $_.Round -eq $Round) })                
-  $classes = ($filter | % { $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 15 } | % { $_.Name }) -join ','
+  $classes = ($filter | % { $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 5 } | % { $_.Name }) -join ','
   
   $hover = ($classes -split ',' | % { "<b>$_</b>: $(Format-MinSec $filter.$_)" }) -join '<br>'
 
@@ -904,11 +904,11 @@ foreach ($jsonFile in $inputFile) {
         if ($arrTimeTrack."$($p)_lastClass" -in '',$null) { continue }
 
         $lastChangeDiff = $round1EndTime - $arrTimeTrack."$($p)_lastChange"
-        arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $arrTimeTrack."$($p)_lastClass" -Round $round `
+        arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $arrTimeTrack."$($p)_lastClass" -Round 1 `
           -Value ($lastChangeDiff) -Increment
         $arrTimeClass."$($p)_$($arrTimeTrack."$($p)_lastClass")" += $lastChangeDiff 
         $arrTimeClassRnd1."$($p)_$($arrTimeTrack."$($p)_lastClass")" += $lastChangeDiff 
-        $arrTimeTrack."$($p)_lastClass" = ''
+        #$arrTimeTrack."$($p)_lastClass" = '-1'
         $arrTimeTrack."$($p)_lastChange" = $round1EndTime
       }
     }
@@ -953,7 +953,7 @@ foreach ($jsonFile in $inputFile) {
         if ($type -eq 'changeClass' -and $item.nextClass -eq 0) { 
           $arrTimeTrack."$($player)_lastClass" = ''
           $arrTimeTrack."$($player)_lastChange" = ''
-          break
+          continue
         }
       }
     }
@@ -1160,18 +1160,22 @@ foreach ($jsonFile in $inputFile) {
 
   #remove any Class Times where timed played less that 20secs
   function timeClassCleanup {
+    Param ( [ref]$Table, [int]$Round)
     $out = @{}
     $out2 = @{}
     
-    foreach ($k in $args[0].keys) {
-      $pc  = ($k -split '_')
-      $kills = ($arrWeaponTable | Where-Object { $_.Name -eq $pc[0] -and $_.PlayerClass -eq $pc[1] -and $Round -match $args[1] } | Measure-Object Kills -Sum).Sum
-      $dmg   = ($arrWeaponTable | Where-Object { $_.Name -eq $pc[0] -and $_.PlayerClass -eq $pc[1] -and $Round -match $args[1] } | Measure-Object Dmg   -Sum).Sum
+    if ($Round -eq 0) { $i = @(1,2) }
+    else { $i = $Round }
 
-      if ($args[0].$k -gt 20 -and ($kills -ne 0 -or $dmg -ne 0)) { 
-        $out.$k = $args[0].$k
+    foreach ($k in $Table.Value.keys) {
+      $pc  = ($k -split '_')
+      $kills = ($arrWeaponTable | Where-Object { $_.Name -eq $pc[0] -and $_.PlayerClass -eq $pc[1] -and $_.Round -in $i } | Measure-Object Kills -Sum).Sum
+      $dmg   = ($arrWeaponTable | Where-Object { $_.Name -eq $pc[0] -and $_.PlayerClass -eq $pc[1] -and $_.Round -in $i } | Measure-Object Dmg   -Sum).Sum
+
+      if ($Table.Value.$k -lt 20 -and $kills -lt 1 -and $dmg -lt 1) { 
+        $out2.$k = $Table.Value.$k
       } else {
-        $out2.$k = $args[0].$k
+        $out.$k = $Table.Value.$k
       }
     }
 
@@ -1189,25 +1193,36 @@ foreach ($jsonFile in $inputFile) {
 
     foreach ($p in $Table.Value) {
       $totalTime = ($p | Measure $ClassAllowedStr -Sum).Sum
-      foreach ($c in $ClassAllowedStr) {
-        if ($p.$c -lt 10) {
-          $p.$c = 0
+      foreach ($c in $ClassAllowed) {
+        $cStr = $ClassToStr[$c]
+        $kills = ($arrWeaponTable | Where-Object { $_.Name -eq $p.Name -and $_.PlayerClass -eq $c -and $_.Round -eq $p.Round } | Measure-Object Kills -Sum).Sum
+        $dmg   = ($arrWeaponTable | Where-Object { $_.Name -eq $p.Name -and $_.PlayerClass -eq $c -and $_.Round -eq $p.Round } | Measure-Object Dmg   -Sum).Sum
+
+        if ($p.$cStr -in 1..20 -and $kills -lt 1 -and $dmg -lt 1) {        
+          foreach ($cl in $ClassAllowedStr) { 
+            if ($cl -ne $cStr -and $p.$cl -gt 0) { 
+              $p.$cl += $p.$cStr
+              write-host $p.Name $p.Round $cStr $p.$cStr $cl $p.$cl 
+              break 
+            } 
+          }
+          $p.$cStr = 0
         }
-        elseif ($p.$c -gt $round1Endtime) {
-          $p.$c = $round1EndTime
+        elseif ($p.$cStr -gt $round1Endtime) {
+          $p.$cStr = $round1EndTime
         }
-        elseif ($p.$c -in ($round1EndTime - 15)..$round1EndTime -and $totalTime -lt $round1EndTime) {
-          $p.$c = $round1EndTime
-        }
+        #elseif ($p.$cStr -in ($round1EndTime - 15)..$round1EndTime -and $totalTime -lt $round1EndTime) {
+        #  $p.$cStr = $round1EndTime
+        #}
       }
     }
   }
 
+  #cleanup class times
   arrClassTimeTable-Cleanup ([ref]$arrClassTimeTable)
-  #cleanup class times less that 10 seconds
-  $arrTimeClass = timeClassCleanup $arrTimeClass .*
-  $arrTimeClassRnd1 = timeClassCleanup $arrTimeClassRnd1 1
-  $arrTimeClassRnd2 = timeClassCleanup $arrTimeClassRnd2 2
+  $arrTimeClass = timeClassCleanup     ([ref]$arrTimeClass) 0
+  $arrTimeClassRnd1 = timeClassCleanup ([ref]$arrTimeClassRnd1) 1
+  $arrTimeClassRnd2 = timeClassCleanup ([ref]$arrTimeClassRnd2) 2
 
   ######
   #Create Ordered Player List 
