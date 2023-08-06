@@ -1,10 +1,10 @@
 ﻿###
-# PS  COMMAND LINE:- & .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RoundTime <seconds>] [-TextOnly] [-TextSave]
-# WIN COMMAND LINE:- powershell -Command "& .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RountTime <seconds>] [-TextOnly] [-TextSave]"
+# PS  COMMAND LINE:- & .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RoundTime <seconds>] [-TextOnly] [-TextSave] [-NoStatJson]
+# WIN COMMAND LINE:- powershell -Command "& .\FO_stats_v2.ps1 -StatFile 'x:\path\filename.json' [-RountTime <seconds>] [-TextOnly] [-TextSave] [-NoStatJson]"
 #
-# NOTE: StatFile parameter now accepts *.json wildcard to generate many HTMLs, Text stats are ALL STATS COMBINED.
+# NOTE: StatFile parameter now accepts *.json wildcard to generate many HTMLs, Text/Json stats are ALL STATS COMBINED.
 #
-# For Text Only stats for many stat files - i.e. not all games combined.
+# For individual TextJson Only stats for many stat files - i.e. not all games combined.
 # PS  *.JSON:- foreach ($f in (gci 'x:\stats\*.json')) { & .\FO_stats_v2.ps1 -StatFile ($f.ToString() -replace '\[','`[' -replace '\]','`]') -TextOnly }
 ###
 
@@ -35,7 +35,8 @@ if ($inputFile -notmatch '.*\.json$') { Write-Host 'ERROR: Following files are n
 
 $regExReplaceFix = '[[+*?()\\.]', '\$&'
 
-<#$ccGrey   = '#F1F1F1'
+<# See fo_stats.css
+$ccGrey   = '#F1F1F1'
 $ccAmber  = '#FFD900'
 $ccOrange = '#FFB16C'
 $ccGreen  = '#96FF8F'
@@ -61,13 +62,6 @@ $script:ClassAllowed = @(1, 3, 4, 5, 6, 7, 8, 9)
 $script:ClassAllowedwithSG = @(1, 3, 4, 5, 6, 7, 8, 9, 10)
 $script:TeamToColor = @('Civ', 'Blue', 'Red', 'Yellow', 'Green')
 
-#array of team keys, playername
-<# wc Old Get Player CLases
-function getPlayerClasses {
-  return ($args[0] -match "^$($args[1] -replace $regExReplaceFix)_[1-9]`$" | `
-            %{ $ClassToStr[($_ -split '_')[1]] } | Sort-Object -Unique) -join ','
-}#>
-
 function getPlayerClasses {
   param ($Round, $Player, $TimePlayed)
   
@@ -75,8 +69,7 @@ function getPlayerClasses {
   $filter = ($arrClassTimeTable  |  Where-Object { $_.Name -eq $Player -and ($Round -lt 1 -or $_.Round -eq $Round) })                
   $classes = ($filter | % { $_.PSObject.Properties | Where Name -in $ClassAllowedStr | Where Value -gt 5 } | % { $_.Name }) -join ','
   
-  $hover = ($classes -split ',' | % { "<b>$_</b>: $(Format-MinSec $filter.$_)" }) -join '<br>'
-
+  #$hover = ($classes -split ',' | % { "<b>$_</b>: $(Format-MinSec $filter.$_)" }) -join '<br>'
   #return "$classes<span class=`"ClassHoverText$($arrPlayerTable[$pos].Team)`">$hover</span> "
   return $classes
 }
@@ -115,7 +108,8 @@ function teamColorCodeByName {
   return "rowTeam$tm"
 }
 
-<## Friendly fire is bad
+<## See fo_stats.css 
+#Friendly fire is bad
 function actionColorCode ($arrTeam, $p1, $p2) {
     #check if action is no Friendly fire
     if ($p1 -eq $p2) {
@@ -874,7 +868,6 @@ foreach ($jsonFile in $inputFile) {
     #$keyTimeT  = "$($timeBlock)_$($target)"
     $keyClassK = "$($player)_$($class)_$($t_class)"
     $keyWeap = "$($player)_$($class)_$($weap)"
-    #$keyWeapT  = "$($target)_$($class)_$($weap)" 
     
 
     # 19/12/21 New Attack/DmgDone stats in object/array format for PS Tables.
@@ -985,7 +978,7 @@ foreach ($jsonFile in $inputFile) {
     # Switch #1 - Tracking Goal/TeamScores prior to world/error checks skip loop.
     #           - Tracking all-death prior to this also (death due to fall/other damage).
     switch ($type) {
-      #'gameStart' { $map = $item.map }
+      # Not used 'gameStart' { $map = $item.map }
       
       'goal' {
         # arrTimeTrack.flag* updated under the fumble event
@@ -1196,6 +1189,7 @@ foreach ($jsonFile in $inputFile) {
         elseif ($p.$cStr -gt $round1Endtime) {
           $p.$cStr = $round1EndTime
         }
+        # More accurate end round / classChange updates above.
         #elseif ($p.$cStr -in ($round1EndTime - 15)..$round1EndTime -and $totalTime -lt $round1EndTime) {
         #  $p.$cStr = $round1EndTime
         #}
@@ -1652,15 +1646,6 @@ foreach ($jsonFile in $inputFile) {
     # Generate the HTML Ouput
     ###
 
-
-    <#$ccGrey   = '#F1F1F1'
-$ccAmber  = '#FFD900'
-$ccOrange = '#FFB16C'
-$ccGreen  = '#96FF8F'
-$ccBlue   = '#87ECFF'
-$ccRed    = '#FF8080'
-$ccPink   = '#FA4CFF'#>
-
     $ccGrey = 'cellGrey'
     $ccAmber = 'cellAmber'
     $ccOrange = 'cellOrange'
@@ -1669,7 +1654,16 @@ $ccPink   = '#FA4CFF'#>
     $ccRed = 'rowTeam2'
     $ccPink = 'rowTeamBoth'
 
-    <#        <style>
+    <# See fo_stats.css
+      $ccGrey   = '#F1F1F1'
+      $ccAmber  = '#FFD900'
+      $ccOrange = '#FFB16C'
+      $ccGreen  = '#96FF8F'
+      $ccBlue   = '#87ECFF'
+      $ccRed    = '#FF8080'
+      $ccPink   = '#FA4CFF'
+
+      <style>
         body { font-family: calibri; color:white; background-color:rgb(56, 75, 94);}
 
         th { background-color: rgb(19, 37, 56);}
@@ -1688,7 +1682,7 @@ $ccPink   = '#FA4CFF'#>
         .cellAmber  { color:black; background-color: #fcd600 }
         .cellOrange { background-color: #e0662d }
         .cellGreen  { background-color: #2357b9 }
-        </style>#>
+      </style>#>
 
     $htmlOut = "<html>
       <head>
@@ -2352,15 +2346,6 @@ foreach ($i in $arrSummaryAttTable) {
 }
 
 $textOut += $arrSummaryAttTable | Format-Table Name, KPM, KD, Kills, Death, TKill, @{L = 'Dmg'; E = { '{0:n0}' -f $_.Dmg } }, @{L = 'DPM'; E = { '{0:n0}' -f $_.DPM } }, @{L = 'FlagCap'; E = { '{0:n0}' -f $_.FlagCap } }, @{L = 'FlagTake'; E = { '{0:n0}' -f $_.FlagTake } }, FlagTime, TimePlayed, Classes | Out-String
-<# OLD - See presentation format above
-                                   @{Label='KPM';Expression={ Table-CalculateVPM $_.Kills $_.TimePlayed }},@{Label='K/D';Expression={ [math]::Round($_.Kills / $_.Death,2) }}, ` 
-                                   Kills,Death,TKill,Dmg, `
-                                   @{Label='DPM';Expression={ Table-CalculateVPM $_.Dmg $_.TimePlayed 0 }}, `
-                                   FlagCap,FlagTake,FlagTime, `
-                                   @{Label='TimePlayed';Expression={ Format-MinSec $_.TimePlayed }}, `
-                                   @{Label='Classes';Expression={ Table-ClassInfo ([ref]$arrClassTimeAttTable) $_.Name $_.TimePlayed }}  `
-                                | Out-String#>
-
 
 # Update the Def Table into presentation format
 foreach ($j in $arrSummaryDefTable) {
@@ -2373,14 +2358,6 @@ foreach ($j in $arrSummaryDefTable) {
 
 $textOut += "Defence Summary`n"
 $textOut += $arrSummaryDefTable | Format-Table Name, KPM, KD, Kills, Death, TKill, @{L = 'Dmg'; E = { '{0:n0}' -f $_.Dmg } }, @{L = 'DPM'; E = { '{0:n0}' -f $_.DPM } }, @{L = 'FlagStop'; E = { '{0:n0}' -f $_.FlagStop } }, Win, Draw, Loss, TimePlayed, Classes | Out-String
-<# OLD - See presentation format above
-                                   @{Label='KPM';Expression={ Table-CalculateVPM $_.Kills $_.TimePlayed }},@{Label='K/D';Expression={ [math]::Round($_.Kills / $_.Death,2) }}, `
-                                   Kills,Death,TKill,Dmg, `
-                                   @{Label='DPM';Expression={ Table-CalculateVPM $_.Dmg $_.TimePlayed 0 }}, `
-                                   FlagStop,Win,Draw,Loss, `
-                                   @{Label='TimePlayed';Expression={ Format-MinSec $_.TimePlayed }}, `
-                                   @{Label='Classes';Expression={ Table-ClassInfo ([ref]$arrClassTimeDefTable) $_.Name  $_.TimePlayed  }}  `
-                                | Out-String#>
 
 $textOut += "Class Kills / KPM Summary - Attack`n"
 $textOut += $arrClassFragAttTable  | Format-Table Name, Sco, @{L = 'KPM'; E = { Table-CalculateVPM $_.Sco ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sco } }, `
