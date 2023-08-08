@@ -295,6 +295,7 @@ function InsertDailyStatsURL() {
     txt = txt + '<b>Daily stats</b> : <a href="http://haze.fortressone.org/_daily/north-america/?C=N;O=D;P=*.html" target="_blank">North-America</a> / '
     txt = txt + '<a href="http://haze.fortressone.org/_daily/oceania/?C=N;O=D;P=*.html" target="_blank">Oceania</a> / '
     txt = txt + '<a href="http://haze.fortressone.org/_daily/europe/?C=N;O=D;P=*.html" target="_blank">Europe</a> / '
+    txt = txt + '<a href="http://haze.fortressone.org/_daily/brasil/?C=N;O=D;P=*.html" target="_blank">Brasil</a> / '
     txt = txt + '<a href="http://haze.fortressone.org/_daily/international/?C=N;O=D;P=*.html" target="_blank">International</a> | '
     txt = txt + '<b>Demo</b> : <a href="http://fortressone-demos.s3-ap-southeast-2.amazonaws.com/' + fopath + '.mvd.gz" target="_blank">MVD</a> | '
     txt = txt + '<b>Archive</b> : <a href="http://fortressone-stats.s3-website-ap-southeast-2.amazonaws.com/' + fopath + '.json" target="_blank">JSON</a>'

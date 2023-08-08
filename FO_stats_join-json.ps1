@@ -9,7 +9,7 @@ param([switch]$ForceBatch,
       [string]$StartDateTime, # Input UTC time to match file names
       [string]$EndDateTime,   # Input UTC time to match file names
       [string]$FilterPath,
-      [ValidateSet('ALL','US','EU','OCE','INT')]
+      [ValidateSet('ALL','US','BR','EU','OCE','INT')]
               $Region,
       [string]$GenerateHTML,
       [string]$OutFile )

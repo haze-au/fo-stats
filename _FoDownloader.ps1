@@ -232,6 +232,7 @@ if (!$DownloadOnly -and !$Demos) {
 if ($DailyBatch) { 
   $DayFilterOCE = [datetime]::Parse('19:00') # Syd 6am
   $DayFilterUS  = [datetime]::Parse('14:00') # Cali 6am
+  $DayFilterBR  = [datetime]::Parse('18:00') # Brasil 6am
   $DayFilterEU  = [datetime]::Parse('6:00')  # UTC time
   $DayFilterINT = [datetime]::Parse('16:00') # Dead zone for all regions - 3am Syd
   
@@ -246,7 +247,7 @@ if ($DailyBatch) {
   elseif ([DateTime]::UtcNow.hour  -in 8..13)  { $DayFilterUS = $DayFilterUS.AddDays(-1); $DayReportUS = $DayFilterUS }
   
   #BR 14-23 same day, 0-7 +1 day, 8-14 6am grace period
-  if     ([DateTime]::UtcNow.hour  -in 18..23) { $DayReportBR = $DayFilterBR }
+  if     ([DateTime]::UtcNow.hour  -in 18..23)  { $DayReportBR = $DayFilterBR }
   elseif ([DateTime]::UtcNow.hour  -in 0..12)   { $DayFilterBR = $DayFilterBR.AddDays(-1); $DayReportBR = $DayFilterBR }
   elseif ([DateTime]::UtcNow.hour  -in 13..17)  { $DayFilterBR = $DayFilterBR.AddDays(-1); $DayReportBR = $DayFilterBR }
 
