@@ -18,6 +18,7 @@ if ($ForceBatch) { $doBatch = $true }
 
 $OCEPaths = @('sydney/','melbourne/')
 $USPaths  = @('california/','dallas/','virginia/','miami/')
+$BRPaths  = @('saopaulo/','fortaleza/')
 $EUPaths  = @('ireland/','stockholm/')
 $IntPaths = @('bahrain/','guam/','mumbai/','tokyo/')
 
@@ -322,6 +323,7 @@ if ($StartDateTime) {
   if ($Region) {  
     if     ($Region -eq 'ALL') { $LatestPaths = $OCEPaths + $USPaths + $EUPaths + $IntPaths }
     elseif ($Region -eq 'US')  { $LatestPaths = $USPaths  }
+    elseif ($Region -eq 'BR')  { $LatestPaths = $BRPaths  }
     elseif ($Region -eq 'EU')  { $LatestPaths = $EUPaths  }
     elseif ($Region -eq 'OCE') { $LatestPaths = $OCEPaths }
     elseif ($Region -eq 'INT') { $LatestPaths = $IntPaths }
