@@ -767,7 +767,7 @@ foreach ($jsonFile in $inputFile) {
   $script:arrKilledClassRnd1 = @{}
   $script:arrKilledClassRnd2 = @{}
  
-  #Json parsing helper - _lastClass and _lastChange
+  #Json parsing helper - _currentClass and _lastChange
   $script:arrTimeTrack = @{}
   
   # Tracking teams via below and then updating arrPlayerTable after JSON parsing -Worth changing?
@@ -831,7 +831,7 @@ foreach ($jsonFile in $inputFile) {
 
     #try fix building kills/deaths
     if ($t_class -eq 0 -and $target -in '', 'build.timer' -and $weap -ne 'worldSpawn') {  
-      $potentialEng = $arrTimeTrack.keys -match '.*_lastClass$'
+      $potentialEng = $arrTimeTrack.keys -match '.*_currentClass$'
       $potentialEng = $potentialEng | foreach { if ($arrTimeTrack.$_ -eq 9) { ($_ -split '_')[0] } }
 
       # If only 1 eng found fix it, else forget it
@@ -845,7 +845,7 @@ foreach ($jsonFile in $inputFile) {
     # Do this before Keys are made# dodgey... Try find out who a gas grenade owner is
     elseif ($class -eq '8' -and $weap -eq 'worldspawn') { 
       if ($type -in 'damageDone', 'kill') {
-        $potentialSpies = $arrTimeTrack.keys -match '.*_lastClass$'
+        $potentialSpies = $arrTimeTrack.keys -match '.*_currentClass$'
         $potentialSpies = $potentialSpies | foreach { if ($arrTimeTrack.$_ -eq 8) { ($_ -split '_')[0] } }
 
         # If only 1 spy found fix it, else forget it
@@ -918,34 +918,37 @@ foreach ($jsonFile in $inputFile) {
 
       #Finalise Rnd1 Class times from the tracker.
       foreach ($p in $arrTeam.Keys) {
-        if ($arrTimeTrack."$($p)_lastClass" -in '',$null) { continue }
+        if ($arrTimeTrack."$($p)_currentClass" -in '',$null) { continue }
 
         $lastChangeDiff = $round1EndTime - $arrTimeTrack."$($p)_lastChange"
-        arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $arrTimeTrack."$($p)_lastClass" -Round 1 `
+        arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $arrTimeTrack."$($p)_currentClass" -Round 1 `
           -Value ($lastChangeDiff) -Increment
+
+        if ($lastChangeDiff -le 20) {
+          $arrTimeTrack."$($p)_endClassRnd1" = $arrTimeTrack."$($p)_previousClass"
+        }
         $arrTimeTrack."$($p)_lastChange" = $round1EndTime
       }
     }
     else {      
       if ($type -eq 'playerStart') {
-        $arrTimeTrack."$($player)_lastClass" = '-1'
+        $arrTimeTrack."$($player)_currentClass"  = '-1'
+        $arrTimeTrack."$($player)_previousClass" = '-1'
         $arrTimeTrack."$($player)_lastChange" = $time
-      } elseif ($type -eq 'changeClass' -and $item.nextClass -ne 0)  { continue }
+      } #elseif ($type -eq 'changeClass' -and $item.nextClass -ne 0)  { continue }
 
       # Class tracking - Player and Target
       foreach ($pc in @(@($player, $classNoSG), @($target, $t_class -replace '10', '9'))) {
         if ($pc[0] -match '^(\s)*$') { continue }
         
         if ($round -eq 2 -and $arrTimeTrack."$($pc[0])_lastChange" -in '',$null -and $time -lt ($round1EndTime+20)) {
-          $arrTimeTrack."$($pc[0])_lastClass" = '-1'
+          $arrTimeTrack."$($pc[0])_previousClass" = $arrTimeTrack."$($pc[0])_currentClass"
+          $arrTimeTrack."$($pc[0])_currentClass" = '-1'
           $arrTimeTrack."$($pc[0])_lastChange" = $round1EndTime
         }
 
         #This is making Rnd1 class bleed to Rnd2...
-        #if ($type -eq 'changeClass') {  $lastClass = $class; $class = $item.nextClass; $class; $lastclass }
-        $lastClass = $arrTimeTrack."$($pc[0])_lastClass"
-        if ($lastClass -match '^(\s*|-1)$') { $lastClass = $pc[1] }
-        
+        #if ($type -eq 'changeClass') {  $currentClass = $class; $class = $item.nextClass; $class; $currentClass }       
         $lastChange = $arrTimeTrack."$($pc[0])_lastChange"	 
         if ($lastChange -in '', $null) { 
           if ((($round1EndTime * $round) - $round1EndTime + $time) -lt 30) { 
@@ -954,23 +957,30 @@ foreach ($jsonFile in $inputFile) {
           else { $lastChange = $time }
         }
       
-        $lastChangeDiff = $time - $lastChange
-      
-        if ($pc[1] -in $ClassAllowed) { 
+        $lastChangeDiff = $time - $lastChange    
+
+        $currentClass = $arrTimeTrack."$($pc[0])_currentClass"
+        if ($type -eq 'changeClass')  { $newClass = $item.nextClass; $oldClass = $pc[1] } 
+        else                          { $newClass = $pc[1]         ; $oldClass = $currentClass }
+
+        if ($pc[1] -in $ClassAllowed -and $currentClass -ne $newClass) { 
+          if ($currentClass -match '^(\s*|-1)$') { $currentClass = $pc[1] }
+
           #Record time 
-          #if ($arrTimeTrack."$($pc[0])_lastClass" -gt 0)  { 
-          arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $pc[0] -Class $lastClass -Round $round -Value $lastChangeDiff -Increment 
-          # }
+          if ($lastChangeDiff -gt 0) {
+            arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $pc[0] -Class $currentClass -Round $round -Value $lastChangeDiff -Increment 
+          }
     
           #Update tracker after stuff is tallied
-          $arrTimeTrack."$($pc[0])_lastClass" = $pc[1]
+          $arrTimeTrack."$($pc[0])_previousClass" = $oldClass
+          $arrTimeTrack."$($pc[0])_currentClass"  = $newClass
           $arrTimeTrack."$($pc[0])_lastChange" = $time
         }
 
-        if ($type -eq 'changeClass' -and $item.nextClass -eq 0) { 
-          $arrTimeTrack."$($player)_lastClass" = ''
-          $arrTimeTrack."$($player)_lastChange" = ''
-          continue
+        if ($type -eq 'changeClass' -and $newClass -eq 0) { 
+          $arrTimeTrack."$($pc[0])_previousClass" = $oldClass
+          $arrTimeTrack."$($pc[0])_currentClass"  = ''
+          $arrTimeTrack."$($pc[0])_lastChange"    = ''
         }
       }
     }
@@ -1160,10 +1170,9 @@ foreach ($jsonFile in $inputFile) {
   $arrTimeTrack.flagTook = 0
 
   foreach ($p in $arrTeam.Keys) {
-    if ($arrTimeTrack."$($p)_lastClass" -in '',$null) { continue }
-    
-    $lastClass = $arrTimeTrack."$($p)_lastClass"     
-    arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $lastClass -Round $round -Value ($time - $arrTimeTrack."$($p)_lastChange")
+    $currentClass = $arrTimeTrack."$($p)_currentClass"   
+    if ($currentClass -in '',$null) { continue }
+    arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $currentClass -Round $round -Value ($time - $arrTimeTrack."$($p)_lastChange")
   }
 
   #remove any Class Times where timed played less that 20secs
@@ -1177,22 +1186,14 @@ foreach ($jsonFile in $inputFile) {
         $kills = ($arrWeaponTable | Where-Object { $_.Name -eq $p.Name -and $_.PlayerClass -eq $c -and $_.Round -eq $p.Round } | Measure-Object Kills -Sum).Sum
         $dmg   = ($arrWeaponTable | Where-Object { $_.Name -eq $p.Name -and $_.PlayerClass -eq $c -and $_.Round -eq $p.Round } | Measure-Object Dmg   -Sum).Sum
 
-        if ($p.$cStr -in 1..20 -and $kills -lt 1 -and $dmg -lt 1) {        
-          foreach ($cl in $ClassAllowedStr) { 
-            if ($cl -ne $cStr -and $p.$cl -gt 0) { 
-              $p.$cl += $p.$cStr
-              break 
-            } 
-          }
+        if ($p.$cStr -in 1..20 -and $kills -lt 1 -and $dmg -lt 1) {      
+          if ($p.Round -eq 1) { $p."$($ClassToStr[$arrTimeTrack."$($p.name)_endClassRnd1"])"  += $p.$cStr }
+          else                { $p."$($ClassToStr[$arrTimeTrack."$($p.name)_previousClass"])" += $p.$cStr }
           $p.$cStr = 0
         }
         elseif ($p.$cStr -gt $round1Endtime) {
           $p.$cStr = $round1EndTime
         }
-        # More accurate end round / classChange updates above.
-        #elseif ($p.$cStr -in ($round1EndTime - 15)..$round1EndTime -and $totalTime -lt $round1EndTime) {
-        #  $p.$cStr = $round1EndTime
-        #}
       }
     }
   }
