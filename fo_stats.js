@@ -1,3 +1,10 @@
+function ConvertTimeToMins(strTime) {
+    var minsec = strTime.split(':');
+
+    if (minsec.length != 2) { return; }
+    return Number(minsec[0]) + (Number(minsec[1]) / 60)
+}
+
 function MakeVersusHover(strTable) {
     var table = document.getElementById(strTable);
     for (var j = 0, col; col = table.rows[0].cells[j]; j++) {
@@ -92,9 +99,11 @@ function MakePerMinFragHover(strTable) {
                     var startRnd2 = 4 + header.rows[0].cells[1].colSpan;
                     if (j < startRnd2) { round = 1; }
                     else { round = 2; }
-
-                    txt = txt + '<tr><td><b>Time:</b></td><td>' +
-                        GetClassTimeValue(i, round, header.rows[1].cells[j].innerText) +
+                    var time = GetClassTimeValue(i, round, header.rows[1].cells[j].innerText);
+     
+                    txt = txt + 
+                        '<tr><td><b>KPM:</b></td><td>'  + Number.parseFloat((arrKD[0] / ConvertTimeToMins(time))).toFixed(2) +
+                        '<tr><td><b>Time:</b></td><td>' + time +
                         '</td></tr>';
                 }
 
