@@ -1687,6 +1687,7 @@ foreach ($jsonFile in $inputFile) {
 
     $htmlOut = "<html>
       <head>
+        <meta id=`"FOStatsVersion`" name=`"FOStatsVersion`" content=`"2.1`">
         <script src=`"http://haze.fortressone.org/.css/fo_stats.js`"></script>
         <script src=`"tablesort.min.js`"></script>
         <script src=`"tablesort.number.min.js`"></script>
@@ -1982,8 +1983,17 @@ foreach ($jsonFile in $inputFile) {
 
     $count = 1
     $tableHeader = "<table id=`"classKills`" >
-    <thead><tr><th colspan=4></th><th colspan=9>Both Rounds</th></tr>
+    <thead><tr><th colspan=4></th><th colspan=9>Rnd1</th><th colspan=9>Rnd2</th></tr>
     <tr><th>#</th><th>Player</th><th>Team</th><th title='Kills'>Kills</th>
+    <th>Sco</th>
+    <th>Sold</th>
+    <th>Demo</th>
+    <th>Med</th>
+    <th>HwG</th>
+    <th>Pyro</th>
+    <th>Spy</th>
+    <th>Eng</th>
+    <th>SG</th>
     <th>Sco</th>
     <th>Sold</th>
     <th>Demo</th>
@@ -1995,28 +2005,30 @@ foreach ($jsonFile in $inputFile) {
     <th>SG</th></tr></thead>`n"
 
     $table = ''
-    $subtotalFrg = @($ClassAllowedwithSG | foreach { 0 }) 
-    $subtotalDth = @($ClassAllowedwithSG | foreach { 0 }) 
+    $subtotalFrg = @($ClassAllowedwithSG | foreach { 0 }) + @($ClassAllowedwithSG | foreach { 0 })
+    $subtotalDth = @($ClassAllowedwithSG | foreach { 0 }) + @($ClassAllowedwithSG | foreach { 0 })
 
     foreach ($p in $playerList) { 
       $kills = ($arrPlayerTable | Where Name -eq $p | Measure Kills -sum).Sum
       $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td><td>$($kills)</td>"
-
+      
       $count2 = 0
-      foreach ($o in ($ClassAllowedwithSG)) {
-        $kills = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Class -eq $o } | Measure-Object Kills -Sum).Sum
-        $dth = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.PlayerClass -eq $o } | Measure-Object Death -Sum).Sum
-        
-        if ($kills + $dth -gt 0) {
-          $table += "<td>$($kills)/$($dth)</td>"
-        }
-        else {
-          $table += "<td class=`"$ccGrey`"></td>"
-        }
+      foreach ($round in 1..2) {
+        foreach ($o in ($ClassAllowedwithSG)) {
+          $kills = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Round -eq $round -and $_.Class -eq $o } | Measure-Object Kills -Sum).Sum
+          $dth   = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Round -eq $round -and $_.PlayerClass -eq $o } | Measure-Object Death -Sum).Sum
+          
+          if ($kills + $dth -gt 0) {
+            $table += "<td>$($kills)/$($dth)</td>"
+          }
+          else {
+            $table += "<td class=`"$ccGrey`"></td>"
+          }
 
-        $subtotalFrg[$count2] += $kills
-        $subtotalDth[$count2] += $dth
-        $count2 += 1
+          $subtotalFrg[$count2] += $kills
+          $subtotalDth[$count2] += $dth
+          $count2 += 1
+        }
       }
 
       $table += "</tr>`n"
@@ -2028,13 +2040,13 @@ foreach ($jsonFile in $inputFile) {
     foreach ($st in $subtotalFrg) { $table += "<td>$(if (0 -ne $subtotalFrg[$count] + $subtotalDth[$count]) { "$($subtotalFrg[$count])/$($subtotalDth[$count])" })</td>"; $count++ }
     $htmlOut += '</tr></tfoot>'
 
-    $htmlOut += '<hr><div class="row">'             
-    $htmlOut += '<div class="column" style="width:550px;display:inline-table;padding-right:5px">' 
-    $htmlOut += "<h2>Kills/Deaths By Class</h2>`n"  
+    #$htmlOut += '<hr><div class="row">'             
+    #$htmlOut += '<div class="column" style="width:550px;display:inline-table;padding-right:5px">' 
+    $htmlOut += "<hr><h2>Kills/Deaths By Class</h2>`n"  
     $htmlOut += $tableHeader                        
     $htmlOut += $table                              
     $htmlOut += '</table>'      
-    $htmlOut += '</div><div class="column" style="width:550px;display:inline-table">' 
+    #$htmlOut += '</div><div class="column" style="width:550px;display:inline-table">' 
 
 
     $table = ''
@@ -2073,11 +2085,11 @@ foreach ($jsonFile in $inputFile) {
 
       
     #'<div class="column">'                
-    $htmlOut += "<h2>Estimated Time per Class</h2>`n"
+    $htmlOut += "<hr><h2>Estimated Time per Class</h2>`n"
     $htmlOut += $tableHeader                          
     $htmlOut += $table                                
     $htmlOut += '</table>'          
-    $htmlOut += '</div></div>'          
+    #$htmlOut += '</div></div>'          
 
     #Stats for each player
     $htmlOut += "<hr><h2>Player Weapon Stats </h2>`n"   

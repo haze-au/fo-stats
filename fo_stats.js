@@ -31,9 +31,10 @@ function MakeVersusHover(strTable) {
             else { var hoverClass = "Green"; var hoverTitle = "Head to Head"; }
 
             var div = document.createElement('div');
-            div.innerHTML = col.innerText + '<span class="VersusHoverText' + hoverClass + '"><b>' + hoverTitle + '</b><br>' +
-                row.cells[1].innerText + ": " + col.innerText + "<br>" +
-                table.rows[pos].cells[1].innerText + ': ' + opValue + '</span>';
+            div.innerHTML = col.innerText + '<span class="VersusHoverText' + hoverClass + '"><b>' + hoverTitle + '</b>' +
+                '<table class="hideTable"><tr><td>' +
+                row.cells[1].innerText + ":</td><td>" + col.innerText + "</td></tr><tr><td>" +
+                table.rows[pos].cells[1].innerText + ':</td><td> ' + opValue + '</td></tr></table></span>';
             col.id = strTable + '-' + i + '-' + pos;
             div.className = 'VersusHover';
 
@@ -57,13 +58,17 @@ function MakeSummaryHover(strTable) {
     }
 }
 
-function MakePerMinFragHover (strTable) {
+function MakePerMinFragHover(strTable) {
     var table = document.getElementById(strTable).getElementsByTagName('tbody')[0];
-   if (strTable.match("^class.*$")) { var start = 4; }
-   else { var start = 6; }
+    var header = document.getElementById(strTable).getElementsByTagName('thead')[0];
+
+    if (strTable.match("^class.*$")) { var start = 4; }
+    else { var start = 6; }
 
     for (var i = 0, row; row = table.rows[i]; i++) {
+        var round = 1;
         for (var j = start, col; col = row.cells[j]; j++) {
+            var txt = '';
             var strKD = col.innerText;
             if (strKD) {
                 var arrKD = strKD.split('/');
@@ -74,22 +79,51 @@ function MakePerMinFragHover (strTable) {
                     kd = Number.parseFloat(kd).toFixed(2);
                 }
                 var rank = arrKD[0] - arrKD[1];
-	            var team = row.cells[2].innerText;
+                var team = row.cells[2].innerText;
                 if (team.match("^.&.$") || team == '') { team = '0'; }
 
+                txt = strKD +
+                    '<span class="ClassHoverText' + team + '">' +
+                    '<table class="hideTable"><tr><td><b>Rank:</b></td><td>' + rank + '</td></tr>' +
+                    '<tr><td><b>K/D:</b></td><td>' + kd + '</td></tr>';
+
+                if (header.rows[0].cells[1].innerText.match("^(Rnd|Round)[1-2]") &&
+                    header.rows[1].cells[j].innerText.match("^Sco|Sold|Demo|Med|HwG|Pyro|Spy|Eng$")) {
+                    var startRnd2 = 4 + header.rows[0].cells[1].colSpan;
+                    if (j < startRnd2) { round = 1; }
+                    else { round = 2; }
+
+                    txt = txt + '<tr><td><b>Time:</b></td><td>' +
+                        GetClassTimeValue(i, round, header.rows[1].cells[j].innerText) +
+                        '</td></tr>';
+                }
+
+                txt = txt + '</table></span>';
+
                 var div = document.createElement('div');
-                div.innerHTML = strKD +
-                                '<span class="ClassHoverText' + team  + '">' +
-                                '<b>Rank:</b> ' + rank + '<br>' +
-                                '<b>K/D:</b> ' + kd + ' </span>';
+                div.innerHTML = txt;
                 div.className = "ClassHover";
                 col.innerHTML = div.outerHTML;
-            }  
+            }
         }
     }
 }
 
+function GetClassTimeValue(id, round, playerclass) {
+    var cTable = document.getElementById("classTime");
+    var start = 4 + ((Number(round) - 1) * 10);
 
+    for (var i = 2, row; row = cTable.rows[i]; i++) {
+        if (row.cells[0].innerText == Number(id) + 1) {
+            for (var j = start, col; col = cTable.rows[i].cells[j]; j++) {
+                var tfClass = cTable.rows[1].cells[j].innerText;
+                if (tfClass == 'K/D') { break; }
+                if (tfClass == playerclass) { return col.innerText; }
+            }
+        }
+    }
+    return ''
+}
 
 function GetClassTime(strTable, id, classCol) {
     var cTable = document.getElementById("classTime");
@@ -262,26 +296,77 @@ function MakeAwardPlayerProfile(strTable) {
     }
 }
 
+function MakeClassTimeHover(strTable) {
+
+    var table = document.getElementById(strTable).getElementsByTagName('tbody')[0];
+    var header = document.getElementById(strTable).getElementsByTagName('thead')[0];
+    var ckTable = document.getElementById('classKills').getElementsByTagName('tbody')[0];
+    
+    var start = 4;
+
+    for (var i = 0, row; row = table.rows[i]; i++) {
+        for (var j = start, col; col = row.cells[j]; j++) {
+            if (col.innerText == '' || header.rows[1].cells[j].innerText == 'K/D') { continue; }
+
+            var txt = '';
+            var ckValue = ckTable.rows[i].cells[j].innerText;
+
+            if (ckValue != '') {
+                strKD = ckValue.split('/');
+            } else { continue; }
+            var kills = Number(strKD[0]);
+            var dth = Number(strKD[1]);
+
+            if (strKD.length == 1 || dth == 0) {
+                var kd = "&infin;";
+            } else {
+                var kd = kills / dth;
+                kd = Number.parseFloat(kd).toFixed(2);
+            }
+
+            var rank = kills - dth;
+            var team = row.cells[2].innerText;
+            if (team.match("^.&.$") || team == '') { team = '0'; }
+            var minsec = col.innerText.split(':');
+            var mins = Number(minsec[0]) + (Number(minsec[1]) / 60);
+
+            txt = col.innerText + 
+                '<span class="ClassHoverText' + team + '">' +
+                '<table class="hideTable"><tr><td><b>Kill/Dth:</b></td><td>' + kills + ' / ' + dth + '</td></tr>' +
+                '<tr><td><b>KPM:</b></td><td>' + Number.parseFloat(kills / mins).toFixed(2) + '</td></tr>' +
+                /*'<b>Death:</b> ' + dth + '<br>' +*/
+                '<tr><td><b>Rank:</b></td><td>' + rank + '</td></tr>' +
+                '<tr><td><b>K/D:</b></td><td>' + kd + '</td></tr></table></span>';
+
+            var div = document.createElement('div');
+            div.innerHTML = txt;
+            div.className = "ClassHover";
+            col.innerHTML = div.outerHTML;
+        }
+    }
+}
+
 function MakeH4PlayerProfile() {
     var elements = document.getElementsByTagName('h4');
     var copyTable = document.getElementById("perMinFragDeath").getElementsByTagName('tbody')[0];
 
     for (var i = 0, name; name = elements[i].innerText; i++) {
         let newInnerTxt = "";
-            for (var k = 0, row2; row2 = copyTable.rows[k].cells[1]; k++) {
-                if (row2.innerText == "") { continue; }
-                if (row2.innerText == name) {
-                    if (newInnerTxt != "") { newInnerTxt = newInnerTxt + ", " }
-                    var span = row2.getElementsByTagName('span')[0];
-                    var div = document.createElement('div');
-                    div.className = 'PlayerHover';
-                    div.innerHTML = name + span.outerHTML;
-                    newInnerTxt = newInnerTxt + div.outerHTML;
-                    break;
-                }
+        for (var k = 0, row2; row2 = copyTable.rows[k].cells[1]; k++) {
+            if (row2.innerText == "") { continue; }
+            if (row2.innerText == name) {
+                if (newInnerTxt != "") { newInnerTxt = newInnerTxt + ", " }
+                var span = row2.getElementsByTagName('span')[0];
+                var div = document.createElement('div');
+                div.className = 'PlayerHover';
+                div.innerHTML = name + span.outerHTML;
+                newInnerTxt = newInnerTxt + div.outerHTML;
+                break;
             }
+        }
 
         if (newInnerTxt != "") { elements[i].innerHTML = newInnerTxt; }
+        if (!elements[i+1]) { break; }
     }
 }
 
@@ -310,11 +395,11 @@ function HighlightMaxVersus(strTable) {
     let ids = [];
     for (i = 0; i < elements.length; i++) {
         if (strTable == "perMinFragDeath") {
-	    if (!elements[i].innerText.match("^[0-9]+\/[0-9]+")) { continue; }
+            if (!elements[i].innerText.match("^[0-9]+\/[0-9]+")) { continue; }
             split = elements[i].innerText.split('/');
-            values.push(Number(split[0]-split[1]));
+            values.push(Number(split[0] - split[1]));
         } else if (elements[i].innerText.match("^[0-9]+$")) {
-	    values.push(Number(elements[i].innerText));
+            values.push(Number(elements[i].innerText));
         } else { continue; }
         ids.push(elements[i].id);
     }
@@ -357,6 +442,10 @@ function HighlightMax(strTable, column) {
 
 
 function FO_Post() {
+    var FOStatsVersion = document.getElementById('FOStatsVersion');
+    if (!FOStatsVersion) { FOStatsVersion = 2.0; }
+    else { FOStatsVersion = Number(FOStatsVersion.content);}
+
     new Tablesort(document.getElementById('summaryAttack'), { descending: true });
     new Tablesort(document.getElementById('summaryDefence'), { descending: true });
     new Tablesort(document.getElementById('fragRound1'), { descending: true });
@@ -413,6 +502,8 @@ function FO_Post() {
     HighlightMax("perMinFlag", '6');
     HighlightMax("perMinFlag", '7');
     HighlightMax("perMinFlag", '8');
+    if (FOStatsVersion >= 2.1) {
+      MakeClassTimeHover('classTime');
+    }
     MakeH4PlayerProfile();
-
 }
