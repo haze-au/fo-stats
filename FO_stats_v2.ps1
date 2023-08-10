@@ -808,7 +808,9 @@ foreach ($jsonFile in $inputFile) {
     #Remove any underscores for _ tokens used in Keys 
     $player = $item.player -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
     $target = $item.target -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
-    
+    $prevPlayer = $prevItem.player -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
+    $prevAttacker = $prevItem.attacker -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
+
     $p_team = $item.playerTeam
     $t_team = $item.targetTeam
     $class = $item.playerClass
@@ -829,13 +831,17 @@ foreach ($jsonFile in $inputFile) {
     # Fix Stupid stuff missing from logs due to 3rd Party events - e.g. Buildings and Gas
     ###
 
+
+    if ($round -eq 1) { $teamRound = [ref]$arrTeamRnd1 }
+    else              { $teamRound = [ref]$arrTeamRnd2 }
+
     #try fix building kills/deaths
-    if ($t_class -eq 0 -and $target -in '', 'build.timer' -and $weap -ne 'worldSpawn') {  
+    if ($t_class -eq 0 -and $target -in '', 'build.timer' -and $weap -ne 'worldSpawn') {      
       $potentialEng = $arrTimeTrack.keys -match '.*_currentClass$'
       $potentialEng = $potentialEng | foreach { if ($arrTimeTrack.$_ -eq 9) { ($_ -split '_')[0] } }
 
       # If only 1 eng found fix it, else forget it
-      if ($potentialEng -notin '', $null -and $potentialEng.Count -eq 1 ) {
+      if ($potentialEng -ne $null -and $potentialEng.Count -eq 1 ) {
         $target = ($potentialEng -split '_')[0]
         $t_class = 10
       }
@@ -846,7 +852,7 @@ foreach ($jsonFile in $inputFile) {
     elseif ($class -eq '8' -and $weap -eq 'worldspawn') { 
       if ($type -in 'damageDone', 'kill') {
         $potentialSpies = $arrTimeTrack.keys -match '.*_currentClass$'
-        $potentialSpies = $potentialSpies | foreach { if ($arrTimeTrack.$_ -eq 8) { ($_ -split '_')[0] } }
+        $potentialSpies = $potentialSpies | foreach { if ($arrTimeTrack.$_ -eq 8 -and $teamRound.Value.$_ -eq $team) { ($_ -split '_')[0] } }
 
         # If only 1 spy found fix it, else forget it
         if ($potentialSpies.Count -eq 1 -and $potentialSpies -notin '', $null) { 
@@ -1014,7 +1020,6 @@ foreach ($jsonFile in $inputFile) {
 
       'death' {
         $arrDeathMin.$keyTime += 1
-        #record sg deahts in class table only i.e.e Class 10/SG.
         if ($player -ne '' -and $class -ne 0) {
           arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'Death' -Increment
           if ($item.attacker -in 'world', '') {
@@ -1142,10 +1147,10 @@ foreach ($jsonFile in $inputFile) {
         $arrFlagDropMin.$keyTime += 1
 
         # work out if death or throw
-        if ($prevItem.attacker -and $item.team -ne $prevItem.attackerTeam -and $prevItem.type -eq 'death' -and $prevItem.player -eq $player -and 
+        if ($prevAttacker -and $item.team -ne $prevItem.attackerTeam -and $prevItem.type -eq 'death' -and $prevPlayer -eq $player -and 
           $prevItem.time -eq $time -and $prevItem.kind -ne 'self') {
-          arrPlayerTable-UpdatePlayer -Name $prevItem.attacker -Round $round -Property 'FlagStop' -Increment
-          $arrFlagStopMin."$($timeBlock)_$($prevItem.attacker)" += 1
+          arrPlayerTable-UpdatePlayer -Name $prevAttacker -Round $round -Property 'FlagStop' -Increment
+          $arrFlagStopMin."$($timeBlock)_$($prevAttacker)" += 1
         }
         elseif ($prevItem.kind -ne 'self') { 
           arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'FlagThrow' -Increment
@@ -1174,7 +1179,7 @@ foreach ($jsonFile in $inputFile) {
     if ($currentClass -in '',$null) { continue }
     arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $currentClass -Round $round -Value ($time - $arrTimeTrack."$($p)_lastChange")
   }
-
+  
   #remove any Class Times where timed played less that 20secs
   function arrClassTimeTable-Cleanup {
     param([ref]$Table)
@@ -1910,7 +1915,7 @@ foreach ($jsonFile in $inputFile) {
 
     foreach ($min in 1..$timeBlock) { $tableHeader += "<th>$($min)</th>" }
     $tableHeader += "</tr></thead>`n"
-
+    
     $count = 1
     $subtotalCap = @(1..$timeBlock | foreach { 0 } )
     $subtotalTook = @(1..$timeBlock | foreach { 0 } )
@@ -1919,12 +1924,11 @@ foreach ($jsonFile in $inputFile) {
     foreach ($p in $playerList) {    
       #$pos = arrFindPlayer -Table ([ref]$arrPlayerTable) -Player $p 
       $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($arrTeam.$p)</td>
-                    <td>$(($arrPlayerTable | Where Name -EQ $p | Measure FlagCap   -Sum).Sum)</td>
-                    <td>$(($arrPlayerTable | Where Name -EQ $p | Measure FlagTake  -Sum).Sum)</td>
-                    <td>$(($arrPlayerTable | Where Name -EQ $p | Measure FlagThrow -Sum).Sum)</td>
-                    <td>$("{0:m\:ss}" -f [timespan]::FromSeconds( ($arrPlayerTable | Where Name -EQ $p | Measure FlagTime -Sum).Sum ) )</td>
-                    <td>$(($arrPlayerTable | Where Name -EQ $p | Measure FlagStop -Sum).Sum)</td>"
-      
+                    <td>$(($arrPlayerTable | Where {$_.Name -eq $p } | Measure FlagCap   -Sum).Sum)</td>
+                    <td>$(($arrPlayerTable | Where {$_.Name -eq $p } | Measure FlagTake  -Sum).Sum)</td>
+                    <td>$(($arrPlayerTable | Where {$_.Name -eq $p } | Measure FlagThrow -Sum).Sum)</td>
+                    <td>$("{0:m\:ss}" -f [timespan]::FromSeconds( ($arrPlayerTable | Where {$_.Name -eq $p } | Measure FlagTime -Sum).Sum ) )</td>
+                    <td>$(($arrPlayerTable | Where {$_.Name -eq $p } | Measure FlagStop -Sum).Sum)</td>"
       
       $count2 = 0
       foreach ($min in 1..$timeBlock) {
