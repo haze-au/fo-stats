@@ -19,7 +19,7 @@ if ($ForceBatch) { $doBatch = $true }
 $OCEPaths = @('sydney/','melbourne/')
 $USPaths  = @('california/','dallas/','virginia/','miami/')
 $BRPaths  = @('saopaulo/','fortaleza/')
-$EUPaths  = @('ireland/','stockholm/')
+$EUPaths  = @('ireland/','stockholm/','london/')
 $IntPaths = @('bahrain/','guam/','mumbai/','tokyo/')
 
 $script:ClassToStr = @('World','Sco','Snp','Sold','Demo','Med','HwG','Pyro','Spy','Eng', 'SG')
