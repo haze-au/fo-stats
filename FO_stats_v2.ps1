@@ -831,7 +831,6 @@ foreach ($jsonFile in $inputFile) {
     # Fix Stupid stuff missing from logs due to 3rd Party events - e.g. Buildings and Gas
     ###
 
-
     if ($round -eq 1) { $teamRound = [ref]$arrTeamRnd1 }
     else              { $teamRound = [ref]$arrTeamRnd2 }
 
@@ -839,13 +838,13 @@ foreach ($jsonFile in $inputFile) {
     if ($t_class -eq 0 -and $target -in '', 'build.timer' -and $weap -ne 'worldSpawn') {      
       $potentialEng = $arrTimeTrack.keys -match '.*_currentClass$'
       $potentialEng = $potentialEng | foreach { if ($arrTimeTrack.$_ -eq 9) { ($_ -split '_')[0] } }
+      $potentialEng = $potentialEng | foreach { if ($teamRound.Value.$_ -eq $t_team) { $_ } }
 
       # If only 1 eng found fix it, else forget it
       if ($potentialEng -ne $null -and $potentialEng.Count -eq 1 ) {
         $target = ($potentialEng -split '_')[0]
         $t_class = 10
-      }
-      else { continue }
+      } else { continue }
     }          
     elseif ($weap -eq 'sent') { $class = 10 }
     # Do this before Keys are made# dodgey... Try find out who a gas grenade owner is
