@@ -2430,10 +2430,10 @@ if (!$NoStatJson) {
   $textJsonOut = ([PSCustomObject]@{Matches = ''; SummaryAttack = ''; SummaryDefence = ''; ClassFragAttack = ''; ClassFragDefence = ''; ClassTimeAttack = ''; ClassTimeDefence = '' })
   $textJsonOut.Matches = @($arrResultTable | Select-Object Match, Winner, @{L = 'Rating'; E = { '{0:P0}' -f $_.Rating } }, Score1, Team1, Score2, Team2)
 
-  $textJsonOut.SummaryAttack = ($arrSummaryAttTable)  #  | Select-Object -Property Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes)
-  $textJsonOut.SummaryDefence = ($arrSummaryDefTable) #  | Select-Object -Property Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes)
+  $textJsonOut.SummaryAttack = [array]($arrSummaryAttTable)  #  | Select-Object -Property Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes)
+  $textJsonOut.SummaryDefence = [array]($arrSummaryDefTable) #  | Select-Object -Property Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes)
 
-  $textJsonOut.ClassFragAttack = ($arrClassFragAttTable  | Select-Object -Property Name, `
+  $textJsonOut.ClassFragAttack = [array]($arrClassFragAttTable  | Select-Object -Property Name, `
       Sco, @{L = 'KPM1'; E = { Table-CalculateVPM $_.Sco ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sco } }, `
       Sold, @{L = 'KPM3'; E = { Table-CalculateVPM $_.Sold ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sold } }, `
       Demo, @{L = 'KPM4'; E = { Table-CalculateVPM $_.Demo ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Demo } }, `
@@ -2454,8 +2454,8 @@ if (!$NoStatJson) {
       Eng, @{L = 'KPM9'; E = { Table-CalculateVPM $_.Eng  ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng } }, `
       SG, @{L = 'KPM0'; E = { Table-CalculateVPM $_.SG   ($arrClassTimeDefTable | Where-Object Name -EQ $_.Name).Eng } })
 
-  $textJsonOut.ClassTimeAttack = ($arrClassTimeAttTable  | Select-Object -Property Name, Sco, Sold, Demo, Med, HwG, Pyro, Spy, Eng)
-  $textJsonOut.ClassTimeDefence = ($arrClassTimeDefTable | Select-Object -Property Name, Sco, Sold, Demo, Med, HwG, Pyro, Spy, Eng)
+  $textJsonOut.ClassTimeAttack = [array]($arrClassTimeAttTable  | Select-Object -Property Name, Sco, Sold, Demo, Med, HwG, Pyro, Spy, Eng)
+  $textJsonOut.ClassTimeDefence = [array]($arrClassTimeDefTable | Select-Object -Property Name, Sco, Sold, Demo, Med, HwG, Pyro, Spy, Eng)
 
   if ($jsonFileCount -eq 1) { 
     $TextFileStr = "$($outFileStr)_stats.json"
