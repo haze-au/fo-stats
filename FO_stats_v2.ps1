@@ -1100,7 +1100,7 @@ foreach ($jsonFile in $inputFile) {
       
         #track all weap deaths on targets AND all versus kills (to see self/team kills in table). Exclude sentry death for player totals.
         #dont track SG deaths except in the class and weapons stats. 
-        if ($t_class -ne '10') {
+        #if ($t_class -ne '10') {
           if ($player -notin $null, '') {
             $arrFragVersus.$key += 1
             switch ($round) {
@@ -1110,7 +1110,7 @@ foreach ($jsonFile in $inputFile) {
 
             arrWeaponTable-UpdatePlayer -Name $target -PlayerClass $t_class -Round $round -Class $class -Weapon $weap -Property 'Death' -Increment
           }
-        }
+        #}
       }
 
       'damageDone' {
@@ -2463,7 +2463,8 @@ if (!$NoStatJson) {
     $TextFileStr = "$($inputfile[0].Directory.FullName)\FO_Stats_Summary-$($jsonFileCount)games-$('{0:yyMMdd_HHmmss}' -f (Get-Date)).json"
   }
 
-  ($textJsonOut | ConvertTo-Json) | Out-File -LiteralPath "$($TextFileStr)_stats.json" -Encoding utf8
+  write-host $outStr
+  ($textJsonOut | ConvertTo-Json) | Out-File -LiteralPath "$($TextFileStr)" -Encoding utf8
   Write-Host "JSON stats saved: $($outFileStr)_stats.json"
 }
 
