@@ -372,7 +372,8 @@ if ($StartDateTime) {
   $i = 0
   foreach ($f in $filesBatched) {
     $newJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json
-    if ($newJson.SummaryAttack.Count -lt 4)  { continue }
+    if ($newJson.SummaryAttack.Count -lt 4)     { continue }
+    elseif ($newJson.Match.Winner -in '',$null) { continue }
     
     Write-Host "Adding file to JSON:- $f"
     if (!$outJson) { $outJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json }
