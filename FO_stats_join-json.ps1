@@ -327,7 +327,7 @@ if ($StartDateTime) {
     elseif ($Region -eq 'EU')  { $LatestPaths = $EUPaths  }
     elseif ($Region -eq 'OCE') { $LatestPaths = $OCEPaths }
     elseif ($Region -eq 'INT') { $LatestPaths = $IntPaths }
-    
+
     $FilterPath = ''
     foreach ($p in $LatestPaths) { 
         if ($FilterPath -ne '') { $FilterPath = (@($FilterPath,"$($p)quad/","$($p)staging/") -join ',') }
@@ -360,21 +360,24 @@ if ($StartDateTime) {
     foreach ($f in (Get-ChildItem $PSScriptRoot/$path/*_stats.json)) {
       $fileDT = [datetime]::ParseExact(($f.Name -replace '^(\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d).*$','$1'),'yyyy-MM-dd-HH-mm-ss',$null)
       if ($fileDT -lt $StartDT -or $fileDT -gt $EndDT ) { continue } 
-      if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) { 
+      if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match `
+              -or ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) { 
         Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
         continue 
       }
       $filesBatched += @($f)
     }
   }
+
   
   $filesBatched = $filesBatched | Sort-Object Name
   $i = 0
   foreach ($f in $filesBatched) {
     $newJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json
-    if ($newJson.SummaryAttack.Count -lt 4)     { continue }
-    elseif ($newJson.Match.Winner -in '',$null) { continue }
-    
+    if ($newJson.SummaryAttack.Count -lt 4)   { continue }
+    elseif ('' -in $newJson.Matches.Match)    { continue }   
+    elseif ($null -in $newJson.Matches.Match) { continue }
+
     Write-Host "Adding file to JSON:- $f"
     if (!$outJson) { $outJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json }
     else { $outJson = processFoStatsJSON -CurrentJson $outJson -NewJson ((Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json) }
