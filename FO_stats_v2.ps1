@@ -735,6 +735,7 @@ $jsonFileCount = 0
 foreach ($jsonFile in $inputFile) {
   # Enure JSON files with [ at start and ] (not added in log files)
   $txt = (Get-Content ($jsonFile.FullName -replace '\[', '`[' -replace '\]', '`]'))
+  $txt = $txt -replace ',\s*"(player|attacker|target)"[:]\s*""([A-Za-z0-9-_]+)"",'
   if ($txt[0] -notmatch '^\[.*') {
     $txt[0] = "[$($txt[0])"
     $txt[$txt.count - 1] = "$($txt[$txt.count - 1])]"
@@ -806,10 +807,10 @@ foreach ($jsonFile in $inputFile) {
     $kind = $item.kind
 
     #Remove any underscores for _ tokens used in Keys 
-    $player = $item.player -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
-    $target = $item.target -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
-    $prevPlayer = $prevItem.player -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
-    $prevAttacker = $prevItem.attacker -replace '[_,]', '.' -replace '\s$', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
+    $player = $item.player -replace '[_,]', '.' -replace '\s', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
+    $target = $item.target -replace '[_,]', '.' -replace '\s', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
+    $prevPlayer = $prevItem.player -replace '[_,]', '.' -replace '\s', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
+    $prevAttacker = $prevItem.attacker -replace '[_,]', '.' -replace '\s', '.' -replace '\$', '§' -replace '\^([b0-9]{0,1}|&[0-9a-fA-F]{2}|x[0-9]{3})', ''  -replace '\*','°'
 
     $p_team = $item.playerTeam
     $t_team = $item.targetTeam
