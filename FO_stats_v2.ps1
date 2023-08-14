@@ -735,7 +735,7 @@ $jsonFileCount = 0
 foreach ($jsonFile in $inputFile) {
   # Enure JSON files with [ at start and ] (not added in log files)
   $txt = (Get-Content ($jsonFile.FullName -replace '\[', '`[' -replace '\]', '`]'))
-  $txt = $txt -replace ',\s*"(player|attacker|target)"[:]\s*""([A-Za-z0-9-_]+)"",'
+  
   if ($txt[0] -notmatch '^\[.*') {
     $txt[0] = "[$($txt[0])"
     $txt[$txt.count - 1] = "$($txt[$txt.count - 1])]"
