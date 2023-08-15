@@ -184,7 +184,7 @@ function MakePlayerProfiles(strTable, kind) {
     for (var i = 0, row; row = table.getElementsByTagName('tbody')[0].rows[i]; i++) {
         let player = row.cells[0].innerText;
         let team = row.cells[2].innerText;
-        if (team == '') { continue }
+        if (team == '' || team == 'None') { continue; }
 
         var plusRound2 = 0;
         if (kind == 'both') {
