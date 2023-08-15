@@ -309,6 +309,8 @@ function arrSummaryTable-UpdatePlayer {
         TKill      = 0
         Dmg        = 0
         DPM        = $null
+        SGKills    = 0
+        SGDeath    = 0
         FlagCap    = 0
         FlagTake   = 0
         FlagTime   = 0
@@ -464,6 +466,8 @@ function arrPlayerTable-UpdatePlayer {
       Team                                = ''
       Round                               = [int]$Round
       Kills                               = 0
+      SGKills                             = 0
+      SGDeath                             = 0
       Death                               = 0
       TKill                               = 0
       Dmg                                 = 0
@@ -536,16 +540,16 @@ function GenerateSummaryHtmlTable {
   
   $count = 1
   $tableHeader = "<table id=`"summary$(if ($Defence) { 'Defence' } else { 'Attack' })`" style=""width:600px;display:inline-table""><thead><tr><th>#</th><th>Player</th><th>Team</th><th title='Kills per minute'>KPM</th><th title='Kill-death ratio'>K/D</th><th title='Kills'>Kills</th><th title='Deaths'>Dth</th><th title='Team kills'>TK</h><th title='Damage'>Dmg</th><th title='Damage per miunte'>DPM</h>"
-  if ($Attack) { $tableHeader += "<th title='Flag Captures'>Caps</th><th title='Flag pickups'>Take</th><th title='Time flag held'>Carry</th>" }
-  else { $tableHeader += "<th title='Killed flag carrier'>FlagStop</th>" }
+  if ($Attack) { $tableHeader += "<th title='Sentry Guns Killed'>Sent</th><th title='Flag Captures'>Caps</th><th title='Flag pickups'>Take</th><th title='Time flag held'>Carry</th>" }
+  else { $tableHeader += "<th title='Sentry Guns Lost'>Sent</th><th title='Killed flag carrier'>FlagStop</th>" }
   $tableHeader += "<th>Time</th>"
   $table = ''
-  $subtotal = @(1..8 | foreach { 0 })
+  $subtotal = @(1..9 | foreach { 0 })
 
   foreach ($p in $playerList) {
     if ($Defence) { 
       if ($arrTeam.$p -eq '1&2') { 
-        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>None</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
+        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>None</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
         $count += 1
         continue 
       }
@@ -558,7 +562,7 @@ function GenerateSummaryHtmlTable {
     }
     else { 
       if ($arrTeam.$p -eq '2&1') { 
-        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>None</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
+        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>None</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
         $count += 1
         continue 
       }
@@ -577,7 +581,7 @@ function GenerateSummaryHtmlTable {
       $team = (Get-Variable "arrTeamRnd$rnd").Value.$p
 
       if ($player -eq $null) { 
-        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
+        $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>None</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>"
         if ($Attack) { $table += "<td></td><td></td>" }
         $table += "</tr>"
         $count++
@@ -594,6 +598,8 @@ function GenerateSummaryHtmlTable {
       $dmg = $player.Dmg
       $dpm = $dmg / ($timePlayed / 60)
 
+      $sgKilled = $player.SGKills
+      $sgDeath = $player.SGDeath
       $flagCap = $player.FlagCap
       $flagTake = $player.FlagTake
       $flagTime = $player.FlagTime
@@ -601,8 +607,8 @@ function GenerateSummaryHtmlTable {
 
       $table += "<tr class=`"$(teamColorCode $arrTeam.$p)`"><td>$($count)</td><td>$($p)</td><td>$($team)</td><td>$('{0:0.00}' -f $kpm)</td><td>$('{0:0.00}' -f $kd)</td><td>$($kills)</td><td>$($death)</td><td>$($tkill)</td><td>$($dmg)</td><td>$('{0:0}' -f $dpm)</td>"
     
-      if ($Attack) { $table += "<td>$($flagCap)</td><td>$($flagTake)</td><td>$(Format-MinSec $flagTime)</td>" }
-      else { $table += "<td>$($flagStop)</td>" }
+      if ($Attack) { $table += "<td>$($sgkilled)</td><td>$($flagCap)</td><td>$($flagTake)</td><td>$(Format-MinSec $flagTime)</td>" }
+      else { $table += "<td>$($sgDeath)</td><td>$($flagStop)</td>" }
       
       $table += "<td>$(Format-MinSec ([int]$timePlayed))</td>"
       #$table += "<td><div class=`"ClassHover`">$(getPlayerClasses -Round $rnd -Player $p)</div></td>"
@@ -611,10 +617,10 @@ function GenerateSummaryHtmlTable {
     
       $subtotal[0] += $kills; $subtotal[1] += $death; $subtotal[2] += $tkill; $subtotal[3] += $dmg; $subtotal[4] = ''
       if ($Attack) {  
-        $subtotal[5] += $flagCap; $subtotal[6] += $flagTake; $subtotal[7] += $FlagTime
+        $subtotal[5] += $sgKilled; $subtotal[6] += $flagCap; $subtotal[7] += $flagTake; $subtotal[8] += $FlagTime
       }
       else {
-        $subtotal[5] += $flagStop; $subtotal[6] = $null; $subtotal[7] = $null
+        $subtotal[5] += $sgDeath; $subtotal[6] += $flagStop; $subtotal[7] = $null; $subtotal[8] = $null
       }
       $count += 1
       $lastPlayer = $player.Name
@@ -624,7 +630,7 @@ function GenerateSummaryHtmlTable {
   $tableHeader += "<th id=`"ClassColumn`">Classes</th></tr></thead>`n"
   $table += '<tfoot><tr id="TotalRow"><td colspan=5 align=right padding=2px><b>Total:</b></td>'
 
-  if ($Attack) { $subtotal[7] = Format-MinSec $subtotal[7] }
+  if ($Attack) { $subtotal[8] = Format-MinSec $subtotal[8] }
   foreach ($st in $subtotal) { if ($st -eq $null) { break }; $table += "<td>$($st)</td>" }
   $table += '</tr></tfoot>'
 
@@ -1022,9 +1028,11 @@ foreach ($jsonFile in $inputFile) {
         $arrDeathMin.$keyTime += 1
         if ($player -ne '' -and $class -ne 0) {
           arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'Death' -Increment
-          if ($item.attacker -in 'world', '') {
-            if ($weap -ne 'laser') { $weap = 'world' }
-            arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'Death' -Increment
+
+          #Record death from the world (e.g. fall dmg)
+          if ($item.attacker -in 'world', '' -and !$item.attackerClass) {
+            $weap = 'world'
+            arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $classNoSG -Property 'Death' -Increment
           }
         }
         continue
@@ -1088,6 +1096,10 @@ foreach ($jsonFile in $inputFile) {
             arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'Kills' -Increment
             arrWeaponTable-UpdatePlayer -Name $player -PlayerClass $class -Round $round -Weapon $weap -Class $class -Property 'Kills' -Increment
 
+            if ($t_class -eq 10) { 
+              arrPlayerTable-UpdatePlayer -Name $player -Round $round -Property 'SGKills' -Increment 
+              arrPlayerTable-UpdatePlayer -Name $target -Round $round -Property 'SGDeath' -Increment 
+            }
             $arrKilledClass.$keyClassK += 1
             $arrFragMin.$keyTime += 1
 
@@ -1692,7 +1704,7 @@ foreach ($jsonFile in $inputFile) {
 
     $htmlOut = "<html>
       <head>
-        <meta id=`"FOStatsVersion`" name=`"FOStatsVersion`" content=`"2.1`">
+        <meta id=`"FOStatsVersion`" name=`"FOStatsVersion`" content=`"2.11`">
         <script src=`"http://haze.fortressone.org/.css/fo_stats.js`"></script>
         <script src=`"tablesort.min.js`"></script>
         <script src=`"tablesort.number.min.js`"></script>
@@ -2322,6 +2334,7 @@ foreach ($jsonFile in $inputFile) {
       }
     }
 
+    arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'SGKills'  -value (($arrPlayerTable | Where Name -EQ $p | Measure SGKills -Sum).Sum)
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'FlagCap'  -value (($arrPlayerTable | Where Name -EQ $p | Measure FlagCap -Sum).Sum)
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'FlagTake' -value (($arrPlayerTable | Where Name -EQ $p | Measure FlagTake -Sum).Sum)
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'FlagTime' -value (($arrPlayerTable | Where Name -EQ $p | Measure FlagTime -Sum).Sum)
@@ -2362,7 +2375,7 @@ foreach ($i in $arrSummaryAttTable) {
   $i.TimePlayed = Format-MinSec $i.TimePlayed
 }
 
-$textOut += $arrSummaryAttTable | Format-Table Name, KPM, KD, Kills, Death, TKill, @{L = 'Dmg'; E = { '{0:n0}' -f $_.Dmg } }, @{L = 'DPM'; E = { '{0:n0}' -f $_.DPM } }, @{L = 'FlagCap'; E = { '{0:n0}' -f $_.FlagCap } }, @{L = 'FlagTake'; E = { '{0:n0}' -f $_.FlagTake } }, FlagTime, TimePlayed, Classes | Out-String
+$textOut += $arrSummaryAttTable | Format-Table Name, KPM, KD, Kills, Death, TKill, @{L = 'Dmg'; E = { '{0:n0}' -f $_.Dmg } }, @{L = 'DPM'; E = { '{0:n0}' -f $_.DPM } }, @{L = 'SGKill'; E = { '{0:n0}' -f $_.SGKills } }, @{L = 'FlagCap'; E = { '{0:n0}' -f $_.FlagCap } }, @{L = 'FlagTake'; E = { '{0:n0}' -f $_.FlagTake } }, FlagTime, TimePlayed, Classes | Out-String
 
 # Update the Def Table into presentation format
 foreach ($j in $arrSummaryDefTable) {

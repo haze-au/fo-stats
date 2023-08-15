@@ -494,16 +494,25 @@ function FO_Post() {
     HighlightMax("summaryAttack", '7');
     HighlightMax("summaryAttack", '9');
     HighlightMax("summaryAttack", '10');
-    HighlightMax("summaryAttack", '11');
-    HighlightMax("summaryAttack", '13');
+    if (FOStatsVersion >= 2.11) {
+        HighlightMax("summaryAttack", '11');
+        HighlightMax("summaryAttack", '12');
+        HighlightMax("summaryAttack", '14');
+    } else {
+        HighlightMax("summaryAttack", '11');
+        HighlightMax("summaryAttack", '13');
+    }
     HighlightMax("summaryDefence", '4');
     HighlightMax("summaryDefence", '5');
     HighlightMax("summaryDefence", '6');
     HighlightMax("summaryDefence", '7');
     HighlightMax("summaryDefence", '9');
     HighlightMax("summaryDefence", '10');
-    HighlightMax("summaryDefence", '11');
-    HighlightMax("summaryDefence", '13');
+    if (FOStatsVersion >= 2.11) {
+        HighlightMax("summaryDefence", '12');
+    } else {
+        HighlightMax("summaryDefence", '11');
+    }
     HighlightMaxVersus("perMinDamage");
     HighlightMaxVersus("perMinFragDeath");
     HighlightMax("perMinFlag", '4');
