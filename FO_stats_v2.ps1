@@ -1186,12 +1186,13 @@ foreach ($jsonFile in $inputFile) {
   $arrTimeTrack.flagPlayer = ''
   $arrTimeTrack.flagTook = 0
 
-  foreach ($p in $arrTeam.Keys) {
-    $currentClass = $arrTimeTrack."$($p)_currentClass"   
+  foreach ($p in $arrTeamRnd2.Keys) {
+    $currentClass = $arrTimeTrack."$($p)_currentClass"
+    
     if ($currentClass -in '',$null) { continue }
     arrClassTable-UpdatePlayer -Table ([ref]$arrClassTimeTable) -Player $p -Class $currentClass -Round $round -Value ($time - $arrTimeTrack."$($p)_lastChange")
   }
-  
+
   #remove any Class Times where timed played less that 20secs
   function arrClassTimeTable-Cleanup {
     param([ref]$Table)
@@ -1393,7 +1394,7 @@ foreach ($jsonFile in $inputFile) {
     foreach ($p in $awardDefDmgTeam.Keys) { $awardDefMagoo.$p = [Math]::Round(($awardDefMagoo.$p + ($awardDefDmgTeam.$p / $tdAvg)) / 2, 2) }
     Remove-Variable tkAvg, tdAvg
 
-
+    
     # Repeatable function for Killed Class Lookup
     function awardFromKilledClass {
       # p1 = att/def p2 = regex
