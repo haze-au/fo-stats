@@ -2170,10 +2170,9 @@ foreach ($jsonFile in $inputFile) {
         $objRnd2 = [PSCustomObject]@{ Name = $p; Class = $class; Kills = 0; Dmg = 0; Death = 0; DmgTaken = 0; AttackCount = 0; HitPercent = ''; pos = 2 }
         
         foreach ($o in @($objRnd1, $objRnd2)) {
-          $item = ($arrWeaponTable | Where-Object { $_.Name -eq $p -and $_.Class -eq $class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon })
+          $item = ($arrWeaponTable | Where-Object { $_.Name -eq $p -and $_.Class -eq $w.class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon })
 
           if ($item.Count -gt 1) {
-            write-host $item
             $o.Kills = ($item.Kills | Measure-Object -Sum).Sum
             $o.Dmg = ($item.Dmg | Measure-Object -Sum).Sum
             $o.Death = ($item.Death | Measure-Object -Sum).Sum
