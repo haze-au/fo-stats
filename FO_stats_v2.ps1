@@ -2172,27 +2172,15 @@ foreach ($jsonFile in $inputFile) {
         foreach ($o in @($objRnd1, $objRnd2)) {
           $item = ($arrWeaponTable | Where-Object { $_.Name -eq $p -and $_.Class -eq $w.class -and $_.Round -eq $o.pos -and $_.Weapon -eq $weapon })
 
-          if ($item.Count -gt 1) {
-            $o.Kills = ($item.Kills | Measure-Object -Sum).Sum
-            $o.Dmg = ($item.Dmg | Measure-Object -Sum).Sum
-            $o.Death = ($item.Death | Measure-Object -Sum).Sum
-            $o.DmgTaken = ($item.DmgTaken | Measure-Object -Sum).Sum
-            $o.AttackCount = ($item.AttackCount | Measure-Object -Sum).Sum
-            
-            if ($o.AttackCount -gt 0) {
-              $o.HitPercent = ($item.DmgCount | Measure-Object -Sum).Sum / $o.AttackCount
-            } 
-          } else {
-            $o.Kills = $item.Kills
-            $o.Dmg = $item.Dmg
-            $o.Death = $item.Death
-            $o.DmgTaken = $item.DmgTaken
-            $o.AttackCount = $item.AttackCount
-            
-            if ($o.AttackCount -gt 0) {
-              $o.HitPercent = $item.DmgCount / $o.AttackCount
-            } 
-          }
+          $o.Kills = ($item.Kills | Measure-Object -Sum).Sum
+          $o.Dmg = ($item.Dmg | Measure-Object -Sum).Sum
+          $o.Death = ($item.Death | Measure-Object -Sum).Sum
+          $o.DmgTaken = ($item.DmgTaken | Measure-Object -Sum).Sum
+          $o.AttackCount = ($item.AttackCount | Measure-Object -Sum).Sum
+          
+          if ($o.AttackCount -gt 0) {
+            $o.HitPercent = ($item.DmgCount | Measure-Object -Sum).Sum / $o.AttackCount
+          } 
         }    
 
         if ($class -ne $lastClass -and $foundFF -lt 1) {        
@@ -2270,7 +2258,6 @@ foreach ($jsonFile in $inputFile) {
       $htmlOut += $playerStats       
       $htmlOut += "</table>`n"         
 
-
       $count += 1 
     }
 
@@ -2284,7 +2271,7 @@ foreach ($jsonFile in $inputFile) {
     if ($OpenHTML) { & "$outFileStr.html" }
   }   #end html generation
 
-  
+
 
   ## Object/Table for Text-base Summaries
   $arrResultTable += [pscustomobject]@{ 
