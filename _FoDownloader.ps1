@@ -138,9 +138,10 @@ if (!$AwsCLI) {
     }
   } 
 } else {
-  $statJson = (& aws s3api list-objects-v2 --bucket fortressone-stats --query "'Contents[?LastModified>``$($TargetDate -f 'yyyy-MM-dd')`]'") | ConvertTo-Json
+  $statJson = (& aws s3api list-objects-v2 --bucket fortressone-stats --query "Contents[?LastModified>``$($TargetDate.ToString('yyyy-MM-dd'))``]") | ConvertFrom-Json
   $statFiles += $statJson | Where-Object { $_.Key -match '.*/(quad|staging)/.*\.json$' } | foreach { (New-UrlStatFile $_.Key $_.LastModified $_.Size) }
 }
+
 
 #LatestFileOnly
 if ($LatestFile) { $statFiles = ($statFiles | Sort-Object DateTime -Descending)[0] }
@@ -155,7 +156,10 @@ write-host "FO Stats Downloader: `n"`
             "-OutFolder:`t$OutFolder`n"`
             "-Overwrite:`t$Overwrite`n"`
             "-DownloadOny:`t$DownloadOny`n"`
-            "-ForceStats:`t$ForceStats`n"
+            "-ForceStats:`t$ForceStats`n"`
+            "-CleanUp:`t$CleanUp`n"`
+            "-DailyBatch:`t$DailyBatch`n"`
+            "-AwsCLI:`t$AwsCLI`n"
 
 
 $filesDownloaded = @()
@@ -166,7 +170,7 @@ write-host "====================================================================
 foreach ($f in $statFiles) {
   if ($FilterFile -and $f.Name -notlike $FilterFile) { continue }
   
-  if (!($FileFilter) -and ($LimitMins -gt 0 -or $LimitDays -gt 0 -or $LimitDate))  {
+  if (!($FileFilter) -and (!$AwsCLI -and ($LimitMins -gt 0 -or $LimitDays -gt 0 -or $LimitDate)))  {
     if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') {
       Write-Host "ERROR: Minute/Day limit not possible - file has invalid date/time [$($f.Name)]"
       continue
