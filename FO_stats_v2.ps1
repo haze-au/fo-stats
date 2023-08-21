@@ -2036,7 +2036,11 @@ foreach ($jsonFile in $inputFile) {
       foreach ($round in 1..2) {
         foreach ($o in ($ClassAllowedwithSG)) {
           $kills = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Round -eq $round -and $_.Class -eq $o } | Measure-Object Kills -Sum).Sum
-          $dth   = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Round -eq $round -and $_.PlayerClass -eq $o } | Measure-Object Death -Sum).Sum
+          if ($o -eq '10') {     
+            $dth   = ($arrPlayerTable | Where { $_.Name -eq $p -and $_.Round -eq $round } | Measure-Object SGDeath -Sum).Sum
+          } else {
+            $dth   = ($arrWeaponTable | Where { $_.Name -eq $p -and $_.Round -eq $round -and $_.PlayerClass -eq $o } | Measure-Object Death -Sum).Sum
+          }
           
           if ($kills + $dth -gt 0) {
             $table += "<td>$($kills)/$($dth)</td>"

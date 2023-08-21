@@ -38,6 +38,7 @@ param (
   [switch]$Demos,      #Demos instead of stats
   [ValidateSet('ALL','US','BR','EU','OCE','INT')]
           $Region,     # All | US | BR | EU | OCE | Int
+  [switch]$AwsCLI,
   [string]$FilterPath, #Stats folder on repo, replicated locally, default='sydney/staging/' 
   [string]$FilterFile, #Filter the filenames from the XML results, use * for wildcards.
   [string]$OutFolder,  #Path of ouput JSON and HTML
@@ -63,7 +64,7 @@ if ($Demos) { $AwsUrl = 'https://fortressone-demos.s3.amazonaws.com/' }
 else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
 
 $OCEPaths = @('sydney/','melbourne/')
-$USPaths  = @('california/','dallas/','virginia/','miami/')
+$USPaths  = @('california/','dallas/','virginia/','miami/','phoenix')
 $BRPaths  = @('saopaulo/','fortaleza/')
 $EUPaths  = @('ireland/','stockholm/','london/')
 $IntPaths = @('bahrain/','guam/','mumbai/','tokyo/')
@@ -127,13 +128,18 @@ if (!$LimitDate -and $LimitMins -eq 0 -and $LimitDays -eq 0) {
 if (!$TargetDate) { $TargetDate  = $timeUTC.AddMinutes($LimitMins * -1).AddDays($LimitDays * -1) }
 if (!$LimitDate)  { $LimitDate   = $timeUTC }
 
-foreach ($p in ($FilterPath -split ',')) {
-  $tempDate  = $TargetDate
-  while ($tempDate.Year -le $LimitDate.Year -and $tempDate.Month -le $LimitDate.Month) {
-    $xml = [xml](invoke-webrequest -Uri "$($AwsUrl)?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
-    $xml.ListBucketResult.Contents | foreach { if ($_) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified $_.Size) } }
-    $tempDate = $tempDate.AddMonths(1)
-  }
+if (!$AwsCLI) {
+  foreach ($p in ($FilterPath -split ',')) {
+    $tempDate  = $TargetDate
+    while ($tempDate.Year -le $LimitDate.Year -and $tempDate.Month -le $LimitDate.Month) {
+      $xml = [xml](invoke-webrequest -Uri "$($AwsUrl)?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
+      $xml.ListBucketResult.Contents | foreach { if ($_) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified $_.Size) } }
+      $tempDate = $tempDate.AddMonths(1)
+    }
+  } 
+} else {
+  $statJson = (& aws s3api list-objects-v2 --bucket fortressone-stats --query "'Contents[?LastModified>``$($TargetDate -f 'yyyy-MM-dd')`]'") | ConvertTo-Json
+  $statFiles += $statJson | Where-Object { $_.Key -match '.*/(quad|staging)/.*\.json$' } | foreach { (New-UrlStatFile $_.Key $_.LastModified $_.Size) }
 }
 
 #LatestFileOnly
