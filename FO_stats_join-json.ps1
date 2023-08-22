@@ -16,6 +16,7 @@ param([switch]$ForceBatch,
 
 if ($ForceBatch) { $doBatch = $true }
 
+# Update me for -Region parameter and Daily Stats updates
 $OCEPaths = @('sydney/','melbourne/')
 $USPaths  = @('california/','dallas/','virginia/','miami/','phoenix')
 $BRPaths  = @('saopaulo/','fortaleza/')

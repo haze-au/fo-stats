@@ -38,7 +38,7 @@ param (
   [switch]$Demos,      #Demos instead of stats
   [ValidateSet('ALL','US','BR','EU','OCE','INT')]
           $Region,     # All | US | BR | EU | OCE | Int
-  [switch]$AwsCLI,
+  [switch]$AwsCLI,     # Requires AWS CLI, scans all paths on the AWS bucket (stagine|quad|fo|hue), ignores region/filterpath
   [string]$FilterPath, #Stats folder on repo, replicated locally, default='sydney/staging/' 
   [string]$FilterFile, #Filter the filenames from the XML results, use * for wildcards.
   [string]$OutFolder,  #Path of ouput JSON and HTML
@@ -50,19 +50,20 @@ param (
   [switch]$DownloadOnly,#Download JSON only
   [switch]$Overwrite,  #Force re-download do the FO_stats again even when file exists
   [switch]$ForceStats, #Force running stats on already existing file
+  [switch]$DailyBatch,  #For HTTP server daily tallying functions (no use on client)
   ### FO_Stats parameters ###################
   [int]   $RoundTime,  #Passed to FO_Stats
   [switch]$TextSave,   #Passed to FO_Stats
   [switch]$NoStatJson, #Passed to FO_stats
   [switch]$TextOnly,   #Passed to FO_Stats
   [switch]$OpenHTML,   #Passed to FO_Stats
-  [switch]$CleanUp,    #Delete JSON after stats.
-  [switch]$DailyBatch  #For HTTP server daily tallying functions (no use on client)
+  [switch]$CleanUp     #Delete JSON after stats.
 )
 
 if ($Demos) { $AwsUrl = 'https://fortressone-demos.s3.amazonaws.com/' }
 else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
 
+# Update me for -Region parameter and Daily Stats updates
 $OCEPaths = @('sydney/','melbourne/')
 $USPaths  = @('california/','dallas/','virginia/','miami/','phoenix')
 $BRPaths  = @('saopaulo/','fortaleza/')
