@@ -49,3 +49,4 @@ $codeCertificate = Get-ChildItem Cert:\LocalMachine\My | Where-Object {$_.Subjec
 # TimeStampServer - Specifies the trusted timestamp server that adds a timestamp to your script's digital signature. Adding a timestamp ensures that your code will not expire when the signing certificate expires.
 Set-AuthenticodeSignature -FilePath H:\src\_GitHub\fo-stats\FO_stats_v2.ps1 -Certificate $codeCertificate -TimeStampServer http://timestamp.digicert.com
 Set-AuthenticodeSignature -FilePath H:\src\_GitHub\fo-stats\_FoDownloader.ps1   -Certificate $codeCertificate -TimeStampServer http://timestamp.digicert.com
+Set-AuthenticodeSignature -FilePath H:\src\_GitHub\fo-stats\FO_stats_join-json.ps1   -Certificate $codeCertificate -TimeStampServer http://timestamp.digicert.com
