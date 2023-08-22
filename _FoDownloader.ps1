@@ -139,7 +139,7 @@ if (!$AwsCLI) {
   } 
 } else {
   $statJson = (& aws s3api list-objects-v2 --bucket fortressone-stats --query "Contents[?LastModified>``$($TargetDate.ToString('yyyy-MM-dd'))``]") | ConvertFrom-Json
-  $statFiles += $statJson | Where-Object { $_.Key -match '.*/(quad|staging)/.*\.json$' } | foreach { (New-UrlStatFile $_.Key $_.LastModified $_.Size) }
+  $statFiles += $statJson | Where-Object { $_.Key -match '.*/(quad|staging|fo|hue)/.*\.json$' } | foreach { (New-UrlStatFile $_.Key $_.LastModified $_.Size) }
 }
 
 
