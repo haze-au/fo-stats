@@ -134,6 +134,8 @@ function processFoStatsJSON {
                 TKill  = 0
                 Dmg    = 0
                 DPM    = $null
+                SGKills  = 0
+                SGDeath  = 0
                 FlagCap  = 0
                 FlagTake = 0
                 FlagTime = 0
@@ -154,6 +156,8 @@ function processFoStatsJSON {
           $CurrentJson.$array[$pos].FlagStop += $p.FlagStop * $removeModifier
           $CurrentJson.$array[$pos].FlagTake  += $p.FlagTake * $removeModifier
           $CurrentJson.$array[$pos].FlagCap   += $p.FlagCap * $removeModifier
+          $CurrentJson.$array[$pos].SGKills  += $p.SGKills * $removeModifier
+          $CurrentJson.$array[$pos].SGDeath  += $p.SGDeath * $removeModifier
           $CurrentJson.$array[$pos].Win   += $p.Win * $removeModifier
           $CurrentJson.$array[$pos].Loss  += $p.Loss * $removeModifier
           $CurrentJson.$array[$pos].Draw  += $p.Draw * $removeModifier
@@ -255,9 +259,9 @@ function Generate-DailyStatsHTML {
     $htmlBody  = '<div class=row><div class=column><h2>Match Log</h2>'
     $htmlBody += ($JSON.Matches       | Sort-Object Name   | ConvertTo-Html -Fragment ) -replace '<table>','<table id="MatchLog">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'
     $htmlBody += '<h2>Attack Summary</h2>'
-    $htmlBody += ($JSON.SummaryAttack  | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="AttackSummary">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'        
+    $htmlBody += ($JSON.SummaryAttack  | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,SGKills,DPM,FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="AttackSummary">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'        
     $htmlBody += '<h2>Defence Summary</h2>'
-    $htmlBody += ($JSON.SummaryDefence  | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,FlagStop,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="DefenceSummary">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'        
+    $htmlBody += ($JSON.SummaryDefence  | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,DPM,SGDeath,FlagStop,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="DefenceSummary">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'        
     $htmlBody += '<h2>Class Kills - Attack</h2>'
     $htmlBody += ($JSON.ClassFragAttack | Sort-Object Name | ConvertTo-Html -Fragment)   -replace '<table>','<table id="ClassKillsAttack">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'
     $htmlBody += '<h2>Class Kills - Defence</h2>'
