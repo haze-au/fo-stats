@@ -2339,6 +2339,7 @@ foreach ($jsonFile in $inputFile) {
     }
 
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'SGKills'  -value (($arrPlayerTable | Where Name -EQ $p | Measure SGKills -Sum).Sum)
+    arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'SGDeath'  -value (($arrPlayerTable | Where Name -EQ $p | Measure SGDeath -Sum).Sum)
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'FlagCap'  -value (($arrPlayerTable | Where Name -EQ $p | Measure FlagCap -Sum).Sum)
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'FlagTake' -value (($arrPlayerTable | Where Name -EQ $p | Measure FlagTake -Sum).Sum)
     arrSummaryTable-SetPlayerProperty -table ([ref]$arrSummaryAttTable) -player $p -property 'FlagTime' -value (($arrPlayerTable | Where Name -EQ $p | Measure FlagTime -Sum).Sum)
