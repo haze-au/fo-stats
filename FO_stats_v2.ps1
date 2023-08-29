@@ -340,7 +340,7 @@ function arrSummaryTable-SetPlayerProperty {
   )
 
   process {
-    if (!$Value) { $Value = 1 }
+    if ($Value -eq $null) { $Value = 1 }
     $playerpos = (arrFindPlayer -Table $table -Player $player)
     if ($playerpos -gt -1 -and $value -gt 0) { ($table.Value)[$playerpos].$property += $value }
   }
@@ -2392,7 +2392,7 @@ foreach ($j in $arrSummaryDefTable) {
 }
 
 $textOut += "Defence Summary`n"
-$textOut += $arrSummaryDefTable | Format-Table Name, KPM, KD, Kills, Death, TKill, @{L = 'Dmg'; E = { '{0:n0}' -f $_.Dmg } }, @{L = 'DPM'; E = { '{0:n0}' -f $_.DPM } }, @{L = 'FlagStop'; E = { '{0:n0}' -f $_.FlagStop } }, Win, Draw, Loss, TimePlayed, Classes | Out-String
+$textOut += $arrSummaryDefTable | Format-Table Name, KPM, KD, Kills, Death, TKill, @{L = 'Dmg'; E = { '{0:n0}' -f $_.Dmg } }, @{L = 'DPM'; E = { '{0:n0}' -f $_.DPM } }, @{L = 'SGDeath'; E = { '{0:n0}' -f $_.SGDeath } }, @{L = 'FlagStop'; E = { '{0:n0}' -f $_.FlagStop } }, Win, Draw, Loss, TimePlayed, Classes | Out-String
 
 $textOut += "Class Kills / KPM Summary - Attack`n"
 $textOut += $arrClassFragAttTable  | Format-Table Name, Sco, @{L = 'KPM'; E = { Table-CalculateVPM $_.Sco ($arrClassTimeAttTable | Where-Object Name -EQ $_.Name).Sco } }, `
