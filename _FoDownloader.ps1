@@ -185,7 +185,9 @@ foreach ($f in $statFiles) {
   $filePath  = "$OutFolder\$(Split-Path $f.Name)"
   $fileName  = "$OutFolder\$($f.Name)"
 
-  if (!$Overwrite -and (Test-Path -LiteralPath ($fileName -replace '\.json$','.html') )) {
+  if (!$Overwrite -and ( (Test-Path -LiteralPath ($fileName -replace '\.json$','.html')) `
+                        -or ((Test-Path -LiteralPath $fileName) -and (Get-Item -LiteralPath $fileName).CreationTime -gt (Get-Date).AddMinutes(-20)) ) `
+      ) {
     write-host "SKIPPED: File Already exists [$($f.Name)]"
     if ($ForceStats) { $filesDownloaded += (Get-Item -LiteralPath $fileName) }
     $filesSkipped += 1
