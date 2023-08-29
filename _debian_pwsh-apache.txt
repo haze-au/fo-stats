@@ -12,3 +12,8 @@ sudo apt update && sudo apt install -y powershell
 0  0-15  * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 1  -DailyBatch
 0  17-23 * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 1  -DailyBatch
 0  16    * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 30
+
+
+---------
+backup
+zip -r 1.zip .
