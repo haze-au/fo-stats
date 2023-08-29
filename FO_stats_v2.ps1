@@ -148,7 +148,7 @@ function timeRnd-RoundDown {
 
 function Format-MinSec {
   param($sec)
-  if (!$sec) { return }
+  if ($sec -eq $null) { return }
   $ts = (New-TimeSpan -Seconds $sec)
   $mins = ($ts.Days * 24 + $ts.Hours) * 60 + $ts.minutes
   return "$($mins):$("{0:d2}" -f $ts.Seconds)"
@@ -446,7 +446,7 @@ function arrWeaponTable-UpdatePlayer {
     $pos = $script:arrWeaponTable.Length - 1 
   }
   
-  if ($Increment -and !$Value) { $Value = [int]1 }
+  if ($Increment -and $Value -eq $null) { $Value = [int]1 }
   if ($Increment) { $script:arrWeaponTable[$pos].$Property += [int]$Value }
   else { $script:arrWeaponTable[$pos].$Property = $Value }
 }
@@ -485,7 +485,7 @@ function arrPlayerTable-UpdatePlayer {
     $pos = $script:arrPlayerTable.Length - 1 
   }
   
-  if ($Increment -and !$Value) { $Value = [int]1 }
+  if ($Increment -and $Value -eq $null) { $Value = [int]1 }
   if ($Increment) { $script:arrPlayerTable[$pos].$Property += $Value }
   else { $script:arrPlayerTable[$pos].$Property = $Value }
 }
