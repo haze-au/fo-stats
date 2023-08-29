@@ -156,7 +156,7 @@ write-host "FO Stats Downloader: `n"`
             "-FilterFile:`t$FilterFile`n" `
             "-OutFolder:`t$OutFolder`n"`
             "-Overwrite:`t$Overwrite`n"`
-            "-DownloadOny:`t$DownloadOny`n"`
+            "-DownloadOnly:`t$DownloadOnly`n"`
             "-ForceStats:`t$ForceStats`n"`
             "-CleanUp:`t$CleanUp`n"`
             "-DailyBatch:`t$DailyBatch`n"`
@@ -186,7 +186,7 @@ foreach ($f in $statFiles) {
   $fileName  = "$OutFolder\$($f.Name)"
 
   if (!$Overwrite -and ( (Test-Path -LiteralPath ($fileName -replace '\.json$','.html')) `
-                        -or ((Test-Path -LiteralPath $fileName) -and (Get-Item -LiteralPath $fileName).CreationTime -gt (Get-Date).AddMinutes(-20)) ) `
+                        -or ((Test-Path -LiteralPath $fileName) -and (Get-Item -LiteralPath $fileName).LastWriteTime -gt (Get-Date).AddMinutes(-20)) ) `
       ) {
     write-host "SKIPPED: File Already exists [$($f.Name)]"
     if ($ForceStats) { $filesDownloaded += (Get-Item -LiteralPath $fileName) }
