@@ -8,6 +8,8 @@ param([switch]$ForceBatch,
       [string]$FromJson,      # See Remove Match
       [string]$StartDateTime, # Input UTC time to match file names
       [string]$EndDateTime,   # Input UTC time to match file names
+      [int]$EndDays,          # If not EndDateTime use End Days/hours
+      [int]$EndHours,
       [string]$FilterPath,
       [ValidateSet('ALL','US','BR','EU','OCE','INT')]
               $Region,
@@ -341,7 +343,9 @@ if ($StartDateTime) {
   }
 
   $StartDT = [DateTime]::Parse($StartDateTime)
-  if (!$EndDateTime) { $EndDT = $StartDT.AddDays(1) }
+  if (!$EndDateTime) { 
+    if (!$EndDays -and !$EndHours) { $EndDT = $StartDT.AddDays(1) }
+    else { $EndDt = $StartDays.AddDays($EndDays).AddHours($EndHours) }
   else {
     $EndDT = [DateTime]::Parse($EndDateTime)
 
