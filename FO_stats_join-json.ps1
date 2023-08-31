@@ -326,94 +326,94 @@ if ($RemoveMatch) {
   return
 }
 
-if ($StartDateTime) {
-  if ($Region) {  
-    if     ($Region -eq 'ALL') { $LatestPaths = $OCEPaths + $USPaths + $EUPaths + $IntPaths }
-    elseif ($Region -eq 'US')  { $LatestPaths = $USPaths  }
-    elseif ($Region -eq 'BR')  { $LatestPaths = $BRPaths  }
-    elseif ($Region -eq 'EU')  { $LatestPaths = $EUPaths  }
-    elseif ($Region -eq 'OCE') { $LatestPaths = $OCEPaths }
-    elseif ($Region -eq 'INT') { $LatestPaths = $IntPaths }
+if ($StartDateTime) { $StartDT = [DateTime]::Parse($StartDateTime) } 
+else { $StartDT = [DateTime]::Now }
 
-    $FilterPath = ''
-    foreach ($p in $LatestPaths) { 
-        if ($FilterPath -ne '') { $FilterPath = (@($FilterPath,"$($p)quad/","$($p)staging/") -join ',') }
-        else                    { $FilterPath = "$($p)quad/,$($p)staging/" }
-    }
+if ($Region) {  
+  if     ($Region -eq 'ALL') { $LatestPaths = $OCEPaths + $USPaths + $EUPaths + $IntPaths }
+  elseif ($Region -eq 'US')  { $LatestPaths = $USPaths  }
+  elseif ($Region -eq 'BR')  { $LatestPaths = $BRPaths  }
+  elseif ($Region -eq 'EU')  { $LatestPaths = $EUPaths  }
+  elseif ($Region -eq 'OCE') { $LatestPaths = $OCEPaths }
+  elseif ($Region -eq 'INT') { $LatestPaths = $IntPaths }
+
+  $FilterPath = ''
+  foreach ($p in $LatestPaths) { 
+      if ($FilterPath -ne '') { $FilterPath = (@($FilterPath,"$($p)quad/","$($p)staging/") -join ',') }
+      else                    { $FilterPath = "$($p)quad/,$($p)staging/" }
   }
+}
 
-  $StartDT = [DateTime]::Parse($StartDateTime)
-  if (!$EndDateTime) { 
-    if (!$EndDays -and !$EndHours) { $EndDT = $StartDT.AddDays(1) }
-    else { $EndDt = $StartDays.AddDays($EndDays).AddHours($EndHours) }
-  else {
-    $EndDT = [DateTime]::Parse($EndDateTime)
+if (!$EndDateTime) { 
+  if (!$EndDays -and !$EndHours) { $EndDT = $StartDT.AddDays(1) }
+  else { $EndDt = $StartDays.AddDays($EndDays).AddHours($EndHours) }
+} else {
+  $EndDT = [DateTime]::Parse($EndDateTime)
 
-    if ($EndDT -lt $StartDT) {
-      $temp = $StartDT
-      $StartDT = $EndDT
-      $EndDT   = $temp
-      Remove-Variable $temp
-    }
+  if ($EndDT -lt $StartDT) {
+    $temp = $StartDT
+    $StartDT = $EndDT
+    $EndDT   = $temp
+    Remove-Variable $temp
   }
- 
-  if ($OutFile -and (Test-Path -LiteralPath $OutFile)) {
-    $outJson = (Get-Content -LiteralPath $OutFile -Raw) | ConvertFrom-Json
+}
+
+if ($OutFile -and (Test-Path -LiteralPath $OutFile)) {
+  $outJson = (Get-Content -LiteralPath $OutFile -Raw) | ConvertFrom-Json
+} else {
+  $outJson = $null
+}
+
+$filesBatched = @()
+foreach ($path in ($FilterPath -split ',')) {
+  if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
+  foreach ($f in (Get-ChildItem $PSScriptRoot/$path/*_stats.json)) {
+    $fileDT = [datetime]::ParseExact(($f.Name -replace '^(\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d).*$','$1'),'yyyy-MM-dd-HH-mm-ss',$null)
+    if ($fileDT -lt $StartDT -or $fileDT -gt $EndDT ) { continue } 
+    if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match `
+            -or ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) { 
+      Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
+      continue 
+    }
+    $filesBatched += @($f)
+  }
+}
+
+
+$filesBatched = $filesBatched | Sort-Object Name
+$i = 0
+foreach ($f in $filesBatched) {
+  $newJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json
+  if ($newJson.SummaryAttack.Count -lt 4)   { continue }
+  elseif ('' -in $newJson.Matches.Match)    { continue }   
+  elseif ($null -in $newJson.Matches.Match) { continue }
+
+  Write-Host "Adding file to JSON:- $f"
+  if (!$outJson) { $outJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json }
+  else { $outJson = processFoStatsJSON -CurrentJson $outJson -NewJson ((Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json) }
+  $i++
+}
+
+if (!$OutFile) {
+  if ($Region) {
+    $OutFile = "statsjoin_$region_$('{0:yyyy-MM-dd_HHmmss}' -f (Get-Date))_$($i)matches.json"
   } else {
-    $outJson = $null
-  }
-
-  $filesBatched = @()
-  foreach ($path in ($FilterPath -split ',')) {
-    if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
-    foreach ($f in (Get-ChildItem $PSScriptRoot/$path/*_stats.json)) {
-      $fileDT = [datetime]::ParseExact(($f.Name -replace '^(\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d).*$','$1'),'yyyy-MM-dd-HH-mm-ss',$null)
-      if ($fileDT -lt $StartDT -or $fileDT -gt $EndDT ) { continue } 
-      if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match `
-              -or ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) { 
-        Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
-        continue 
-      }
-      $filesBatched += @($f)
-    }
-  }
-
-  
-  $filesBatched = $filesBatched | Sort-Object Name
-  $i = 0
-  foreach ($f in $filesBatched) {
-    $newJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json
-    if ($newJson.SummaryAttack.Count -lt 4)   { continue }
-    elseif ('' -in $newJson.Matches.Match)    { continue }   
-    elseif ($null -in $newJson.Matches.Match) { continue }
-
-    Write-Host "Adding file to JSON:- $f"
-    if (!$outJson) { $outJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json }
-    else { $outJson = processFoStatsJSON -CurrentJson $outJson -NewJson ((Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json) }
-    $i++
-  }
-
-  if (!$OutFile) {
-    if ($Region) {
-      $OutFile = "statsjoin_$region_$('{0:yyyy-MM-dd_HHmmss}' -f (Get-Date))_$($i)matches.json"
-    } else {
-      $OutFile = "statsjoin_$('{0:yyyy-MM-dd_HHmmss}' -f (Get-Date))_$($i)matches.json"
-    }
-  } 
-
-  if ($i -lt 1) { Write-Host "No batch files found to be added to $region" }
-  
-  if ($outJson) { 
-    if ($OutFile -match '[\\/]' -and !(Test-Path -LiteralPath (Split-Path -LiteralPath $OutFile))) {
-      New-Item -Path (Split-Path -LiteralPath $OutFile) -ItemType Directory
-    }
-    $outJson | ConvertTo-Json | Out-File $OutFile  -Encoding utf8
-    Write-Host "JSON has been generated - $i files added"
-    Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($OutFile -replace '\.json$','.html') -Encoding utf8
-    Write-Host "Batch HTML - Generated :- $($OutFile -replace '\.json$','.html')"
-    return
+    $OutFile = "statsjoin_$('{0:yyyy-MM-dd_HHmmss}' -f (Get-Date))_$($i)matches.json"
   }
 } 
+
+if ($i -lt 1) { Write-Host "No batch files found to be added to $region" }
+
+if ($outJson) { 
+  if ($OutFile -match '[\\/]' -and !(Test-Path -LiteralPath (Split-Path -LiteralPath $OutFile))) {
+    New-Item -Path (Split-Path -LiteralPath $OutFile) -ItemType Directory
+  }
+  $outJson | ConvertTo-Json | Out-File $OutFile  -Encoding utf8
+  Write-Host "JSON has been generated - $i files added"
+  Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($OutFile -replace '\.json$','.html') -Encoding utf8
+  Write-Host "Batch HTML - Generated :- $($OutFile -replace '\.json$','.html')"
+  return
+}
 
 
 
