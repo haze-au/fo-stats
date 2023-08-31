@@ -326,9 +326,6 @@ if ($RemoveMatch) {
   return
 }
 
-if ($StartDateTime) { $StartDT = [DateTime]::Parse($StartDateTime) } 
-else { $StartDT = [DateTime]::Now }
-
 if ($Region) {  
   if     ($Region -eq 'ALL') { $LatestPaths = $OCEPaths + $USPaths + $EUPaths + $IntPaths }
   elseif ($Region -eq 'US')  { $LatestPaths = $USPaths  }
@@ -343,6 +340,9 @@ if ($Region) {
       else                    { $FilterPath = "$($p)quad/,$($p)staging/" }
   }
 }
+
+if ($StartDateTime) { $StartDT = [DateTime]::Parse($StartDateTime) } 
+else { $StartDT = [DateTime]::Now }
 
 if (!$EndDateTime) { 
   if (!$EndDays -and !$EndHours) { $EndDT = $StartDT.AddDays(1) }
