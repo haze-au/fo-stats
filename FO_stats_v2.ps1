@@ -918,7 +918,7 @@ foreach ($jsonFile in $inputFile) {
     
     #Round tracking
     #if (($class -eq '0' -and $player -eq 'world' -and $p_team -eq '0' -and $weap -eq 'worldspawn' -and $time -ge $round1EndTime) -and $round -le 1) {    #(($kind -eq 'enemy' -and ..)
-    if ($time -ge $round1EndTime -and $round -lt 2) { 
+    if ($time -gt $round1EndTime -and $round -lt 2) { 
       $round += 1
       $prevItem = '-1'
       
