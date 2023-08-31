@@ -346,7 +346,7 @@ else { $StartDT = [DateTime]::Now }
 
 if (!$EndDateTime) { 
   if (!$EndDays -and !$EndHours) { $EndDT = $StartDT.AddDays(1) }
-  else { $EndDt = $StartDays.AddDays($EndDays).AddHours($EndHours) }
+  else { $EndDT = $StartDT.AddDays($EndDays).AddHours($EndHours) }
 } else {
   $EndDT = [DateTime]::Parse($EndDateTime)
 
