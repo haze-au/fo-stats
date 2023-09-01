@@ -7,9 +7,9 @@ param([switch]$ForceBatch,
       [string]$RemoveMatch,   # JSON file to remove $FromJson file
       [string]$FromJson,      # See Remove Match
       [string]$StartDateTime, # Input UTC time to match file names
+      [int]$StartOffsetDays,        # If not StartDateTime use End Days/hours
+      [int]$StartOffsetHours,
       [string]$EndDateTime,   # Input UTC time to match file names
-      [int]$EndDays,          # If not EndDateTime use End Days/hours
-      [int]$EndHours,
       [string]$FilterPath,
       [ValidateSet('ALL','US','BR','EU','OCE','INT')]
               $Region,
@@ -245,8 +245,9 @@ function processFoStatsJSON {
 
         foreach ($classID in $ClassAllowedWithSG) {
           $class   = $ClassToStr[$classID]
-          if ($player.$class -gt 0) {
-            $player."KPM$(if ($classID -eq 10) { 0 } else { $classID })" = '{0:0.00}' -f ($player.$class / (($ClassTable.Value | Where Name -EQ $player.Name)."$(if ($classID -eq 10) { $ClassToStr[9] } else { $class })" / 60))
+          $classTime = ($ClassTable.Value | Where Name -EQ $player.Name)."$(if ($classID -eq 10) { $ClassToStr[9] } else { $class })" 
+          if ($classTime -gt 0 -and $player.$class -gt 0) {
+            $player."KPM$(if ($classID -eq 10) { 0 } else { $classID })" = '{0:0.00}' -f ($player.$class / $classTime / 60)
           }
         }
       }
@@ -344,20 +345,23 @@ if ($Region) {
 if ($StartDateTime) { $StartDT = [DateTime]::Parse($StartDateTime) } 
 else { $StartDT = [DateTime]::Now }
 
-if (!$EndDateTime) { 
-  if (!$EndDays -and !$EndHours) { $EndDT = $StartDT.AddDays(1) }
-  else { $EndDT = $StartDT.AddDays($EndDays).AddHours($EndHours) }
+if ($StartOffsetDays -gt 0 -or $StartOffsetHours -gt 0) {
+  $StartDT = $StartDT.AddDays($StartOffsetDays * -1).AddHours($StartOffsetHours * -1)
+  $EndDT = [DateTime]::Now
+} elseif (!$EndDateTime) { 
+  $EndDT = $StartDT.AddDays(1)
 } else {
   $EndDT = [DateTime]::Parse($EndDateTime)
-
-  if ($EndDT -lt $StartDT) {
-    $temp = $StartDT
-    $StartDT = $EndDT
-    $EndDT   = $temp
-    Remove-Variable $temp
-  }
 }
 
+if ($EndDT -lt $StartDT) {
+  $temp = $StartDT
+  $StartDT = $EndDT
+  $EndDT   = $temp
+  Remove-Variable temp
+}
+$startDT
+$EndDT
 if ($OutFile -and (Test-Path -LiteralPath $OutFile)) {
   $outJson = (Get-Content -LiteralPath $OutFile -Raw) | ConvertFrom-Json
 } else {
