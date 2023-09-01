@@ -360,8 +360,7 @@ if ($EndDT -lt $StartDT) {
   $EndDT   = $temp
   Remove-Variable temp
 }
-$startDT
-$EndDT
+
 if ($OutFile -and (Test-Path -LiteralPath $OutFile)) {
   $outJson = (Get-Content -LiteralPath $OutFile -Raw) | ConvertFrom-Json
 } else {
