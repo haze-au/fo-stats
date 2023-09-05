@@ -19,7 +19,7 @@ aws configure
 1-59 * * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitMins 60 -DailyBatch
 0  0-15  * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 1  -DailyBatch
 0  17-23 * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 1  -DailyBatch
-0  16    * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 30
+0  16    * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 30 -PeriodBatch
 
 
 ---------

@@ -278,6 +278,30 @@ if ($DailyBatch) {
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterBR.ToString()  -Region BR  -OutFile "$PSScriptRoot/_daily/brasil/brasil_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportBR).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportINT.ToString() -Region INT -OutFile "$PSScriptRoot/_daily/international/international_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportINT).json"
+  if (!$PeriodBatch) {
+    & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetHours 1 -Region ALL -OutFile "$PSScriptRoot/_stats-last24hrs.json"
+    & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetHours 1 -Region ALL -OutFile "$PSScriptRoot/_stats-last7days.json"
+
+    $json = (Get-Content -LiteralPath "$PSScriptRoot/_stats-last24hrs.json" -Raw) | ConvertFrom-Json
+    foreach ($m in $json.Matches.Match) {
+      if ($m -match '.*\/(\d{4}-\d\d-\d\d)-(\d\d-\d\d-\d\d)_.*') {
+        $dt = [datetime]::Parse($matches[1] + " " + ($matches[2] -replace '-',':'))
+        if ($dt -lt (Get-Date).AddDays(-1).ToUniversalTime()) {
+          & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$m_blue_vs_red.json" -FromJson "$PSScriptRoot/_stats-last24hrs.json"
+        }
+      }
+    }
+    $json = (Get-Content -LiteralPath "$PSScriptRoot/_stats-last7days.json" -Raw) | ConvertFrom-Json
+    foreach ($m in $json.Matches.Match) {
+      if ($m -match '.*\/(\d{4}-\d\d-\d\d)-(\d\d-\d\d-\d\d)_.*') {
+        $dt = [datetime]::Parse($matches[1] + " " + ($matches[2] -replace '-',':'))
+
+        if ($dt -lt (Get-Date).AddDays(-7).ToUniversalTime()) {
+          & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$m_blue_vs_red.json" -FromJson "$PSScriptRoot/_stats-last7days.json"
+        }
+      }
+    }
+  }
 }
 
 if ($PeriodBatch) {
