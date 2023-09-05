@@ -287,7 +287,7 @@ if ($DailyBatch) {
       if ($m -match '.*\/(\d{4}-\d\d-\d\d)-(\d\d-\d\d-\d\d)_.*') {
         $dt = [datetime]::Parse($matches[1] + " " + ($matches[2] -replace '-',':'))
         if ($dt -lt (Get-Date).AddDays(-1).ToUniversalTime()) {
-          & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$m_blue_vs_red.json" -FromJson "$PSScriptRoot/_stats-last24hrs.json"
+          & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$($m)_blue_vs_red_stats.json" -FromJson "$PSScriptRoot/_stats-last24hrs.json"
         }
       }
     }
@@ -297,7 +297,7 @@ if ($DailyBatch) {
         $dt = [datetime]::Parse($matches[1] + " " + ($matches[2] -replace '-',':'))
 
         if ($dt -lt (Get-Date).AddDays(-7).ToUniversalTime()) {
-          & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$m_blue_vs_red.json" -FromJson "$PSScriptRoot/_stats-last7days.json"
+          & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$($m)_blue_vs_red_stats.json" -FromJson "$PSScriptRoot/_stats-last7days.json"
         }
       }
     }
