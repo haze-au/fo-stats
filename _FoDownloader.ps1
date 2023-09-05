@@ -51,6 +51,7 @@ param (
   [switch]$Overwrite,  #Force re-download do the FO_stats again even when file exists
   [switch]$ForceStats, #Force running stats on already existing file
   [switch]$DailyBatch,  #For HTTP server daily tallying functions (no use on client)
+  [switch]$PeriodBatch, #For HTTP server last 24hr / 7days stats
   ### FO_Stats parameters ###################
   [int]   $RoundTime,  #Passed to FO_Stats
   [switch]$TextSave,   #Passed to FO_Stats
@@ -277,13 +278,14 @@ if ($DailyBatch) {
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterBR.ToString()  -Region BR  -OutFile "$PSScriptRoot/_daily/brasil/brasil_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportBR).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportINT.ToString() -Region INT -OutFile "$PSScriptRoot/_daily/international/international_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportINT).json"
-  
+}
+
+if ($PeriodBatch) {
   Remove-Item "$PSScriptRoot/_stats-last24hrs.json"
   Remove-Item "$PSScriptRoot/_stats-last7days.json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetDays 1 -Region ALL -OutFile "$PSScriptRoot/_stats-last24hrs.json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetDays 7 -Region ALL -OutFile "$PSScriptRoot/_stats-last7days.json"
 }
-
 
 # SIG # Begin signature block
 # MIIboAYJKoZIhvcNAQcCoIIbkTCCG40CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
