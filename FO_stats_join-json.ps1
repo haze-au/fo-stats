@@ -337,8 +337,8 @@ if ($Region) {
 
   $FilterPath = ''
   foreach ($p in $LatestPaths) { 
-      if ($FilterPath -ne '') { $FilterPath = (@($FilterPath,"$($p)quad/","$($p)staging/") -join ',') }
-      else                    { $FilterPath = "$($p)quad/,$($p)staging/" }
+      if ($FilterPath -ne '') { $FilterPath = (@($FilterPath,"$($p)quad/","$($p)staging/","$($p)scrim/","$($p)tourney/") -join ',') }
+      else                    { $FilterPath = "$($p)quad/,$($p)staging/,$($p)scrim/,$($p)tourney/" }
   }
 }
 

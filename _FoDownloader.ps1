@@ -109,7 +109,7 @@ if (!$FilterFile -and $FilterPath) { $FilterPath = (($FilterPath -split ',' | fo
 
 
 if ($Region) {
-  if (!$FilterPath) { $FilterPath = 'quad/,staging/'  }
+  if (!$FilterPath) { $FilterPath = 'quad/,staging/,scrim/,tourney/'  }
   foreach ($lp in $LatestPaths) {
     foreach ($fp in ($FilterPath -split ',')) { $temp += "$(if ($temp) { ',' })$lp$fp"  } 
   }
