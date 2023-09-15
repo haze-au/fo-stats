@@ -21,7 +21,7 @@
 # 6. Do not download stats again but run FO Stats again.
 #     & .\_FoDownloader.ps1 -Region US -ForceStats
 #
-# 7. Demos from ALL regions - Staging servers only in last 24hrs.
+# 7. Demos from ALL regions - Go servers only in last 24hrs.
 #     & .\_FoDownloader.ps1 -Region ALL -FilterPath 'staging/' -Demos
 #
 # 8. Results from in Sydney & Dallas Stagin where map = well6.
@@ -104,6 +104,8 @@ if ($LimitDate) {
 if (!$FilterPath -and `
     !$Region    )   { $FilterPath = 'sydney/staging/' }
 
+if ($FilterPath -match '^(.*/)+(.*\.json)$') { $FilterPath = $matches[1]; $FilterFile = $matches[2] }
+
 if (!$FilterFile -and $FilterPath) { $FilterPath = (($FilterPath -split ',' | foreach { if ($_ -notmatch '.*/$') { "$_/" } else { $_ } }) -join ',') }
 #if ($FilterPath -match    '/.*')  { $FilterPath =  $FilterPath.TrimStart("/") }
 
@@ -133,10 +135,11 @@ if (!$LimitDate)  { $LimitDate   = $timeUTC }
 if (!$AwsCLI) {
   foreach ($p in ($FilterPath -split ',')) {
     $tempDate  = $TargetDate
-    while ($tempDate.Year -le $LimitDate.Year -and $tempDate.Month -le $LimitDate.Month) {
+    while ($tempDate -le $LimitDate) {
       $xml = [xml](invoke-webrequest -Uri "$($AwsUrl)?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
       $xml.ListBucketResult.Contents | foreach { if ($_) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified $_.Size) } }
       $tempDate = $tempDate.AddMonths(1)
+      if ($tempDate -gt $LimitDate -and $TempDate.Month -eq $LimitDate.Month) { $tempDate = $LimitDate }
     }
   } 
 } else {
@@ -170,7 +173,7 @@ write-host " Downloading..."
 write-host "===================================================================================================="
 
 foreach ($f in $statFiles) {
-  if ($FilterFile -and $f.Name -notlike $FilterFile) { continue }
+  if ($FilterFile -and $f.Name -notlike ($FilterFile -replace '[\[\]]','`$&')) { continue }
   
   if (!($FileFilter) -and (!$AwsCLI -and ($LimitMins -gt 0 -or $LimitDays -gt 0 -or $LimitDate)))  {
     if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') {
