@@ -1,5 +1,13 @@
+
+sudo systemctl restart apache2
+sudo systemctl restart fostats-api.service
+sudo nano /var/www/api/hello.js
+
+---
 sudo apt update
 sudo apt install apache2
+sudo a2enmod proxy
+sudo htpasswd -c ./.htpasswd foserver
 
 sudo apt update  && sudo apt install -y curl gnupg apt-transport-https
 curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -25,3 +33,48 @@ aws configure
 ---------
 backup
 zip -r 1.zip .
+
+----
+<Location /notify>
+    AuthType Basic
+</Location>
+
+
+Apache CFG
+sudo nano /etc/apache2/sites-available/000-default.conf
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+        DocumentRoot /var/www/html
+        ProxyPass /notify http://127.0.0.1:8080/
+        ProxyPassReverse /notify http://127.0.0.1:8080/
+        #<Proxy *>
+        #        Order deny,allow
+        #        Allow from all
+        #        Authtype Basic
+        #        Authname "Password Required"
+        #        AuthUserFile /etc/apache2/.htpasswd
+        #        Require valid-user
+        #</Proxy>
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+
+---
+Notify run as service
+sudo nano /etc/systemd//system/fostats-api.service
+
+[Unit]
+Description=FO Stats Notify
+
+[Service]
+ExecStart=/var/www/api/notify.js
+Restart=always
+User=root
+# Note Debian/Ubuntu uses 'nogroup', RHEL/Fedora uses 'nobody'
+Group=nogroup
+Environment=PATH=/usr/bin:/usr/local/bin
+Environment=NODE_ENV=production
+WorkingDirectory=/var/www/api
+
+[Install]
+WantedBy=multi-user.target

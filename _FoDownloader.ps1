@@ -121,7 +121,6 @@ if ($Region) {
 function New-UrlStatFile { return [PSCustomObject]@{ Name=$args[0]; DateTime=$args[1]; Size=$args[2] } }
 $statFiles = @()
 
-if ($FilterFile -and $FilterFile -notmatch '\*') { $FilterFile = "*$FilterFile*" }
 if (!$LimitDate -and $LimitMins -eq 0 -and $LimitDays -eq 0) {
   if ($FilterFile)     { $LimitDays = 30 }
   elseif ($LatestFile) { $LimitDays = 7  }
@@ -132,7 +131,9 @@ if (!$LimitDate -and $LimitMins -eq 0 -and $LimitDays -eq 0) {
 if (!$TargetDate) { $TargetDate  = $timeUTC.AddMinutes($LimitMins * -1).AddDays($LimitDays * -1) }
 if (!$LimitDate)  { $LimitDate   = $timeUTC }
 
-if (!$AwsCLI) {
+if ($FilterFile -and $FilterFile -notmatch '\*') {
+  $statFiles = New-UrlStatFile "$FilterPath$FilterFile" $null -1
+} elseif (!$AwsCLI) {
   foreach ($p in ($FilterPath -split ',')) {
     $tempDate  = $TargetDate
     while ($tempDate -le $LimitDate) {
@@ -173,7 +174,7 @@ write-host " Downloading..."
 write-host "===================================================================================================="
 
 foreach ($f in $statFiles) {
-  if ($FilterFile -and $f.Name -notlike ($FilterFile -replace '[\[\]]','`$&')) { continue }
+  if ($FilterFile -match '\*' -and $f.Name -notlike "*$($FilterFile -replace '[\[\]]','$&')*") { continue}
   
   if (!($FileFilter) -and (!$AwsCLI -and ($LimitMins -gt 0 -or $LimitDays -gt 0 -or $LimitDate)))  {
     if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') {
@@ -200,8 +201,14 @@ foreach ($f in $statFiles) {
 
   if (!(Test-Path -LiteralPath $filePath)) { New-Item -Path $filePath -ItemType Directory | Out-Null }
   write-host "Downloading:- $($f.Name)"
-  (invoke-webrequest -Uri "$($AwsUrl)$($f.Name)").Content | Out-File -LiteralPath  $fileName  -Encoding utf8
-  $filesDownloaded += (Get-Item -LiteralPath $fileName)
+  try { 
+    (invoke-webrequest -Uri "$($AwsUrl)$($f.Name)").Content | Out-File -LiteralPath  $fileName  -Encoding utf8    
+    $filesDownloaded += (Get-Item -LiteralPath $fileName)
+  } catch [System.Net.WebException] {
+    
+    Write-Host "Error:- $($_.Exception.Message)"
+    Write-Host "URL:- $($AwsUrl)$($f.Name)"
+  }
 }
 
 if (!$filesSkipped -and $filesDownloaded.Count -eq 0) {
