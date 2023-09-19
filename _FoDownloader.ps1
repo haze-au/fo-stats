@@ -105,8 +105,7 @@ if (!$FilterPath -and `
     !$Region    )   { $FilterPath = 'sydney/staging/' }
 
 if ($FilterPath -match '^(.*/)+(.*\.json)$') { $FilterPath = $matches[1]; $FilterFile = $matches[2] }
-
-if (!$FilterFile -and $FilterPath) { $FilterPath = (($FilterPath -split ',' | foreach { if ($_ -notmatch '.*/$') { "$_/" } else { $_ } }) -join ',') }
+elseif (!$FilterFile -and $FilterPath) { $FilterPath = (($FilterPath -split ',' | foreach { if ($_ -notmatch '.*/$') { "$_/" } else { $_ } }) -join ',') }
 #if ($FilterPath -match    '/.*')  { $FilterPath =  $FilterPath.TrimStart("/") }
 
 
@@ -174,8 +173,7 @@ write-host " Downloading..."
 write-host "===================================================================================================="
 
 foreach ($f in $statFiles) {
-  if ($FilterFile -match '\*' -and $f.Name -notlike "*$($FilterFile -replace '[\[\]]','$&')*") { continue}
-  
+  if ($FilterFile -match '\*' -and $f.Name -notlike "*$($FilterFile)*") { continue }
   if (!($FileFilter) -and (!$AwsCLI -and ($LimitMins -gt 0 -or $LimitDays -gt 0 -or $LimitDate)))  {
     if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') {
       Write-Host "ERROR: Minute/Day limit not possible - file has invalid date/time [$($f.Name)]"
@@ -201,13 +199,20 @@ foreach ($f in $statFiles) {
 
   if (!(Test-Path -LiteralPath $filePath)) { New-Item -Path $filePath -ItemType Directory | Out-Null }
   write-host "Downloading:- $($f.Name)"
-  try { 
-    (invoke-webrequest -Uri "$($AwsUrl)$($f.Name)").Content | Out-File -LiteralPath  $fileName  -Encoding utf8    
-    $filesDownloaded += (Get-Item -LiteralPath $fileName)
-  } catch [System.Net.WebException] {
-    
-    Write-Host "Error:- $($_.Exception.Message)"
-    Write-Host "URL:- $($AwsUrl)$($f.Name)"
+  
+  foreach ($retry in 3..0) {
+    try { 
+      (invoke-webrequest -Uri "$($AwsUrl)$($f.Name)").Content | Out-File -LiteralPath  $fileName  -Encoding utf8    
+      $filesDownloaded += (Get-Item -LiteralPath $fileName)
+      break
+    } catch [System.Net.WebException] {
+      Write-Host "Error:- $($_.Exception.Message)"
+      Write-Host "URL:- $($AwsUrl)$($f.Name)"
+      if ($retry -gt 0) { 
+        Write-Host "Retrying in 3 seconds - $retry remaining" 
+        Start-Sleep -Seconds 3
+      }
+    }
   }
 }
 
