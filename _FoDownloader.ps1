@@ -123,9 +123,9 @@ if (!$LimitDate)  { $LimitDate   = $timeUTC }
 
 if ($LocalFile) {
   if (!(Test-Path -LiteralPath $LocalFile)) { write-host "ERROR - Local File not found:- $LocalFile"; return }
-  elseif ($LocalFile -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') { write-host "ERROR - No date found in '$LocalFile'"; return }
+  elseif ($LocalFile -notmatch '^(.*/)?(20[1-3][0-9]-[0-1][0-9]-[0-3][0-9][_-][0-9][0-9]-[0-5][0-9]-[0-5][0-9]).*[.]json') { write-host "ERROR - No date found in '$LocalFile'"; return }
   else {
-    $f_date = ([DateTime]::ParseExact($matches[0],'yyyy-MM-dd-HH-mm-ss',$null))
+    $f_date = ([DateTime]::ParseExact(($matches[2] -replace '_','-'),'yyyy-MM-dd-HH-mm-ss',$null))
     if ($f_date -lt $TargetDate -or $f_date -gt $LimitDate) { write-host "ERROR - Did not meet date/time restrictions:- $LocalFile"; return}
   }
   $filesDownloaded = @(Get-Item -LiteralPath $LocalFile)
@@ -190,7 +190,7 @@ if ($LocalFile) {
         Write-Host "ERROR: Minute/Day limit not possible - file has invalid date/time [$($f.Name)]"
         continue
       } else {
-        $f_date = ([DateTime]::ParseExact($matches[0],'yyyy-MM-dd-HH-mm-ss',$null))
+        $f_date = ([DateTime]::ParseExact(($matches[0] -replace '_','-'),'yyyy-MM-dd-HH-mm-ss',$null))
         if ($f_date -lt $TargetDate -or $f_date -gt $LimitDate) { continue }
       }
 

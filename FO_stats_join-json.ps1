@@ -371,7 +371,7 @@ $filesBatched = @()
 foreach ($path in ($FilterPath -split ',')) {
   if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
   foreach ($f in (Get-ChildItem $PSScriptRoot/$path/*_stats.json)) {
-    $fileDT = [datetime]::ParseExact(($f.Name -replace '^(\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d).*$','$1'),'yyyy-MM-dd-HH-mm-ss',$null)
+    $fileDT = [datetime]::ParseExact((($f.Name -replace '^(\d\d\d\d-\d\d-\d\d[_-]\d\d-\d\d-\d\d).*$','$1') -replace '_','-'),'yyyy-MM-dd-HH-mm-ss',$null)
     if ($fileDT -lt $StartDT -or $fileDT -gt $EndDT ) { continue } 
     if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match `
             -or ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) { 
