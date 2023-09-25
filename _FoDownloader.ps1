@@ -39,6 +39,7 @@ param (
   [ValidateSet('ALL','US','BR','EU','OCE','INT')]
           $Region,     # All | US | BR | EU | OCE | Int
   [switch]$AwsCLI,     # Requires AWS CLI, scans all paths on the AWS bucket (stagine|quad|fo|hue), ignores region/filterpath
+  [string]$LocalFile,
   [string]$FilterPath, #Stats folder on repo, replicated locally, default='sydney/staging/' 
   [string]$FilterFile, #Filter the filenames from the XML results, use * for wildcards.
   [string]$OutFolder,  #Path of ouput JSON and HTML
@@ -108,125 +109,138 @@ if ($FilterPath -match '^(.*/)+(.*\.json)$') { $FilterPath = $matches[1]; $Filte
 elseif (!$FilterFile -and $FilterPath) { $FilterPath = (($FilterPath -split ',' | foreach { if ($_ -notmatch '.*/$') { "$_/" } else { $_ } }) -join ',') }
 #if ($FilterPath -match    '/.*')  { $FilterPath =  $FilterPath.TrimStart("/") }
 
-
-if ($Region) {
-  if (!$FilterPath) { $FilterPath = 'quad/,staging/,scrim/,tourney/'  }
-  foreach ($lp in $LatestPaths) {
-    foreach ($fp in ($FilterPath -split ',')) { $temp += "$(if ($temp) { ',' })$lp$fp"  } 
-  }
-  $FilterPath = $temp
-} 
-
 function New-UrlStatFile { return [PSCustomObject]@{ Name=$args[0]; DateTime=$args[1]; Size=$args[2] } }
-$statFiles = @()
 
 if (!$LimitDate -and $LimitMins -eq 0 -and $LimitDays -eq 0) {
-  if ($FilterFile)     { $LimitDays = 30 }
+  if     ($LocalFile)  { $LimitDays = 90 }
+  elseif ($FilterFile) { $LimitDays = 30 }
   elseif ($LatestFile) { $LimitDays = 7  }
   else                 { $LimitDays = 1  }
 } 
 
-
 if (!$TargetDate) { $TargetDate  = $timeUTC.AddMinutes($LimitMins * -1).AddDays($LimitDays * -1) }
 if (!$LimitDate)  { $LimitDate   = $timeUTC }
 
-if ($FilterFile -and $FilterFile -notmatch '\*') {
-  $statFiles = New-UrlStatFile "$FilterPath$FilterFile" $null -1
-} elseif (!$AwsCLI) {
-  foreach ($p in ($FilterPath -split ',')) {
-    $tempDate  = $TargetDate
-    while ($tempDate -le $LimitDate) {
-      $xml = [xml](invoke-webrequest -Uri "$($AwsUrl)?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
-      $xml.ListBucketResult.Contents | foreach { if ($_) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified $_.Size) } }
-      $tempDate = $tempDate.AddMonths(1)
-      if ($tempDate -gt $LimitDate -and $TempDate.Month -eq $LimitDate.Month) { $tempDate = $LimitDate }
+if ($LocalFile) {
+  if (!(Test-Path -LiteralPath $LocalFile)) { write-host "ERROR - Local File not found:- $LocalFile"; return }
+  elseif ($LocalFile -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') { write-host "ERROR - No date found in '$LocalFile'"; return }
+  else {
+    $f_date = ([DateTime]::ParseExact($matches[0],'yyyy-MM-dd-HH-mm-ss',$null))
+    if ($f_date -lt $TargetDate -or $f_date -gt $LimitDate) { write-host "ERROR - Did not meet date/time restrictions:- $LocalFile"; return}
+  }
+  $filesDownloaded = @(Get-Item -LiteralPath $LocalFile)
+  write-host "===================================================================================================="
+  write-host " Processing local file: $LocalFile"
+} else { 
+  if ($Region) {
+    if (!$FilterPath) { $FilterPath = 'quad/,staging/,scrim/,tourney/'  }
+    foreach ($lp in $LatestPaths) {
+      foreach ($fp in ($FilterPath -split ',')) { $temp += "$(if ($temp) { ',' })$lp$fp"  } 
     }
+    $FilterPath = $temp
   } 
-} else {
-  $statJson = (& aws s3api list-objects-v2 --bucket fortressone-stats --query "Contents[?LastModified>``$($TargetDate.ToString('yyyy-MM-dd'))``]") | ConvertFrom-Json
-  $statFiles += $statJson | Where-Object { $_.Key -match '.*/(quad|staging|scrim|tourney|fo|hue)/.*\.json$' } | foreach { (New-UrlStatFile $_.Key $_.LastModified $_.Size) }
-}
+  $statFiles = @()
 
-
-#LatestFileOnly
-if ($LatestFile) { $statFiles = ($statFiles | Sort-Object DateTime -Descending)[0] }
-
-write-host "FO Stats Downloader: `n"`
-            "-TargetDate:`t$('{0:yyyy-MM-dd-HH-mm-ss}' -f $TargetDate)`n"`
-            "-LimitDate: `t$('{0:yyyy-MM-dd-HH-mm-ss}' -f $LimitDate)`n"`
-            "-LimitDays:`t$LimitDays`n" `
-            "-LimitMins:`t$LimitMins`n" `
-            "-FilterPath:`t$FilterPath`n" `
-            "-FilterFile:`t$FilterFile`n" `
-            "-OutFolder:`t$OutFolder`n"`
-            "-Overwrite:`t$Overwrite`n"`
-            "-DownloadOnly:`t$DownloadOnly`n"`
-            "-ForceStats:`t$ForceStats`n"`
-            "-CleanUp:`t$CleanUp`n"`
-            "-DailyBatch:`t$DailyBatch`n"`
-            "-AwsCLI:`t$AwsCLI`n"
-
-
-$filesDownloaded = @()
-
-write-host " Downloading..."
-write-host "===================================================================================================="
-
-foreach ($f in $statFiles) {
-  if ($FilterFile -match '\*' -and $f.Name -notlike "*$($FilterFile)*") { continue }
-  if (!($FileFilter) -and (!$AwsCLI -and ($LimitMins -gt 0 -or $LimitDays -gt 0 -or $LimitDate)))  {
-    if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') {
-      Write-Host "ERROR: Minute/Day limit not possible - file has invalid date/time [$($f.Name)]"
-      continue
-    } else {
-      $f_date = ([DateTime]::ParseExact($matches[0],'yyyy-MM-dd-HH-mm-ss',$null))
-      if ($f_date -lt $TargetDate -or $f_date -gt $LimitDate) { continue }
-    }
-
+  if ($FilterFile -and $FilterFile -notmatch '\*') {
+    $statFiles = New-UrlStatFile "$FilterPath$FilterFile" $null -1
+  } elseif (!$AwsCLI) {
+    foreach ($p in ($FilterPath -split ',')) {
+      $tempDate  = $TargetDate
+      while ($tempDate -le $LimitDate) {
+        $xml = [xml](invoke-webrequest -Uri "$($AwsUrl)?prefix=$p$($tempDate.Year)-$('{0:d2}' -f $tempDate.Month)") 
+        $xml.ListBucketResult.Contents | foreach { if ($_) { $statFiles += (New-UrlStatFile $_.Key $_.LastModified $_.Size) } }
+        $tempDate = $tempDate.AddMonths(1)
+        if ($tempDate -gt $LimitDate -and $TempDate.Month -eq $LimitDate.Month) { $tempDate = $LimitDate }
+      }
+    } 
+  } else {
+    $statJson = (& aws s3api list-objects-v2 --bucket fortressone-stats --query "Contents[?LastModified>``$($TargetDate.ToString('yyyy-MM-dd'))``]") | ConvertFrom-Json
+    $statFiles += $statJson | Where-Object { $_.Key -match '.*/(quad|staging|scrim|tourney|fo|hue)/.*\.json$' } | foreach { (New-UrlStatFile $_.Key $_.LastModified $_.Size) }
   }
 
-  $filePath  = "$OutFolder\$(Split-Path $f.Name)"
-  $fileName  = "$OutFolder\$($f.Name)"
 
-  if (!$Overwrite -and ( (Test-Path -LiteralPath ($fileName -replace '\.json$','.html')) `
-                        -or ((Test-Path -LiteralPath $fileName) -and (Get-Item -LiteralPath $fileName).LastWriteTime -gt (Get-Date).AddMinutes(-20)) ) `
-      ) {
-    write-host "SKIPPED: File Already exists [$($f.Name)]"
-    if ($ForceStats) { $filesDownloaded += (Get-Item -LiteralPath $fileName) }
-    $filesSkipped += 1
-    continue
-  } 
+  #LatestFileOnly
+  if ($LatestFile) { $statFiles = ($statFiles | Sort-Object DateTime -Descending)[0] }
 
-  if (!(Test-Path -LiteralPath $filePath)) { New-Item -Path $filePath -ItemType Directory | Out-Null }
-  write-host "Downloading:- $($f.Name)"
-  
-  foreach ($retry in 3..0) {
-    try { 
-      (invoke-webrequest -Uri "$($AwsUrl)$($f.Name)").Content | Out-File -LiteralPath  $fileName  -Encoding utf8    
-      $filesDownloaded += (Get-Item -LiteralPath $fileName)
-      break
-    } catch [System.Net.WebException] {
-      Write-Host "Error:- $($_.Exception.Message)"
-      Write-Host "URL:- $($AwsUrl)$($f.Name)"
-      if ($retry -gt 0) { 
-        Write-Host "Retrying in 3 seconds - $retry remaining" 
-        Start-Sleep -Seconds 3
+  write-host "FO Stats Downloader: `n"`
+              "-TargetDate:`t$('{0:yyyy-MM-dd-HH-mm-ss}' -f $TargetDate)`n"`
+              "-LimitDate: `t$('{0:yyyy-MM-dd-HH-mm-ss}' -f $LimitDate)`n"`
+              "-LimitDays:`t$LimitDays`n" `
+              "-LimitMins:`t$LimitMins`n" `
+              "-FilterPath:`t$FilterPath`n" `
+              "-FilterFile:`t$FilterFile`n" `
+              "-OutFolder:`t$OutFolder`n"`
+              "-Overwrite:`t$Overwrite`n"`
+              "-DownloadOnly:`t$DownloadOnly`n"`
+              "-ForceStats:`t$ForceStats`n"`
+              "-CleanUp:`t$CleanUp`n"`
+              "-DailyBatch:`t$DailyBatch`n"`
+              "-AwsCLI:`t$AwsCLI`n"
+
+
+  $filesDownloaded = @()
+
+  write-host " Downloading..."
+  write-host "===================================================================================================="
+
+  foreach ($f in $statFiles) {
+    if ($FilterFile -match '\*' -and $f.Name -notlike "*$($FilterFile)*") { continue }
+    if (!($FileFilter) -and (!$AwsCLI -and ($LimitMins -gt 0 -or $LimitDays -gt 0 -or $LimitDate)))  {
+      if ($f.Name -notmatch '20[1-3][0-9]-[0-1][0-9]-[0-3][0-9]-[0-9][0-9]-[0-5][0-9]-[0-5][0-9]') {
+        Write-Host "ERROR: Minute/Day limit not possible - file has invalid date/time [$($f.Name)]"
+        continue
+      } else {
+        $f_date = ([DateTime]::ParseExact($matches[0],'yyyy-MM-dd-HH-mm-ss',$null))
+        if ($f_date -lt $TargetDate -or $f_date -gt $LimitDate) { continue }
+      }
+
+    }
+
+    $filePath  = "$OutFolder\$(Split-Path $f.Name)"
+    $fileName  = "$OutFolder\$($f.Name)"
+
+    if (!$Overwrite -and ( (Test-Path -LiteralPath ($fileName -replace '\.json$','.html')) `
+                          -or ((Test-Path -LiteralPath $fileName) -and (Get-Item -LiteralPath $fileName).LastWriteTime -gt (Get-Date).AddMinutes(-20)) ) `
+        ) {
+      write-host "SKIPPED: File Already exists [$($f.Name)]"
+      if ($ForceStats) { $filesDownloaded += (Get-Item -LiteralPath $fileName) }
+      $filesSkipped += 1
+      continue
+    } 
+
+    if (!(Test-Path -LiteralPath $filePath)) { New-Item -Path $filePath -ItemType Directory | Out-Null }
+    write-host "Downloading:- $($f.Name)"
+    
+    foreach ($retry in 5..0) {
+      try { 
+        (invoke-webrequest -Uri "$($AwsUrl)$($f.Name)").Content | Out-File -LiteralPath  $fileName  -Encoding utf8    
+        $filesDownloaded += (Get-Item -LiteralPath $fileName)
+        break
+      } catch {
+        Write-Host "Error:- $($_.Exception.Message)"
+        Write-Host "URL:- $($AwsUrl)$($f.Name)"
+        # Retry for single file downloads only
+        if (!$FilterFile -and $FilterFile -match '\*') { break }
+        if ($retry -gt 0) { 
+          Write-Host "Retrying in 3 seconds - $retry remaining" 
+          Start-Sleep -Seconds 3
+        }
       }
     }
   }
-}
 
-if (!$filesSkipped -and $filesDownloaded.Count -eq 0) {
-  Write-Host "No stat files matched from the $($statFiles.Count) AWSresults filtered."
-  Write-Host "NOTE: AWS results are capped at 1000 files, limit your days/mins or paths."
-  Write-Host ""
-  Write-Host "`tFirst file date:`t$(if ($statFiles.Count -gt 0) { $statFiles[0].DateTime  } else { 'No results' } )"
-  Write-Host "`tLast  file date:`t$(if ($statFiles.Count -gt 0) { $statFiles[-1].DateTime } else { 'No results' } )"
-  Write-Host ""
-  Write-Host "Please check your search filters and try again."
-  write-host "===================================================================================================="
-  return
-}
+  if (!$filesSkipped -and $filesDownloaded.Count -eq 0) {
+    Write-Host "No stat files matched from the $($statFiles.Count) AWSresults filtered."
+    Write-Host "NOTE: AWS results are capped at 1000 files, limit your days/mins or paths."
+    Write-Host ""
+    Write-Host "`tFirst file date:`t$(if ($statFiles.Count -gt 0) { $statFiles[0].DateTime  } else { 'No results' } )"
+    Write-Host "`tLast  file date:`t$(if ($statFiles.Count -gt 0) { $statFiles[-1].DateTime } else { 'No results' } )"
+    Write-Host ""
+    Write-Host "Please check your search filters and try again."
+    write-host "===================================================================================================="
+    return
+  }
+} 
 
 if (!$DownloadOnly -and !$Demos) { 
     write-host "====================================================================================================`n"

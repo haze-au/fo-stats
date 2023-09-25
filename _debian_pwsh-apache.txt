@@ -61,7 +61,7 @@ sudo nano /etc/apache2/sites-available/000-default.conf
 
 ---
 Notify run as service
-sudo nano /etc/systemd//system/fostats-api.service
+sudo nano /etc/systemd/system/fostats-api.service
 
 [Unit]
 Description=FO Stats Notify
