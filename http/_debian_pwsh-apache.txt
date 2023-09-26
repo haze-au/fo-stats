@@ -1,19 +1,22 @@
 
 sudo systemctl restart apache2
 sudo systemctl restart fostats-api.service
-sudo nano /var/www/api/hello.js
+sudo nano /var/www/api/controller/controller.js
 
 ---
+#Install Apache and Proxy
 sudo apt update
 sudo apt install apache2
 sudo a2enmod proxy
-sudo htpasswd -c ./.htpasswd foserver
+#sudo htpasswd -c ./.htpasswd foserver
 
+#Powershell
 sudo apt update  && sudo apt install -y curl gnupg apt-transport-https
 curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-bullseye-prod bullseye main" > /etc/apt/sources.list.d/microsoft.list'
 sudo apt update && sudo apt install -y powershell
 
+#AWS CLI
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install
@@ -31,22 +34,19 @@ aws configure
 
 
 ---------
-backup
+#backup
 zip -r 1.zip .
 
 ----
-<Location /notify>
-    AuthType Basic
-</Location>
-
-
-Apache CFG
+#Apache CFG
 sudo nano /etc/apache2/sites-available/000-default.conf
 <VirtualHost *:80>
         ServerAdmin webmaster@localhost
         DocumentRoot /var/www/html
-        ProxyPass /notify http://127.0.0.1:8080/
-        ProxyPassReverse /notify http://127.0.0.1:8080/
+        ProxyPass /notify http://127.0.0.1:8080/notify
+        ProxyPassReverse /notify http://127.0.0.1:8080/notify
+        ProxyPass /upload http://127.0.0.1:8080/upload
+        ProxyPassReverse /upload http://127.0.0.1:8080/upload
         #<Proxy *>
         #        Order deny,allow
         #        Allow from all
@@ -60,14 +60,15 @@ sudo nano /etc/apache2/sites-available/000-default.conf
 </VirtualHost>
 
 ---
-Notify run as service
+API run as service
 sudo nano /etc/systemd/system/fostats-api.service
 
+#fostats-api.service
 [Unit]
 Description=FO Stats Notify
 
 [Service]
-ExecStart=/var/www/api/notify.js
+ExecStart=/var/www/api/server.js
 Restart=always
 User=root
 # Note Debian/Ubuntu uses 'nogroup', RHEL/Fedora uses 'nobody'
