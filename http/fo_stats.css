@@ -71,7 +71,7 @@ th[role=columnheader]:not(.no-sort) {
 }
 
 .VersusHover .VersusHoverTextGreen, .VersusHover .VersusHoverTextAmber, .VersusHover .VersusHoverTextOrange {
-  font-size: 90%;
+  font-size: 85%;
   font-weight: normal;
   visibility: hidden;
   width: auto;
@@ -103,7 +103,7 @@ th[role=columnheader]:not(.no-sort) {
 
 
 .VersusHover .VersusHoverTextHeader {
-  font-size: 90%;
+  font-size: 85%;
   visibility: hidden;
   width: auto;
   color: black;
@@ -158,7 +158,7 @@ th[role=columnheader]:not(.no-sort) {
 
 .ClassHover .ClassHoverText1, .ClassHover .ClassHoverText2, .ClassHover .ClassHoverText0 {
   font-weight: normal;
-  font-size: 90%;
+  font-size: 85%;
   visibility: hidden;
   width: auto;
   color: black;

@@ -7,4 +7,11 @@ function linkify(inputText) {
 
 function fo_daily_post () {
    document.body.innerHTML = linkify(document.body.innerHTML);
+   new Tablesort(document.getElementById('MatchLog'), { descending: true });
+   new Tablesort(document.getElementById('AttackSummary'), { descending: true });
+   new Tablesort(document.getElementById('DefenceSummary'), { descending: true });
+   new Tablesort(document.getElementById('ClassKillsAttack'), { descending: true });
+   new Tablesort(document.getElementById('ClassKillsDefence'), { descending: true });
+   new Tablesort(document.getElementById('ClassTimeAttack'), { descending: true });
+   new Tablesort(document.getElementById('ClassTimeDefence'), { descending: true });
 }
