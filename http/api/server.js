@@ -11,12 +11,13 @@ global.__basedir = __dirname;
 
 app.use(cors(corsOptions));*/
 
-const initRoutes = require("./src/routes");
+const initRoutes = require("./routes");
 
 app.use(express.urlencoded({ extended: true }));
 initRoutes(app);
 
-let port = 8081;
+let port = 8080;
+
 app.listen(port, () => {
   console.log(`Running at localhost:${port}`);
 });

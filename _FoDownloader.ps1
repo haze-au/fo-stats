@@ -122,13 +122,13 @@ if (!$TargetDate) { $TargetDate  = $timeUTC.AddMinutes($LimitMins * -1).AddDays(
 if (!$LimitDate)  { $LimitDate   = $timeUTC }
 
 if ($LocalFile) {
-  if (!(Test-Path -LiteralPath $LocalFile)) { write-host "ERROR - Local File not found:- $LocalFile"; return }
-  elseif ($LocalFile -notmatch '^(.*/)?(20[1-3][0-9]-[0-1][0-9]-[0-3][0-9][_-][0-9][0-9]-[0-5][0-9]-[0-5][0-9]).*[.]json') { write-host "ERROR - No date found in '$LocalFile'"; return }
+  if (!(Test-Path -LiteralPath "$OutFolder$LocalFile")) { write-host "ERROR - Local File not found:- $LocalFile"; return }
+  elseif ($LocalFile -notmatch '.*/(20[1-3][0-9]-[0-1][0-9]-[0-3][0-9][-_][0-9][0-9]-[0-5][0-9]-[0-5][0-9]).*[.]json$') { $matches; write-host "ERROR - No date found in '$LocalFile'"; return }
   else {
-    $f_date = ([DateTime]::ParseExact(($matches[2] -replace '_','-'),'yyyy-MM-dd-HH-mm-ss',$null))
+    $f_date = ([DateTime]::ParseExact(($matches[1] -replace '_','-'),'yyyy-MM-dd-HH-mm-ss',$null))
     if ($f_date -lt $TargetDate -or $f_date -gt $LimitDate) { write-host "ERROR - Did not meet date/time restrictions:- $LocalFile"; return}
   }
-  $filesDownloaded = @(Get-Item -LiteralPath $LocalFile)
+  $filesDownloaded = @(Get-Item -LiteralPath "$OutFolder$LocalFile")
   write-host "===================================================================================================="
   write-host " Processing local file: $LocalFile"
 } else { 
@@ -313,7 +313,7 @@ if ($DailyBatch) {
 
     $json = (Get-Content -LiteralPath "$PSScriptRoot/_stats-last24hrs.json" -Raw) | ConvertFrom-Json
     foreach ($m in $json.Matches.Match) {
-      if ($m -match '.*\/(\d{4}-\d\d-\d\d)-(\d\d-\d\d-\d\d)_.*') {
+      if ($m -match '.*\/(\d{4}-\d\d-\d\d)[_-](\d\d-\d\d-\d\d)_.*') {
         $dt = [datetime]::Parse($matches[1] + " " + ($matches[2] -replace '-',':'))
         if ($dt -lt (Get-Date).AddDays(-1).ToUniversalTime()) {
           & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$($m)_blue_vs_red_stats.json" -FromJson "$PSScriptRoot/_stats-last24hrs.json"
