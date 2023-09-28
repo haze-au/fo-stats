@@ -302,11 +302,20 @@ if ($DailyBatch) {
   # Interational cut-off, new days starts at 4pm
   if ([DateTime]::UtcNow.hour -in 0..15) { $DayReportINT = $DayFilterINT.AddDays(-1) }
 
+  #Daily stats cumalitve
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportOCE).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportUS).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterBR.ToString()  -Region BR  -OutFile "$PSScriptRoot/_daily/brasil/brasil_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportBR).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportINT.ToString() -Region INT -OutFile "$PSScriptRoot/_daily/international/international_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportINT).json"
+
+  #Monthly stats cumaltive
+  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_monthly/oceania/oceania_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportOCE).json"
+  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_monthly/north-america/north-america_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportUS).json"
+  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterBR.ToString()  -Region BR  -OutFile "$PSScriptRoot/_monthly/brasil/brasil_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportBR).json"
+  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_monthly/europe/europe_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportEU).json"
+  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportINT.ToString() -Region INT -OutFile "$PSScriptRoot/_monthly/international/international_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportINT).json"
+
   if (!$PeriodBatch) {
     & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetHours 1 -Region ALL -OutFile "$PSScriptRoot/_stats-last24hrs.json"
     & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetHours 1 -Region ALL -OutFile "$PSScriptRoot/_stats-last7days.json"
