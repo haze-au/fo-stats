@@ -337,10 +337,21 @@ if ($Region) {
   elseif ($Region -eq 'OCE') { $LatestPaths = $OCEPaths }
   elseif ($Region -eq 'INT') { $LatestPaths = $IntPaths }
 
-  $FilterPath = ''
-  foreach ($p in $LatestPaths) { 
-      if ($FilterPath -ne '') { $FilterPath = (@($FilterPath,"$($p)quad/","$($p)staging/","$($p)scrim/","$($p)tourney/") -join ',') }
-      else                    { $FilterPath = "$($p)quad/,$($p)staging/,$($p)scrim/,$($p)tourney/" }
+  if ($FilterPath -in '',$null) {
+    foreach ($p in $LatestPaths) { 
+        if ($FilterPath -ne '') { $FilterPath = (@($FilterPath,"$($p)quad/","$($p)staging/","$($p)scrim/","$($p)tourney/") -join ',') }
+        else                    { $FilterPath = "$($p)quad/,$($p)staging/,$($p)scrim/,$($p)tourney/" }
+    }
+  } else {
+    $temp = $FilterPath -split ','
+    $FilterPath = ''
+    foreach ($fp in $temp) {
+      if ($fp -notmatch '/$') { $fp = "$fp/"}
+      foreach ($p in $LatestPaths) { 
+        if ($FilterPath -ne '') { $FilterPath = (@($FilterPath,"$($p)$fp") -join ',') }
+        else                    { $FilterPath = "$($p)$fp" }
+      }
+    }
   }
 }
 
@@ -373,16 +384,17 @@ $filesBatched = @()
 foreach ($path in ($FilterPath -split ',')) {
   if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
   foreach ($f in (Get-ChildItem $PSScriptRoot/$path/*_stats.json)) {
+    $inJson = (Get-Content -LiteralPath $f -Raw | ConvertFrom-Json)
     $fileDT = [datetime]::ParseExact((($f.Name -replace '^(\d\d\d\d-\d\d-\d\d[_-]\d\d-\d\d-\d\d).*$','$1') -replace '_','-'),'yyyy-MM-dd-HH-mm-ss',$null)
     if ($fileDT -lt $StartDT -or $fileDT -gt $EndDT ) { continue } 
     if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match `
             -or ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) {
       Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
-    } elseif (!$AllowUnranked -and $outJson.SummaryAttack.Name -notmatch '#\d{1-5}$') {
+    } elseif (!$AllowUnranked -and @($inJson.SummaryAttack.Name,$inJson.SummaryDefence.Name) -notmatch '#\d{1,5}$') {
       Write-Host "SKIPPED - Unranked Match not allowed: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
-    } elseif ($outJson.Matches.Winner -in '',$null) {
+    } elseif ($inJson.Matches.Winner -in '',$null) {
       Write-Host "SKIPPED - No result found int match: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
     }
