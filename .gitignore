@@ -25,3 +25,4 @@ ts.js
 *.html
 *.json
 
+._daily_refresher.ps1
