@@ -14,6 +14,7 @@ param([switch]$ForceBatch,
       [ValidateSet('ALL','US','BR','EU','OCE','INT')]
               $Region,
       [switch]$AllowUnranked,
+      [string]$PlayerCount,
       [string]$GenerateHTML,
       [string]$OutFile )
 
@@ -385,17 +386,21 @@ foreach ($path in ($FilterPath -split ',')) {
   if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
   foreach ($f in (Get-ChildItem $PSScriptRoot/$path/*_stats.json)) {
     $inJson = (Get-Content -LiteralPath $f -Raw | ConvertFrom-Json)
+    $names  = @($inJson.SummaryAttack.Name + $inJson.SummaryDefence.Name)
     $fileDT = [datetime]::ParseExact((($f.Name -replace '^(\d\d\d\d-\d\d-\d\d[_-]\d\d-\d\d-\d\d).*$','$1') -replace '_','-'),'yyyy-MM-dd-HH-mm-ss',$null)
     if ($fileDT -lt $StartDT -or $fileDT -gt $EndDT ) { continue } 
     if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match `
             -or ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) {
       Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
-    } elseif (!$AllowUnranked -and @($inJson.SummaryAttack.Name,$inJson.SummaryDefence.Name) -notmatch '#\d{1,5}$') {
+    } elseif (!$AllowUnranked -and $names -notmatch '#\d{1,5}$') {
       Write-Host "SKIPPED - Unranked Match not allowed: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
     } elseif ($inJson.Matches.Winner -in '',$null) {
-      Write-Host "SKIPPED - No result found int match: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
+      Write-Host "SKIPPED - No result found in match: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
+      continue 
+    } elseif ($PlayerCount -and (($names | Sort-Object -Unique).Count) -notmatch $PlayerCount) {
+      Write-Host "SKIPPED - PlayerCount not equal to $($PlayerCount): $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
     }
 
