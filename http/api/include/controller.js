@@ -1,5 +1,5 @@
 const { exec } = require("child_process");
-const uploadFile = require("../include/upload");
+const uploadFile = require("./upload");
 
 const upload = async (req, res) => {
   try {

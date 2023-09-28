@@ -245,9 +245,10 @@ function processFoStatsJSON {
 
         foreach ($classID in $ClassAllowedWithSG) {
           $class   = $ClassToStr[$classID]
-          $classTime = ($ClassTable.Value | Where Name -EQ $player.Name)."$(if ($classID -eq 10) { $ClassToStr[9] } else { $class })" 
+          $classTime = ($ClassTable.Value | Where Name -EQ $player.Name)."$(if ($classID -eq 10) { "Eng" } else { $class })" /60
+
           if ($classTime -gt 0 -and $player.$class -gt 0) {
-            $player."KPM$(if ($classID -eq 10) { 0 } else { $classID })" = '{0:0.00}' -f ($player.$class / $classTime / 60)
+            $player."KPM$(if ($classID -eq 10) { 0 } else { $classID })" = ('{0:0.00}' -f ($player.$class / $classTime))
           }
         }
       }
