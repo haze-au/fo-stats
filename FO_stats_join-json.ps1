@@ -395,7 +395,6 @@ foreach ($path in ($FilterPath -split ',')) {
     $inJson = (Get-Content -LiteralPath $f -Raw | ConvertFrom-Json)
     $names  = @($inJson.SummaryAttack.Name + $inJson.SummaryDefence.Name)
     $fileDT = [datetime]::ParseExact((($f.Name -replace '^(\d\d\d\d-\d\d-\d\d[_-]\d\d-\d\d-\d\d).*$','$1') -replace '_','-'),'yyyy-MM-dd-HH-mm-ss',$null)
-    $outJson.Matches
     if ($fileDT -lt $StartDT -or $fileDT -gt $EndDT ) { continue } 
     write-host ($path + ($f.Name -replace '_blue_vs_red_stats.json',''))
     if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match `
@@ -406,7 +405,6 @@ foreach ($path in ($FilterPath -split ',')) {
       Write-Host "SKIPPED - Unranked Match not allowed: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
     } elseif ($inJson.Matches.Winner -in '',$null) {
-      $inJson.Matches
       Write-Host "SKIPPED - No result found in match: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
     } elseif ($PlayerCount -and (($names | Sort-Object -Unique).Count) -notmatch $PlayerCount) {
