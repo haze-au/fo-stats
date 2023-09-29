@@ -16,6 +16,7 @@ param([switch]$ForceBatch,
       [switch]$AllowUnranked,
       [string]$PlayerCount,
       [string]$GenerateHTML,
+      [string]$ExcludeFile,
       [string]$OutFile )
 
 if ($ForceBatch) { $doBatch = $true }
@@ -412,7 +413,11 @@ foreach ($path in ($FilterPath -split ',')) {
     } elseif ($PlayerCount -and (($names | Sort-Object -Unique).Count) -notmatch $PlayerCount) {
       Write-Host "SKIPPED - PlayerCount not equal to $($PlayerCount): $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
+    } elseif ($ExcludeFile -and (Test-Path $ExcludeFile) -and ($f -in (Get-Content $ExcludeFile))) {
+      Write-Host "SKIPPED - File exclusion list: $f"
+      continue
     }
+
 
     $filesBatched += @($f)
   }
