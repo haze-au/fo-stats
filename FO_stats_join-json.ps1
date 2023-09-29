@@ -321,6 +321,8 @@ if ($RemoveMatch) {
 
   $keepJson  = ((Get-Content -LiteralPath $FromJson -Raw)    | ConvertFrom-Json)
   $remJson   = ((Get-Content -LiteralPath $RemoveMatch -Raw) | ConvertFrom-Json)
+  if ($remJson.Matches.Match -notin $keepJson.Matches.Match) { Write-Host "$($remJson.Matches.Match) not found in $FromJson"; return }
+
   $outJson = (processFoStatsJSON -CurrentJson ($keepJson) -NewJson ($remJson) -RemoveMatch)
   
   if ($keepJson -eq $null -or $remJson -eq $null) { Write-Host "NULL JSON ERROR"; return }
