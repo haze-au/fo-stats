@@ -316,7 +316,7 @@ if ($DailyBatch) {
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_monthly/europe/europe_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportEU).json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportINT.ToString() -Region INT -OutFile "$PSScriptRoot/_monthly/international/international_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportINT).json"
 
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetHours 24 -Region ALL -FilterPath 'tourney/' -OutFile "$PSScriptRoot/2v2_tourney_stats.json"
+  & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetHours 24 -Region ALL -FilterPath 'tourney/' -ExcludeFile "$PSScriptRoot/.2v2_tourney_exlude.txt" -OutFile "$PSScriptRoot/2v2_tourney_stats.json"
 
   if (!$PeriodBatch) {
     & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetHours 1 -Region ALL -OutFile "$PSScriptRoot/_stats-last24hrs.json"
