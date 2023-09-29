@@ -226,7 +226,7 @@ function processFoStatsJSON {
     $x = 1
     foreach ($table in @($CurrentJson.SummaryAttack,$CurrentJson.SummaryDefence)) {
         if ($x -eq 1) { $classTable = [ref]$CurrentJson.ClassTimeAttack }
-        else              { $classTable = [ref]$CurrentJson.ClassTimeDefence  }
+        else          { $classTable = [ref]$CurrentJson.ClassTimeDefence }
 
         foreach ($player in $table) {
             $timePlayed = $player.TimePlayed -split ':'
@@ -251,7 +251,7 @@ function processFoStatsJSON {
 
           if ($classTime -gt 0 -and $player.$class -gt 0) {
             $player."KPM$(if ($classID -eq 10) { 0 } else { $classID })" = ('{0:0.00}' -f ($player.$class / $classTime))
-          }
+          } else { $player."KPM$(if ($classID -eq 10) { 0 } else { $classID })" = $null }
         }
       }
       $x++
