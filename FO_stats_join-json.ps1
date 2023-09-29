@@ -330,7 +330,7 @@ if ($RemoveMatch) {
   return
 }
 
-if ($Region) {  
+if ($Region -and $FilterPath -notmatch '[.]json$') {  
   if     ($Region -eq 'ALL') { $LatestPaths = $OCEPaths + $USPaths + $EUPaths + $IntPaths }
   elseif ($Region -eq 'US')  { $LatestPaths = $USPaths  }
   elseif ($Region -eq 'BR')  { $LatestPaths = $BRPaths  }
@@ -383,12 +383,21 @@ if ($OutFile -and (Test-Path -LiteralPath $OutFile)) {
 
 $filesBatched = @()
 foreach ($path in ($FilterPath -split ',')) {
-  if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
-  foreach ($f in (Get-ChildItem $PSScriptRoot/$path/*_stats.json)) {
+  if ($FilterPath -match '(.[/\\])?(.*[/\\])?.+\.json$') {
+    $files = (Get-Item -LiteralPath $FilterPath)
+    $path = $matches[2]
+  } else {
+    if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
+    $files = (Get-ChildItem $PSScriptRoot/$path/*_stats.json)
+  }
+  
+  foreach ($f in $files) {
     $inJson = (Get-Content -LiteralPath $f -Raw | ConvertFrom-Json)
     $names  = @($inJson.SummaryAttack.Name + $inJson.SummaryDefence.Name)
     $fileDT = [datetime]::ParseExact((($f.Name -replace '^(\d\d\d\d-\d\d-\d\d[_-]\d\d-\d\d-\d\d).*$','$1') -replace '_','-'),'yyyy-MM-dd-HH-mm-ss',$null)
+    $outJson.Matches
     if ($fileDT -lt $StartDT -or $fileDT -gt $EndDT ) { continue } 
+    write-host ($path + ($f.Name -replace '_blue_vs_red_stats.json',''))
     if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match `
             -or ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) {
       Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
@@ -397,6 +406,7 @@ foreach ($path in ($FilterPath -split ',')) {
       Write-Host "SKIPPED - Unranked Match not allowed: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
     } elseif ($inJson.Matches.Winner -in '',$null) {
+      $inJson.Matches
       Write-Host "SKIPPED - No result found in match: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
     } elseif ($PlayerCount -and (($names | Sort-Object -Unique).Count) -notmatch $PlayerCount) {
