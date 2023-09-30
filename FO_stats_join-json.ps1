@@ -322,7 +322,7 @@ if ($RemoveMatch) {
 
   $keepJson  = ((Get-Content -LiteralPath $FromJson -Raw)    | ConvertFrom-Json)
   $remJson   = ((Get-Content -LiteralPath $RemoveMatch -Raw) | ConvertFrom-Json)
-  if ($remJson.Matches.Match -notin $keepJson.Matches.Match) { Write-Host "$($remJson.Matches.Match) not found in $FromJson"; return }
+  if ($remJson.Matches.Match -notin $keepJson.Matches.Match) { Write-Host "ERROR: $($remJson.Matches.Match) not found in $FromJson"; return }
 
   $outJson = (processFoStatsJSON -CurrentJson ($keepJson) -NewJson ($remJson) -RemoveMatch)
   
@@ -386,7 +386,7 @@ if ($OutFile -and (Test-Path -LiteralPath $OutFile)) {
 
 $filesBatched = @()
 foreach ($path in ($FilterPath -split ',')) {
-  if ($FilterPath -match '(.[/\\])?(.*[/\\])?.+\.json$') {
+  if ($FilterPath -match '(.[/\\])?(.+[/\\]){2}?.+\.json$') {
     $files = (Get-Item -LiteralPath $FilterPath)
     $path = $matches[2]
   } else {
