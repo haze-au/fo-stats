@@ -52,7 +52,10 @@ param (
   [switch]$Overwrite,  #Force re-download do the FO_stats again even when file exists
   [switch]$ForceStats, #Force running stats on already existing file
   [switch]$DailyBatch,  #For HTTP server daily tallying functions (no use on client)
+  [switch]$MonthlyBatch,
+  [switch]$FullBatch,
   [switch]$PeriodBatch, #For HTTP server last 24hr / 7days stats
+  [switch]$PeriodExpire,
   ### FO_Stats parameters ###################
   [int]   $RoundTime,  #Passed to FO_Stats
   [switch]$TextSave,   #Passed to FO_Stats
@@ -64,6 +67,18 @@ param (
 
 if ($Demos) { $AwsUrl = 'https://fortressone-demos.s3.amazonaws.com/' }
 else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
+
+function GetPathFromFileName {
+  param( $fileName )
+
+  $arrPath = $fileName -split '[\\/]'
+
+  if ($fileName -match 'brazil[\\/]fo[\\/]upload[\\/]') {
+    return $arrPath[-4] + '/' + $arrPath[-3] + '/' + $arrPath[-2] + '/'
+  } else {
+    return $arrPath[-3] + '/' + $arrPath[-2] + '/'
+  }
+}
 
 # Update me for -Region parameter and Daily Stats updates
 $OCEPaths = @('sydney/','melbourne/')
@@ -105,7 +120,7 @@ if ($LimitDate) {
 if (!$FilterPath -and `
     !$Region    )   { $FilterPath = 'sydney/staging/' }
 
-if ($FilterPath -match '^(.*/)+(.*\.json)$') { $FilterPath = $matches[1]; $FilterFile = $matches[2] }
+if ($FilterPath -match '^(.*[\\/])+(.*\.json)$') { $FilterPath = $matches[1]; $FilterFile = $matches[2] }
 elseif (!$FilterFile -and $FilterPath) { $FilterPath = (($FilterPath -split ',' | foreach { if ($_ -notmatch '.*/$') { "$_/" } else { $_ } }) -join ',') }
 #if ($FilterPath -match    '/.*')  { $FilterPath =  $FilterPath.TrimStart("/") }
 
@@ -238,11 +253,10 @@ if ($LocalFile) {
     Write-Host ""
     Write-Host "Please check your search filters and try again."
     write-host "===================================================================================================="
-    return
   }
 } 
 
-if (!$DownloadOnly -and !$Demos) { 
+if (!$DownloadOnly -and !$Demos -and $filesDownloaded.Count -gt 0) { 
     write-host "====================================================================================================`n"
     foreach ($fileName in $filesDownloaded) {
       $param = @{ StatFile=$fileName }
@@ -268,11 +282,11 @@ if (!$DownloadOnly -and !$Demos) {
       write-host "FO Stats Completed:-`t$($fileName)"
       write-host "----------------------------------------------------------------------------------------------------"
 
-      if ($DailyBatch -or $CleanUp) { Remove-Item -LiteralPath $fileName -Force }
+      if ($DailyBatch -or $CleanUp) { Remove-Item -LiteralPath $fileName.FullName -Force }
     }
 }
 
-if ($DailyBatch) { 
+if ($DailyBatch -or $MonthlyBatch -or $FullBatch) { 
   $DayFilterOCE = [datetime]::Parse('19:00') # Syd 6am
   $DayFilterUS  = [datetime]::Parse('14:00') # Cali 6am
   $DayFilterBR  = [datetime]::Parse('18:00') # Brasil 6am
@@ -302,44 +316,49 @@ if ($DailyBatch) {
   # Interational cut-off, new days starts at 4pm
   if ([DateTime]::UtcNow.hour -in 0..15) { $DayReportINT = $DayFilterINT.AddDays(-1) }
 
-  #Daily stats cumalitve
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportOCE).json"
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportUS).json"
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterBR.ToString()  -Region BR  -OutFile "$PSScriptRoot/_daily/brasil/brasil_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportBR).json"
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportINT.ToString() -Region INT -OutFile "$PSScriptRoot/_daily/international/international_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportINT).json"
+  if ($FullBatch) {
+    & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetDays 7 -Region ALL -FilterPath 'tourney/' -ExcludeFile "$PSScriptRoot/.2v2_tourney_exlude.txt" -OutFile "$PSScriptRoot/2v2_tourney_stats.json"
 
-  #Monthly stats cumaltive
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_monthly/oceania/oceania_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportOCE).json"
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_monthly/north-america/north-america_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportUS).json"
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterBR.ToString()  -Region BR  -OutFile "$PSScriptRoot/_monthly/brasil/brasil_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportBR).json"
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_monthly/europe/europe_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportEU).json"
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportINT.ToString() -Region INT -OutFile "$PSScriptRoot/_monthly/international/international_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportINT).json"
-
-  & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetHours 24 -Region ALL -FilterPath 'tourney/' -ExcludeFile "$PSScriptRoot/.2v2_tourney_exlude.txt" -OutFile "$PSScriptRoot/2v2_tourney_stats.json"
-
-  if (!$PeriodBatch) {
-    & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetHours 1 -Region ALL -OutFile "$PSScriptRoot/_stats-last24hrs.json"
-    & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetHours 1 -Region ALL -OutFile "$PSScriptRoot/_stats-last7days.json"
-
-    $json = (Get-Content -LiteralPath "$PSScriptRoot/_stats-last24hrs.json" -Raw) | ConvertFrom-Json
-    foreach ($m in $json.Matches.Match) {
-      if ($m -match '.*\/(\d{4}-\d\d-\d\d)[_-](\d\d-\d\d-\d\d)_.*') {
-        $dt = [datetime]::Parse($matches[1] + " " + ($matches[2] -replace '-',':'))
-        if ($dt -lt (Get-Date).AddDays(-1).ToUniversalTime()) {
-          & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$($m)_blue_vs_red_stats.json" -FromJson "$PSScriptRoot/_stats-last24hrs.json"
-        }
-      }
+    #Scan for all files and refresh stats
+    if ($DailyBatch) {
+      #Daily stats cumalitve
+      & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_daily/oceania/oceania_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportOCE).json"
+      & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_daily/north-america/north-america_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportUS).json"
+      & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterBR.ToString()  -Region BR  -OutFile "$PSScriptRoot/_daily/brasil/brasil_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportBR).json"
+      & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_daily/europe/europe_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportEU).json"
+      & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportINT.ToString() -Region INT -OutFile "$PSScriptRoot/_daily/international/international_DailyStats_$('{0:yyyy-MM-dd}' -f $DayReportINT).json"
     }
-    $json = (Get-Content -LiteralPath "$PSScriptRoot/_stats-last7days.json" -Raw) | ConvertFrom-Json
-    foreach ($m in $json.Matches.Match) {
-      if ($m -match '.*\/(\d{4}-\d\d-\d\d)-(\d\d-\d\d-\d\d)_.*') {
-        $dt = [datetime]::Parse($matches[1] + " " + ($matches[2] -replace '-',':'))
 
-        if ($dt -lt (Get-Date).AddDays(-7).ToUniversalTime()) {
-          & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$($m)_blue_vs_red_stats.json" -FromJson "$PSScriptRoot/_stats-last7days.json"
-        }
+    if ($MonthlyBatch) {
+      #Monthly stats cumaltive
+      & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterOCE.ToString() -Region OCE -OutFile "$PSScriptRoot/_monthly/oceania/oceania_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportOCE).json"
+      & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterUS.ToString()  -Region US  -OutFile "$PSScriptRoot/_monthly/north-america/north-america_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportUS).json"
+      & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterBR.ToString()  -Region BR  -OutFile "$PSScriptRoot/_monthly/brasil/brasil_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportBR).json"
+      & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayFilterEU.ToString()  -Region EU  -OutFile "$PSScriptRoot/_monthly/europe/europe_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportEU).json"
+      & $PSScriptRoot\FO_stats_join-json.ps1 -StartDateTime $DayReportINT.ToString() -Region INT -OutFile "$PSScriptRoot/_monthly/international/international_MonthlyStats_$('{0:yyyy-MM}' -f $DayReportINT).json"
+    }
+  } else {
+    # Add newly processed files only - i.e. $filesDownloaded
+    foreach ($fileName in $filesDownloaded) {
+      switch (((GetPathFromFileName $fileName.FullName) -split '/')[0]   + '/') {
+        {$_ -in $OCEPaths} { $f_region = 'oceania';       $f_dayreport = $DayReportOCE; $f_dayfilter = $DayFilterOCE }
+        {$_ -in $USPaths}  { $f_region = 'north-america'; $f_dayreport = $DayReportUS ; $f_dayfilter = $DayFilterUS  }
+        {$_ -in $BRPaths}  { $f_region = 'brasil';        $f_dayreport = $DayReportBR ; $f_dayfilter = $DayFilterBR  }
+        {$_ -in $EUPaths}  { $f_region = 'europe';        $f_dayreport = $DayReportEU ; $f_dayfilter = $DayFilterEU  }
+        {$_ -in $INTPaths} { $f_region = 'international'; $f_dayreport = $DayReportINT; $f_dayfilter = $DayFilterINT }
+        else { continue }
       }
+
+      $fileName = $fileName.FullName -replace '_red.json$','_red_stats.json'
+
+      if ($fileName.FullName -match '[\\/]tourney[\\/]') {
+        & $PSScriptRoot\FO_stats_join-json.ps1 -FilterPath $fileName -StartOffSetDays 1 -ExcludeFile "$PSScriptRoot/.2v2_tourney_exlude.txt" -OutFile "$PSScriptRoot/2v2_tourney_stats.json"
+      }
+
+      & $PSScriptRoot\FO_stats_join-json.ps1 -FilterPath $fileName -StartDateTime $f_dayfilter.ToString() -OutFile "$PSScriptRoot/_daily/$f_region/$($f_region)_DailyStats_$('{0:yyyy-MM-dd}' -f $f_dayreport).json"
+      & $PSScriptRoot\FO_stats_join-json.ps1 -FilterPath $fileName -StartDateTime $f_dayfilter.ToString() -OutFile "$PSScriptRoot/_monthly/$f_region/$($f_region)_MonthlyStats_$('{0:yyyy-MM}' -f $f_dayreport).json"
+      & $PSScriptRoot\FO_stats_join-json.ps1 -FilterPath $fileName -StartOffSetDays 1 -OutFile "$PSScriptRoot/_stats-last24hrs.json"
+      & $PSScriptRoot\FO_stats_join-json.ps1 -FilterPath $fileName -StartOffsetDays 7 -OutFile "$PSScriptRoot/_stats-last7days.json"
     }
   }
 }
@@ -349,6 +368,26 @@ if ($PeriodBatch) {
   Remove-Item "$PSScriptRoot/_stats-last7days.json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetDays 1 -Region ALL -OutFile "$PSScriptRoot/_stats-last24hrs.json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetDays 7 -Region ALL -OutFile "$PSScriptRoot/_stats-last7days.json"
+} elseif ($PeriodExpire) {
+  $json = (Get-Content -LiteralPath "$PSScriptRoot/_stats-last24hrs.json" -Raw) | ConvertFrom-Json
+  foreach ($m in $json.Matches.Match) {
+    if ($m -match '/(\d{4}-\d\d-\d\d)[_-](\d\d-\d\d-\d\d)_') {
+      $dt = [datetime]::Parse($matches[1] + " " + ($matches[2] -replace '-',':'))
+      if ($dt -lt (Get-Date).AddDays(-1).ToUniversalTime()) {
+        & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$($m)_blue_vs_red_stats.json" -FromJson "$PSScriptRoot/_stats-last24hrs.json"
+      }
+    }
+  }
+  $json = (Get-Content -LiteralPath "$PSScriptRoot/_stats-last7days.json" -Raw) | ConvertFrom-Json
+  foreach ($m in $json.Matches.Match) {
+    if ($m -match '/(\d{4}-\d\d-\d\d)-(\d\d-\d\d-\d\d)_') {
+      $dt = [datetime]::Parse($matches[1] + " " + ($matches[2] -replace '-',':'))
+
+      if ($dt -lt (Get-Date).AddDays(-7).ToUniversalTime()) {
+        & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$($m)_blue_vs_red_stats.json" -FromJson "$PSScriptRoot/_stats-last7days.json"
+      }
+    }
+  }
 }
 
 # SIG # Begin signature block

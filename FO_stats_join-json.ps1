@@ -33,6 +33,8 @@ $script:ClassAllowedStr = @('Sco','Sold','Demo','Med','HwG','Pyro','Spy','Eng')
 $script:ClassAllowed       = @(1,3,4,5,6,7,8,9)
 $script:ClassAllowedWithSG = @(1,3,4,5,6,7,8,9,10)
 
+$regExReplaceFix = '[[+*?()\\.]', '\$&'
+
 function Format-MinSec {
   param($sec)
 
@@ -126,11 +128,9 @@ function processFoStatsJSON {
     #Add/Minus the JSONs
     foreach ($array in @('SummaryAttack','SummaryDefence')) {
         foreach ($p in $NewJson.$array) {
-
-
           $pos = (arrFindPlayer ([ref]$CurrentJson.$array) $p.Name)
           if ($removeModifier -gt 0 -and $pos -lt 0) {
-              $CurrentJson.$array += [PSCustomObject]@{
+              [array]$CurrentJson.$array += [PSCustomObject]@{
                 Name   = $p.Name
                 KPM    = $null
                 KD     = $null
@@ -186,7 +186,7 @@ function processFoStatsJSON {
       foreach ($p in $NewJson.$strTable) {
         $pos = (arrFindPlayer-Class ([ref]$CurrentJson.$strTable) $p.Name)
         if ($removeModifier -gt 0 -and $pos -lt 0) {
-              $CurrentJson.$strTable +=  [PSCustomObject]@{
+              [array]$CurrentJson.$strTable +=  [PSCustomObject]@{
                 Name = $p.Name
                 Sco  = 0
                 KPM1 = $p.KPM1
@@ -311,6 +311,18 @@ function Generate-DailyStatsHTML {
     return (ConvertTo-Html -Body $htmlBody -Head $htmlHeader -PostContent $htmlPost)
 } # end Generate HTML
 
+function GetPathFromFileName {
+  param( $fileName )
+
+  $arrPath = $fileName -split '[\\/]'
+
+  if ($fileName -match 'brazil[\\/]fo[\\/]upload[\\/]') {
+    return $arrPath[-4] + '/' + $arrPath[-3] + '/' + $arrPath[-2] + '/'
+  } else {
+    return $arrPath[-3] + '/' + $arrPath[-2] + '/'
+  }
+}
+
 if ($GenerateHTML) {
   Generate-DailyStatsHTML -JSON (Get-Content $GenerateHTML -Raw | ConvertFrom-Json) | Out-File ($GenerateHTML -replace '.json$','.html')
   write-host "Generated HTML:- $GenerateHTML"
@@ -386,22 +398,25 @@ if ($OutFile -and (Test-Path -LiteralPath $OutFile)) {
 
 $filesBatched = @()
 foreach ($path in ($FilterPath -split ',')) {
-  if ($FilterPath -match '(.[/\\])?(.+[/\\]){2}?.+\.json$') {
+  #if ($FilterPath -match '([A-Za-z0-9-_]+[\\/][A-Za-z0-9-_]+[\\/]).+[.]json$') {
+  if ($FilterPath -match '[.]json$') {
     $files = (Get-Item -LiteralPath $FilterPath)
-    $path = $matches[2]
+    $path = (GetPathFromFileName $path)
   } else {
-    if (!(Test-Path $PSScriptRoot/$path/*_stats.json)) { continue }
-    $files = (Get-ChildItem $PSScriptRoot/$path/*_stats.json)
+    if (!(Test-Path -LiteralPath "$PSScriptRoot/$path") -or !(Test-Path -LiteralPath "$PSScriptRoot/$path*_stats.json")) { continue }
+    $files = (Get-ChildItem "$PSScriptRoot/$path*_stats.json")
   }
-  
+
   foreach ($f in $files) {
     $inJson = (Get-Content -LiteralPath $f -Raw | ConvertFrom-Json)
     $names  = @($inJson.SummaryAttack.Name + $inJson.SummaryDefence.Name)
     $fileDT = [datetime]::ParseExact((($f.Name -replace '^(\d\d\d\d-\d\d-\d\d[_-]\d\d-\d\d-\d\d).*$','$1') -replace '_','-'),'yyyy-MM-dd-HH-mm-ss',$null)
-    if ($fileDT -lt $StartDT -or $fileDT -gt $EndDT ) { continue } 
-    write-host ($path + ($f.Name -replace '_blue_vs_red_stats.json',''))
-    if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match `
-            -or ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) {
+
+    if (<#($FilterPath -notmatch '[.]json$') -and#> ($fileDT -lt $StartDT -or $fileDT -gt $EndDT)) { continue } 
+
+    #if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match `
+    #        -or ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) {
+    if ($outJson.Matches.Match -match "$($f.Name -replace '_blue_vs_red_stats.json','' -replace $regExReplaceFix)$") {
       Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
       continue 
     } elseif (!$AllowUnranked -and $names -notmatch '#\d{1,5}$') {
@@ -418,11 +433,9 @@ foreach ($path in ($FilterPath -split ',')) {
       continue
     }
 
-
     $filesBatched += @($f)
   }
 }
-
 
 $filesBatched = $filesBatched | Sort-Object Name
 $i = 0
@@ -440,13 +453,13 @@ foreach ($f in $filesBatched) {
 
 if (!$OutFile) {
   if ($Region) {
-    $OutFile = "statsjoin_$region_$('{0:yyyy-MM-dd_HHmmss}' -f (Get-Date))_$($i)matches.json"
+    $OutFile = "statsjoin_$($region)_$('{0:yyyy-MM-dd_HHmmss}' -f (Get-Date))_$($i)matches.json"
   } else {
     $OutFile = "statsjoin_$('{0:yyyy-MM-dd_HHmmss}' -f (Get-Date))_$($i)matches.json"
   }
 } 
 
-if ($i -lt 1) { Write-Host "No batch files found to be added to $region" }
+if ($i -lt 1) { Write-Host "No batch files found to be added to $OutFile" }
 
 if ($outJson) { 
   if ($OutFile -match '[\\/]' -and !(Test-Path -LiteralPath (Split-Path -LiteralPath $OutFile))) {
