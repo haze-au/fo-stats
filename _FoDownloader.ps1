@@ -297,6 +297,7 @@ if (!$DownloadOnly -and !$Demos -and $filesDownloaded.Count -gt 0) {
       }
       write-host "----------------------------------------------------------------------------------------------------"
       write-host "FO Stats Completed:-`t$($fileName)"
+      write-host "----------------------------------------------------------------------------------------------------"
       if ($CleanUp) { Remove-Item -LiteralPath $fileName.FullName -Force }
     }
     write-host "===================================================================================================="
@@ -387,7 +388,7 @@ if ($PeriodBatch) {
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetDays 7 -Region ALL -OutFile "$PSScriptRoot/_stats-last7days.json"
 } elseif ($PeriodExpire) {
   write-host ' FO Downlaoder -PeriodExpire '
-  write-host '---------------------------------'
+  write-host '---------------------------------------------'
 
   $json = (Get-Content -LiteralPath "$PSScriptRoot/_stats-last24hrs.json" -Raw) | ConvertFrom-Json
   foreach ($m in $json.Matches.Match) {
@@ -408,11 +409,10 @@ if ($PeriodBatch) {
       }
     }
   }
-  write-host '================================='
+  write-host '============================================='
 }
 
 Write-host " FO Downloader complete | $(get-date)"
-write-host '================================='
 
 # SIG # Begin signature block
 # MIIboAYJKoZIhvcNAQcCoIIbkTCCG40CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
