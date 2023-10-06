@@ -20,6 +20,7 @@ param([switch]$ForceBatch,
       [string]$OutFile )
 
 if ($ForceBatch) { $doBatch = $true }
+if (!$PlayerCount) { $PlayerCount = '([4-9]|[1-2][0-9])' }
 
 # Update me for -Region parameter and Daily Stats updates
 $OCEPaths = @('sydney/','melbourne/')
@@ -264,7 +265,11 @@ function Generate-DailyStatsHTML {
     param([array]$JSON)
     
     $htmlBody  = '<div class=row><div class=column><h2>Match Log</h2>'
-    $htmlBody += ($JSON.Matches       | Sort-Object Name   | ConvertTo-Html -Fragment ) -replace '<table>','<table id="MatchLog">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'
+    #if (($JSON.Matches.Server -ne $null).Count -gt 0) {
+    #  $htmlBody += ($JSON.Matches        | Sort-Object Match   | ConvertTo-Html -Fragment Server,Match,Winner,Rating,Score1,Team1,Score2,Team2) -replace '<table>','<table id="MatchLog">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'
+    #} else {
+      $htmlBody += ($JSON.Matches        | Sort-Object Match   | ConvertTo-Html -Fragment) -replace '<table>','<table id="MatchLog">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'
+    #}
     $htmlBody += '<h2>Attack Summary</h2>'
     $htmlBody += ($JSON.SummaryAttack  | Select-Object Name,KPM,KD,Kills,Death,TKill,Dmg,SGKills,DPM,FlagCap,FlagTake,FlagTime,Win,Draw,Loss,TimePlayed,Classes | Sort-Object Name | ConvertTo-Html -Fragment)  -replace '<table>','<table id="AttackSummary">' -replace '<tr><th>','<thead><tr><th>' -replace '</th></tr>','</th></tr></thead>'        
     $htmlBody += '<h2>Defence Summary</h2>'
@@ -298,6 +303,7 @@ function Generate-DailyStatsHTML {
     $htmlBoyd += '</div></div>'
 
     $htmlHeader = @"
+    <meta id="FOJoinJsonVersion" name="FOJoinJsonVersion" content="1.1">
     <link rel="stylesheet" href="fo_daily.css">
     <link rel="stylesheet" href="../../fo_daily.css">
     <link rel="stylesheet" href="http://haze.fortressone.org/.css/fo_daily.css">
@@ -322,6 +328,9 @@ function GetPathFromFileName {
     return $arrPath[-3] + '/' + $arrPath[-2] + '/'
   }
 }
+
+Write-Host " FO_stats_join-json | $(get-date)"
+Write-Host '--------------------------------------------'
 
 if ($GenerateHTML) {
   Generate-DailyStatsHTML -JSON (Get-Content $GenerateHTML -Raw | ConvertFrom-Json) | Out-File ($GenerateHTML -replace '.json$','.html')
@@ -403,7 +412,7 @@ foreach ($path in ($FilterPath -split ',')) {
     $files = (Get-Item -LiteralPath $FilterPath)
     $path = (GetPathFromFileName $path)
   } else {
-    if (!(Test-Path -LiteralPath "$PSScriptRoot/$path") -or !(Test-Path -LiteralPath "$PSScriptRoot/$path*_stats.json")) { continue }
+    if (!(Test-Path -LiteralPath "$PSScriptRoot/$path") -or !(Test-Path "$PSScriptRoot/$path*_stats.json")) { continue }
     $files = (Get-ChildItem "$PSScriptRoot/$path*_stats.json")
   }
 
@@ -441,8 +450,8 @@ $filesBatched = $filesBatched | Sort-Object Name
 $i = 0
 foreach ($f in $filesBatched) {
   $newJson = (Get-Content -LiteralPath $f -Raw) | ConvertFrom-Json
-  if ($newJson.SummaryAttack.Count -lt 4)   { continue }
-  elseif ('' -in $newJson.Matches.Match)    { continue }   
+  #if ($newJson.SummaryAttack.Count -lt 4)   { continue }
+  if ('' -in $newJson.Matches.Match)        { continue }   
   elseif ($null -in $newJson.Matches.Match) { continue }
 
   Write-Host "Adding file to JSON:- $f"
@@ -469,8 +478,9 @@ if ($outJson) {
   Write-Host "JSON has been generated - $i files added"
   Generate-DailyStatsHTML -JSON $outJson | Out-File -LiteralPath ($OutFile -replace '\.json$','.html') -Encoding utf8
   Write-Host "Batch HTML - Generated :- $($OutFile -replace '\.json$','.html')"
-  return
 }
+
+Write-Host '============================================'
 
 
 

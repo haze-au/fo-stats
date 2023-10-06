@@ -37,24 +37,25 @@ param (
   #AWS Result limit is 1000 files, so please filter to target your results
   [switch]$Demos,      #Demos instead of stats
   [ValidateSet('ALL','US','BR','EU','OCE','INT')]
-          $Region,     # All | US | BR | EU | OCE | Int
-  [switch]$AwsCLI,     # Requires AWS CLI, scans all paths on the AWS bucket (stagine|quad|fo|hue), ignores region/filterpath
-  [string]$LocalFile,
-  [string]$FilterPath, #Stats folder on repo, replicated locally, default='sydney/staging/' 
-  [string]$FilterFile, #Filter the filenames from the XML results, use * for wildcards.
-  [string]$OutFolder,  #Path of ouput JSON and HTML
-  [switch]$LatestFile, #Last modified file only (from the filtered list)
-          $TargetDate, #Date pointer - limited by -LimitDate or -LimitDays/-LimitMins
+          $Region,       # All | US | BR | EU | OCE | Int
+  [switch]$AwsCLI,       # Requires AWS CLI, scans all paths on the AWS bucket (stagine|quad|fo|hue), ignores region/filterpath
+  [string]$LocalFile,    #
+  [string]$FilterPath,   #Stats folder on repo, replicated locally, default='sydney/staging/' 
+  [string]$FilterFile,   #Filter the filenames from the XML results, use * for wildcards.
+  [string]$OutFolder,    #Path of ouput JSON and HTML
+  [switch]$LatestFile,   #Last modified file only (from the filtered list)
+          $TargetDate,   #Date pointer - limited by -LimitDate or -LimitDays/-LimitMins
           $LimitDate,
-  [int]   $LimitMins,  #Only access files from last X minutes (sum of days and mins)(sum of days and mins)
-  [double]$LimitDays,  #Only access files from last X days (sum of days and mins)
-  [switch]$DownloadOnly,#Download JSON only
-  [switch]$Overwrite,  #Force re-download do the FO_stats again even when file exists
-  [switch]$ForceStats, #Force running stats on already existing file
-  [switch]$DailyBatch,  #For HTTP server daily tallying functions (no use on client)
-  [switch]$MonthlyBatch,
-  [switch]$FullBatch,
-  [switch]$PeriodBatch, #For HTTP server last 24hr / 7days stats
+  [int]   $LimitMins,    #Only access files from last X minutes (sum of days and mins)(sum of days and mins)
+  [double]$LimitDays,    #Only access files from last X days (sum of days and mins)
+  [switch]$DownloadOnly, #Download JSON only
+  [switch]$Overwrite,    #Force re-download do the FO_stats again even when file exists
+  [switch]$ForceStats,   #Force running stats on already existing file
+  [switch]$DailyBatch,   #For HTTP server daily tallying functions (no use on client)
+  [switch]$MonthlyBatch, #For HTTP server monthly tallying functions (no use on client)
+  [switch]$FullBatch,    #Remove and regenerate above stats
+  [switch]$NewOnlyBatch, #Add newly process files to all batches
+  [switch]$PeriodBatch,  #For HTTP server last 24hr / 7days stats
   [switch]$PeriodExpire,
   ### FO_Stats parameters ###################
   [int]   $RoundTime,  #Passed to FO_Stats
@@ -67,6 +68,12 @@ param (
 
 if ($Demos) { $AwsUrl = 'https://fortressone-demos.s3.amazonaws.com/' }
 else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
+
+if ($DailyBatch -or $MonthlyBatch -or $PeriodBatch -or $PeriodExpire -or $FullBatch) { $CleanUp = $true }
+if ($FullBatch -and !$DailyBatch -and !$MonthlyBatch) { $DailyBatch = $true; $MonthlyBatch = $true}
+if ($NewOnlyBatch -and $DailyBatch)   { $DailyBatch   = $true }
+if ($NewOnlyBatch -and $MonthlyBatch) { $MonthlyBatch = $true }
+if ($PeriodBatch -and $PeriodExpire)  { $PeriodExpire = $false }
 
 function GetPathFromFileName {
   param( $fileName )
@@ -177,7 +184,9 @@ if ($LocalFile) {
   #LatestFileOnly
   if ($LatestFile) { $statFiles = ($statFiles | Sort-Object DateTime -Descending)[0] }
 
-  write-host "FO Stats Downloader: `n"`
+  write-host  "FO Stats Downloader | $(Get-Date)`n"`
+              "-------------------------------------------------------------`n"`
+              "-AwsCLI:`t$AwsCLI`n"`
               "-TargetDate:`t$('{0:yyyy-MM-dd-HH-mm-ss}' -f $TargetDate)`n"`
               "-LimitDate: `t$('{0:yyyy-MM-dd-HH-mm-ss}' -f $LimitDate)`n"`
               "-LimitDays:`t$LimitDays`n" `
@@ -185,12 +194,11 @@ if ($LocalFile) {
               "-FilterPath:`t$FilterPath`n" `
               "-FilterFile:`t$FilterFile`n" `
               "-OutFolder:`t$OutFolder`n"`
-              "-Overwrite:`t$Overwrite`n"`
-              "-DownloadOnly:`t$DownloadOnly`n"`
-              "-ForceStats:`t$ForceStats`n"`
-              "-CleanUp:`t$CleanUp`n"`
-              "-DailyBatch:`t$DailyBatch`n"`
-              "-AwsCLI:`t$AwsCLI`n"
+              "Options:`t$(@('CleanUp','DownloadOnly','Overwrite','ForceStats') | foreach { if (Get-Variable $_ -ValueOnly -ErrorAction SilentlyContinue) { "-$_" }})`n"`
+              "Stats:`t$(@('RoundTime','TextSave','NoStatJson','TextOnly','OpenHTML') | foreach { if (Get-Variable $_ -ValueOnly -ErrorAction SilentlyContinue) { "-$_" }})`n"`
+              "Batches:`t$(@('FullBatch','NewOnlyBatch','DailyBatch','MonthlyhBatch','PeriodBatch','PeriodExpire') | foreach { if (Get-Variable $_ -ValueOnly -ErrorAction SilentlyContinue) { "-$_" }})`n"`
+              "=============================================================`n"
+
 
 
   $filesDownloaded = @()
@@ -244,7 +252,8 @@ if ($LocalFile) {
     }
   }
 
-  if (!$filesSkipped -and $filesDownloaded.Count -eq 0) {
+  if ($filesDownloaded.Count -eq 0) {
+    write-host "----------------------------------------------------------------------------------------------------"
     Write-Host "No stat files matched from the $($statFiles.Count) AWSresults filtered."
     Write-Host "NOTE: AWS results are capped at 1000 files, limit your days/mins or paths."
     Write-Host ""
@@ -253,11 +262,10 @@ if ($LocalFile) {
     Write-Host ""
     Write-Host "Please check your search filters and try again."
     write-host "===================================================================================================="
-  }
+  } else { write-host "====================================================================================================" }
 } 
 
 if (!$DownloadOnly -and !$Demos -and $filesDownloaded.Count -gt 0) { 
-    write-host "====================================================================================================`n"
     foreach ($fileName in $filesDownloaded) {
       $param = @{ StatFile=$fileName }
       if ($RoundTime)  { $param.RoundTime  = $RoundTime }
@@ -267,7 +275,6 @@ if (!$DownloadOnly -and !$Demos -and $filesDownloaded.Count -gt 0) {
       if ($OpenHTML)   { $param.OpenHTML   = $true  }
 
       $i++
-      write-host "===================================================================================================="
       write-host "FO Stats ($i of $($filesDownloaded.Length)):- `t$($fileName)"
       if ($param.Count -gt 1) { Write-Host "Parameters: $($param.GetEnumerator() | foreach { if ($_.Name -ne 'StatFile') { " -$($_.Name): $($_.Value)" } })" }
       write-host "----------------------------------------------------------------------------------------------------"
@@ -275,18 +282,27 @@ if (!$DownloadOnly -and !$Demos -and $filesDownloaded.Count -gt 0) {
       
       if (!$NoStatJson) {
         $outJson = (Get-Content -LiteralPath ($fileName -replace '\.json$','_stats.json') -Raw) | ConvertFrom-Json
-        $outJson.Matches[0].Match = "$($fileName.Directory.Parent.Name)/$($fileName.Directory.Name)/$($outJson.Matches[0].Match)"
+        #$outJson.Matches[0].Match = "$($fileName.Directory.Parent.Name)/$($fileName.Directory.Name)/$($outJson.Matches[0].Match)"
+        #Rebuild the Matches entry so server is the first column
+        $outJson.Matches[0] = [pscustomobject]@{ Server = "$($fileName.Directory.Parent.Name)/$($fileName.Directory.Name)/";
+                                                 Match  = $outJson.Matches[0].Match;
+                                                 Winner = $outJson.Matches[0].Winner;
+                                                 Rating = $outJson.Matches[0].Rating;
+                                                 Score1 = $outJson.Matches[0].Score1;
+                                                 Team1  = $outJson.Matches[0].Team1;
+                                                 Score2 = $outJson.Matches[0].Score2;
+                                                 Team2  = $outJson.Matches[0].Team2;
+                                               }
         ($outJson | ConvertTo-JSON) | Out-File -LiteralPath ($fileName -replace '\.json$','_stats.json')  -Encoding utf8
       }
       write-host "----------------------------------------------------------------------------------------------------"
       write-host "FO Stats Completed:-`t$($fileName)"
-      write-host "----------------------------------------------------------------------------------------------------"
-
-      if ($DailyBatch -or $CleanUp) { Remove-Item -LiteralPath $fileName.FullName -Force }
+      if ($CleanUp) { Remove-Item -LiteralPath $fileName.FullName -Force }
     }
+    write-host "===================================================================================================="
 }
 
-if ($DailyBatch -or $MonthlyBatch -or $FullBatch) { 
+if ($FullBatch -or $NewOnlyBatch) { 
   $DayFilterOCE = [datetime]::Parse('19:00') # Syd 6am
   $DayFilterUS  = [datetime]::Parse('14:00') # Cali 6am
   $DayFilterBR  = [datetime]::Parse('18:00') # Brasil 6am
@@ -314,7 +330,8 @@ if ($DailyBatch -or $MonthlyBatch -or $FullBatch) {
   $DayReportEU = $DayFilterEU
 
   # Interational cut-off, new days starts at 4pm
-  if ([DateTime]::UtcNow.hour -in 0..15) { $DayReportINT = $DayFilterINT.AddDays(-1) }
+  if ([DateTime]::UtcNow.hour -in 0..15) { $DayFilterINT = $DayFilterINT.AddDays(-1) }
+  $DayReportINT = $DayFilterINT
 
   if ($FullBatch) {
     & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetDays 7 -Region ALL -FilterPath 'tourney/' -ExcludeFile "$PSScriptRoot/.2v2_tourney_exlude.txt" -OutFile "$PSScriptRoot/2v2_tourney_stats.json"
@@ -369,6 +386,9 @@ if ($PeriodBatch) {
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetDays 1 -Region ALL -OutFile "$PSScriptRoot/_stats-last24hrs.json"
   & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetDays 7 -Region ALL -OutFile "$PSScriptRoot/_stats-last7days.json"
 } elseif ($PeriodExpire) {
+  write-host ' FO Downlaoder -PeriodExpire '
+  write-host '---------------------------------'
+
   $json = (Get-Content -LiteralPath "$PSScriptRoot/_stats-last24hrs.json" -Raw) | ConvertFrom-Json
   foreach ($m in $json.Matches.Match) {
     if ($m -match '/(\d{4}-\d\d-\d\d)[_-](\d\d-\d\d-\d\d)_') {
@@ -388,6 +408,7 @@ if ($PeriodBatch) {
       }
     }
   }
+  write-host '================================='
 }
 
 # SIG # Begin signature block

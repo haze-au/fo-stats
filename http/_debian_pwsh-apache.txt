@@ -27,10 +27,12 @@ aws configure
 
 ---- Cron tab.
 # m h  dom mon dow   command
-1-59 * * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitMins 60 -DailyBatch
-0  0-15  * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 1  -DailyBatch
-0  17-23 * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 1  -DailyBatch
-0  16    * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -LimitDays 30 -PeriodBatch
+5,10,20,25,35,40,50,55 0-15,17-23 * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -AwsCLI -LimitDays 1 -DailyBatch > /var/www/html/.cron1.log
+*/15 0-15,17-23 * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -AwsCLI -LimitDays 1 -DailyBatch -MonthlyBatch -FullBatch -PeriodExpire > /var/www/html/.cr>
+0 16 * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -AwsCLI -LimitDays 30 -PeriodBatch -FullBatch > /var/www/html/.cron3.log
+15,30,45 16 * * * pwsh /var/www/html/_FoDownloader.ps1 -Region ALL -AwsCLI -LimitDays 1 -DailyBatch -PeriodExpire > /var/www/html/.cron4.log
+
+
 
 
 ---------
