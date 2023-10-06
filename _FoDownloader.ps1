@@ -195,7 +195,7 @@ if ($LocalFile) {
               "-OutFolder:`t$OutFolder`n"`
               "Options:`t$(@('CleanUp','DownloadOnly','Overwrite','ForceStats') | foreach { if (Get-Variable $_ -ValueOnly -ErrorAction SilentlyContinue) { "-$_" }})`n"`
               "Stats:`t$(@('RoundTime','TextSave','NoStatJson','TextOnly','OpenHTML') | foreach { if (Get-Variable $_ -ValueOnly -ErrorAction SilentlyContinue) { "-$_" }})`n"`
-              "Batches:`t$(@('FullBatch','NewOnlyBatch','DailyBatch','MonthlyhBatch','PeriodBatch','PeriodExpire') | foreach { if (Get-Variable $_ -ValueOnly -ErrorAction SilentlyContinue) { "-$_" }})`n"`
+              "Batches:`t$(@('FullBatch','NewOnlyBatch','DailyBatch','MonthlyBatch','PeriodBatch','PeriodExpire') | foreach { if (Get-Variable $_ -ValueOnly -ErrorAction SilentlyContinue) { "-$_" }})`n"`
               "=============================================================`n"
 
 
