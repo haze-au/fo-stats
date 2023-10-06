@@ -411,6 +411,9 @@ if ($PeriodBatch) {
   write-host '================================='
 }
 
+Write-host " FO Downloader complete | $(get-date)"
+write-host '================================='
+
 # SIG # Begin signature block
 # MIIboAYJKoZIhvcNAQcCoIIbkTCCG40CAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
