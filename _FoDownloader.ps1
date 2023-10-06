@@ -72,7 +72,7 @@ else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
 if ($FullBatch -and !$DailyBatch -and !$MonthlyBatch) { $DailyBatch = $true; $MonthlyBatch = $true}
 if ($NewOnlyBatch) { $DailyBatch = $true; $MonthlyBatch = $true }
 if ($PeriodBatch -and $PeriodExpire)  { $PeriodExpire = $false }
-if ($DailyBatch -or $MonthlyBatch -or $PeriodBatch -or $PeriodExpire -or $FullBatch) { $CleanUp = $true }
+if ($FullBatch -or $NewOnlyBatch -or $DailyBatch -or $MonthlyBatch -or $PeriodBatch -or $PeriodExpire) { $CleanUp = $true }
 
 function GetPathFromFileName {
   param( $fileName )
@@ -175,7 +175,7 @@ if ($LocalFile) {
       }
     } 
   } else {
-    $statJson = (& aws s3api list-objects-v2 --bucket fortressone-stats --query "Contents[?LastModified>``$($TargetDate.ToString('yyyy-MM-dd'))``]") | ConvertFrom-Json
+    $statJson = (& aws s3api list-objects-v2 --bucket fortressone-stats --query "Contents[?LastModified>``$($TargetDate.ToString('yyyy-MM-ddTHH:mm:ss'))``]") | ConvertFrom-Json
     $statFiles += $statJson | Where-Object { $_.Key -match '.*/(quad|staging|scrim|tourney|fo|hue)/.*\.json$' } | foreach { (New-UrlStatFile $_.Key $_.LastModified $_.Size) }
   }
 
@@ -256,8 +256,8 @@ if ($LocalFile) {
     Write-Host "No stat files matched from the $($statFiles.Count) AWSresults filtered."
     Write-Host "NOTE: AWS results are capped at 1000 files, limit your days/mins or paths."
     Write-Host ""
-    Write-Host "`tFirst file date:`t$(if ($statFiles.Count -gt 0) { $statFiles[0].DateTime  } else { 'No results' } )"
-    Write-Host "`tLast  file date:`t$(if ($statFiles.Count -gt 0) { $statFiles[-1].DateTime } else { 'No results' } )"
+    Write-Host "`tFirst file date:`t$(if ($statFiles.Count -gt 0) { ($statFiles.DateTime | Measure-Object -Minimum).Minimum } else { 'No results' } )"
+    Write-Host "`tLast  file date:`t$(if ($statFiles.Count -gt 0) { ($statFiles.DateTime | Measure-Object -Maximum).Maximum } else { 'No results' } )"
     Write-Host ""
     Write-Host "Please check your search filters and try again."
     write-host "===================================================================================================="

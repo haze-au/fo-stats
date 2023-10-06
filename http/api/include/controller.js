@@ -1,5 +1,20 @@
 const { exec } = require("child_process");
 const uploadFile = require("../include/upload");
+let   HttpDir = '/var/www/html/';
+let   LogDir  = '/var/www/html/';
+
+function logRequest (req,file,param) {
+    var fs = require('fs');
+    const d = new Date();
+    fs.readFile(file,function (err,data){
+      if (err) { console.log(err); }
+      txt = data.toString() + '\n' + d.toISOString() + '\t| ' + req.ip + '\t| ' + param;
+      fs.writeFile(file,txt,function (err2){
+        if (err2) { console.log(err2); }
+      });
+    });
+}
+
 
 const upload = async (req, res) => {
   try {
@@ -9,11 +24,18 @@ const upload = async (req, res) => {
       return res.status(400).send({ message: "Please upload a file!" });
     }
 
+//    var fs = require('fs');
+//    if (fs.existsSync("/var/www/html/" + req.params.path + "/" + req.file.originalname.replace('[.]json$','.html'))) {
+//      return res.status(400).send({ message: "File already exists." });
+//    }
+
+    logRequest(req,LogDir + '.upload2.log',txt);
+
     res.status(200).send({
       message: "Uploaded the file successfully: " + req.params.path + "/" + req.file.originalname,
     });
-    //exec('pwsh /var/www/html/FO_stats_v2.ps1 -StatFile /var/www/html/' + req.params.path + "/" + req.file.originalname +  ' > /var/www/html/.upload.log');
-    exec('pwsh /var/www/html/_FoDownloader.ps1 -OutFolder /var/www/html/ -LocalFile ' + req.params.path + '/' + req.file.originalname + ' -LimitDays 90  -DailyBatch > /var/www/html/.upload.log');
+
+    exec('pwsh ' + HttpDir + '_FoDownloader.ps1 -OutFolder ' + HttpDir + ' -LocalFile ' + req.params.path + '/' + req.file.originalname + ' -LimitDays 90  -NewOnlyBatch > ' + LogDir + '.upload.log');
   } catch (err) {
     res.status(500).send({
       message: `Could not upload the file: ${req.file.originalname}. ${err}`,
@@ -21,14 +43,17 @@ const upload = async (req, res) => {
   }
 };
 
+
 const notify = (req, res) => {
     url = req.params.path;
 
-    if (url.match("^.+/(staging|quad|scrim|tourney)/.+[.]json$") ) {
-        exec('pwsh /var/www/html/_FoDownloader.ps1 -FilterPath ' + url + ' -LimitDays 7  -DailyBatch > /var/www/html/.notify.log');
+    if ( url.match("^.+/(staging|quad|scrim|tourney)/.+[.]json$") ) {
+        logRequest(req,LogDir + '.notify2.log',url);
+        exec('pwsh ' + HttpDir +  '_FoDownloader.ps1 -FilterPath ' + url + ' -LimitDays 7 -NewOnlyBatch >> ' + LogDir + '.notify.log');
         res.status(200).send({ message: "Processing: " + url, });
     } else { res.status(400).send({ message: "Invalid path: " + url, }); }
 };
+
 
 const add2v2 = (req, res) => {
   url = req.params.path;
@@ -37,7 +62,7 @@ const add2v2 = (req, res) => {
     var fs = require('fs');
 
     var excluded = false;
-    fs.readFile('/var/www/html/.2v2_tourney_exclude.txt',function (err,data){
+    fs.readFile(HttpDir + '.2v2_tourney_exclude.txt',function (err,data){
       if (err) { console.log(err); }
 
       urlre = url.replace(/(\[|\])/g,'\\$1');
@@ -48,17 +73,18 @@ const add2v2 = (req, res) => {
       if (excluded == true) {
         var txt = data.toString();
         txt = txt.replace(re,'$1');
-        fs.writeFile('/var/www/html/.2v2_tourney_exclude.txt',txt,function (err2){
+        fs.writeFile(HttpDir + '.2v2_tourney_exclude.txt',txt,function (err2){
           if (err2) { console.log(err2); }
-          console.log(url + ' has been removed from /var/www/html/.2v2_tourney_exclude.txt');
+          console.log(url + ' has been removed from ' + HttpDir + '.2v2_tourney_exclude.txt');
         });
       }
     });
 
-    exec('pwsh /var/www/html/FO_stats_join-json.ps1 -FilterPath /var/www/html/' + url + ' -StartOffsetDays 365 -PlayerCount \'^4$\' -OutFile /var/www/html/2v2_tourney_stats.json');
+    exec('pwsh ' + HttpDir + 'FO_stats_join-json.ps1 -FilterPath ' + HttpDir +  url + ' -StartOffsetDays 365 -PlayerCount \'^4$\' -OutFile ' + HttpDir + '2v2_tourney_stats.json');
     res.status(200).send({ message: "Adding " + url });
   } else { res.status(400).send({ message: "Invalid path: " + url }); }
 }
+
 
 const rem2v2 = (req, res) => {
   url = req.params.path;
@@ -68,25 +94,24 @@ const rem2v2 = (req, res) => {
   if (url.match("^.+/.+/.+[.]json$")) {
     var fs = require('fs');
     var excluded = false;
-    fs.readFile('/var/www/html/.2v2_tourney_exclude.txt',function (err,data){
+    fs.readFile(HttpDir + '.2v2_tourney_exclude.txt',function (err,data){
       if (err) { console.log(err); }
       urlre = url.replace(/(\[|\])/g,'\\$1');
       urlre = '(^|\n)' + urlre + '(\n|$)';
       re = new RegExp(urlre,'g');
       if (data.toString().match(re)) { excluded = true; }
       if (excluded == false) {
-        fs.writeFile('/var/www/html/.2v2_tourney_exclude.txt',data.toString() + '\n' + url,function (err2){
+        fs.writeFile(HttpDir + '.2v2_tourney_exclude.txt',data.toString() + '\n' + url,function (err2){
         if (err2) { console.log(err2); }
-        console.log(url + ' has been added to /var/www/html/.2v2_tourney_exclude.txt');
+        console.log(url + ' has been added to ' + HttpDir + '.2v2_tourney_exclude.txt');
       });
       }
     });
 
-    exec('pwsh /var/www/html/FO_stats_join-json.ps1 -RemoveMatch /var/www/html/' + url + ' -FromJson /var/www/html/2v2_tourney_stats.json > /var/www/html/.2v2-remove.log');
+    exec('pwsh ' + HttpDir + 'FO_stats_join-json.ps1 -RemoveMatch ' + HttpDir + url + ' -FromJson ' + HttpDir + '2v2_tourney_stats.json > ' + LogDir + '.2v2-remove.log');
     res.status(200).send({ message: "Removing " + url});
   } else { res.status(400).send({ message: "Invalid path: " + url }); }
 }
-
 
 module.exports = {
   upload,
