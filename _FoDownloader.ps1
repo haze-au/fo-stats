@@ -69,11 +69,10 @@ param (
 if ($Demos) { $AwsUrl = 'https://fortressone-demos.s3.amazonaws.com/' }
 else        { $AwsUrl = 'https://fortressone-stats.s3.amazonaws.com/' }
 
-if ($DailyBatch -or $MonthlyBatch -or $PeriodBatch -or $PeriodExpire -or $FullBatch) { $CleanUp = $true }
 if ($FullBatch -and !$DailyBatch -and !$MonthlyBatch) { $DailyBatch = $true; $MonthlyBatch = $true}
-if ($NewOnlyBatch -and $DailyBatch)   { $DailyBatch   = $true }
-if ($NewOnlyBatch -and $MonthlyBatch) { $MonthlyBatch = $true }
+if ($NewOnlyBatch) { $DailyBatch = $true; $MonthlyBatch = $true }
 if ($PeriodBatch -and $PeriodExpire)  { $PeriodExpire = $false }
+if ($DailyBatch -or $MonthlyBatch -or $PeriodBatch -or $PeriodExpire -or $FullBatch) { $CleanUp = $true }
 
 function GetPathFromFileName {
   param( $fileName )
