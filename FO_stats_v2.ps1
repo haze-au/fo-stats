@@ -756,6 +756,7 @@ foreach ($jsonFile in $inputFile) {
   $json = ((Get-Content -Path ($jsonFile.FullName -replace '\[', '`[' -replace '\]', '`]') -Raw) | ConvertFrom-Json)
   $jsonFileCount++
   Write-Host "Input File$(if ($inputFile.Length -gt 1) { " ($jsonFileCount/$($inputFile.Length))" } ): $($jsonFile.Name)"
+  Write-Host "$(Get-Date) | #1 Processing JSON"
 
   #Check for end round time (seconds) - default to 600secs (10mins)
   if ($RoundTime -is [int] -and $RoundTime -gt 0) { $round1EndTime = $RoundTime }
@@ -1253,7 +1254,7 @@ foreach ($jsonFile in $inputFile) {
     ###
     # Calculate awards
     ##
-
+    Write-Host "$(Get-Date) | #2 Award calcualtions"
     #create variables here, min/max values to be generated for awardAtt* + awardDef* (exclude *versus)
     Remove-Variable -Name award*
     $script:awardAttKills = @{}
@@ -1667,7 +1668,7 @@ foreach ($jsonFile in $inputFile) {
     ###
     # Generate the HTML Ouput
     ###
-
+    Write-Host "$(Get-Date) | #3 HTML generation started"
     $ccGrey = 'cellGrey'
     $ccAmber = 'cellAmber'
     $ccOrange = 'cellOrange'
@@ -2272,6 +2273,7 @@ foreach ($jsonFile in $inputFile) {
     $htmlOut += "</body></html>"
 
     $htmlOut | Out-File -LiteralPath "$outFileStr.html" -Encoding utf8
+    Write-Host "$(Get-Date) | #4 HTML generation ended"    
     if ($OpenHTML) { & "$outFileStr.html" }
   }   #end html generation
 
