@@ -1046,7 +1046,7 @@ foreach ($jsonFile in $inputFile) {
     
 
     #team tracking
-    if ($p_team -notin $null, '' -and $p_team -gt 0 -and $class -gt 0 -and $type -notin 'damageTaken' -and $weap -notlike 'worldspawn*') {
+    if ($p_team -notin $null, '' -and $p_team -gt 0 -and $class -gt 0 -and $type -and $weap -notlike 'worldspawn*') {
       if ($player -eq 'world') { $weap; $item }
       if ($arrTeam.$player -in '', $null) {
         #Initialise team info when null

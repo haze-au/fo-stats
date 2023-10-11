@@ -390,21 +390,21 @@ if ($PeriodBatch) {
   write-host '---------------------------------------------'
 
   $json = (Get-Content -LiteralPath "$PSScriptRoot/_stats-last24hrs.json" -Raw) | ConvertFrom-Json
-  foreach ($m in $json.Matches.Match) {
-    if ($m -match '/(\d{4}-\d\d-\d\d)[_-](\d\d-\d\d-\d\d)_') {
+  foreach ($m in $json.Matches) {
+    if ($m.Match -match '(\d{4}-\d\d-\d\d)[_-](\d\d-\d\d-\d\d)_') {
       $dt = [datetime]::Parse($matches[1] + " " + ($matches[2] -replace '-',':'))
       if ($dt -lt (Get-Date).AddDays(-1).ToUniversalTime()) {
-        & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$($m)_blue_vs_red_stats.json" -FromJson "$PSScriptRoot/_stats-last24hrs.json"
+        & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$($m.Server)$($m.Match)_blue_vs_red_stats.json" -FromJson "$PSScriptRoot/_stats-last24hrs.json"
       }
     }
   }
   $json = (Get-Content -LiteralPath "$PSScriptRoot/_stats-last7days.json" -Raw) | ConvertFrom-Json
-  foreach ($m in $json.Matches.Match) {
-    if ($m -match '/(\d{4}-\d\d-\d\d)-(\d\d-\d\d-\d\d)_') {
+  foreach ($m in $json.Matches) {
+    if ($m.Match -match '(\d{4}-\d\d-\d\d)-(\d\d-\d\d-\d\d)_') {
       $dt = [datetime]::Parse($matches[1] + " " + ($matches[2] -replace '-',':'))
 
       if ($dt -lt (Get-Date).AddDays(-7).ToUniversalTime()) {
-        & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$($m)_blue_vs_red_stats.json" -FromJson "$PSScriptRoot/_stats-last7days.json"
+        & $PSScriptRoot/FO_stats_join-json.ps1 -RemoveMatch "$PSScriptRoot/$($m.Server)$($m.Match)_blue_vs_red_stats.json" -FromJson "$PSScriptRoot/_stats-last7days.json"
       }
     }
   }
