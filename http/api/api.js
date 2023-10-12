@@ -2,7 +2,6 @@
 //const cors = require("cors");
 const express = require("express");
 const app = express();
-
 global.__basedir = __dirname;
 
 /*var corsOptions = {
@@ -17,6 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 initRoutes(app);
 
 let port = 8080;
+app.enable('trust proxy');
 
 app.listen(port, () => {
   console.log(`Running at localhost:${port}`);
