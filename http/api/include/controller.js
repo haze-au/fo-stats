@@ -10,15 +10,21 @@ function logRequest (req,file,param) {
     fs.readFile(file,function (err,data){
       if (err) { console.log(err); }
       if (data.length > 60000) {
-        txt2 = removeLines(data.toString(),[1]);
+        txt2 = removeLastLine(data.toString())
       } else { txt2 = data.toString(); }
       
-     
-      txt = txt2 + '\n' + d.toISOString() + '\t| ' + req.ip + '\t| ' + param;
-      fs.writeFile(file,txt,function (err2){
+      fs.writeFile(file,d.toISOString() + '\t| ' + req.ip + '\t| ' + param + '\n' + txt2,function (err2){
         if (err2) { console.log(err2); }
       });
     });
+}
+
+function removeLastLine (data) {
+  if(data.lastIndexOf("\n") > 0) {
+    return data.substring(0, x.lastIndexOf("\n"));
+  } else {
+    return data;
+  }
 }
 
 function removeLines (data, lines = []) {
@@ -67,7 +73,7 @@ const notify = (req, res) => {
 
     if ( url.match("^.+/(staging|quad|scrim|tourney)/.+[.]json$") ) {
         logRequest(req,LogDir + '.notify2.log',url);
-        exec('pwsh ' + HttpDir +  '_FoDownloader.ps1 -FilterPath ' + url + ' -LimitDays 7 -NewOnlyBatch >> ' + LogDir + '.notify.log');
+        exec('pwsh ' + HttpDir +  '_FoDownloader.ps1 -FilterPath ' + url + ' -LimitMins 30 -NewOnlyBatch >> ' + LogDir + '.notify.log');
         logRequest(req,LogDir + '.notify2.log',url);
         res.status(200).send({ message: "Processing: " + url, });
     } else { res.status(400).send({ message: "Invalid path: " + url, }); }
