@@ -24,7 +24,7 @@ if (!$PlayerCount) { $PlayerCount = '([4-9]|[1-2][0-9])' }
 
 # Update me for -Region parameter and Daily Stats updates
 $OCEPaths = @('sydney/','melbourne/')
-$USPaths  = @('california/','dallas/','virginia/','miami/','phoenix/')
+$USPaths  = @('california/','dallas/','virginia/','miami/','phoenix/','atlanta/')
 $BRPaths  = @('saopaulo/','fortaleza/')
 $EUPaths  = @('ireland/','stockholm/','london/')
 $IntPaths = @('bahrain/','guam/','mumbai/','tokyo/')
