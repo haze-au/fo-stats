@@ -425,17 +425,17 @@ foreach ($path in ($FilterPath -split ',')) {
 
     #if ($path + ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match `
     #        -or ($f.Name -replace '_blue_vs_red_stats.json','') -in $outJson.Matches.Match) {
-    if ($outJson.Matches.Match -match "$($f.Name -replace '_blue_vs_red_stats.json','' -replace $regExReplaceFix)$") {
-      Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
+    if ($outJson.Matches.Match -match "$($f.Name -replace '_blue_vs_red(_vs_yell_vs_gren)?_stats.json','' -replace $regExReplaceFix)$") {
+      Write-Host "SKIPPED - Match already in the JSON: $path$($f.Name -replace '_blue_vs_red(_vs_yell_vs_gren)?_stats.json','')"
       continue 
     } elseif (!$AllowUnranked -and $names -notmatch '#\d{1,5}$') {
-      Write-Host "SKIPPED - Unranked Match not allowed: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
+      Write-Host "SKIPPED - Unranked Match not allowed: $path$($f.Name -replace '_blue_vs_red(_vs_yell_vs_gren)?_stats.json','')"
       continue 
     } elseif ($inJson.Matches.Winner -in '',$null) {
-      Write-Host "SKIPPED - No result found in match: $path$($f.Name -replace '_blue_vs_red_stats.json','')"
+      Write-Host "SKIPPED - No result found in match: $path$($f.Name -replace '_blue_vs_red(_vs_yell_vs_gren)?_stats.json','')"
       continue 
     } elseif ($PlayerCount -and (($names | Sort-Object -Unique).Count) -notmatch $PlayerCount) {
-      Write-Host "SKIPPED - PlayerCount not equal to $($PlayerCount): $path$($f.Name -replace '_blue_vs_red_stats.json','')"
+      Write-Host "SKIPPED - PlayerCount not equal to $($PlayerCount): $path$($f.Name -replace '_blue_vs_red(_vs_yell_vs_gren)?_stats.json','')"
       continue 
     } elseif ($ExcludeFile -and (Test-Path $ExcludeFile) -and ($f -in (Get-Content $ExcludeFile))) {
       Write-Host "SKIPPED - File exclusion list: $f"
