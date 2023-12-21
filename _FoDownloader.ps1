@@ -334,7 +334,7 @@ if ($FullBatch -or $NewOnlyBatch) {
   $DayReportINT = $DayFilterINT
 
   if ($FullBatch) {
-    & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetDays 7 -Region ALL -FilterPath 'tourney/' -ExcludeFile "$PSScriptRoot/.2v2_tourney_exlude.txt" -OutFile "$PSScriptRoot/2v2_tourney_stats.json"
+    & $PSScriptRoot\FO_stats_join-json.ps1 -StartOffSetDays 7 -Region ALL -FilterPath 'tourney/' -PlayerCount '^4$' -ExcludeFile "$PSScriptRoot/.2v2_tourney_exlude.txt" -OutFile "$PSScriptRoot/2v2_tourney_stats.json"
 
     #Scan for all files and refresh stats
     if ($DailyBatch) {
