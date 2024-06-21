@@ -26,3 +26,5 @@ ts.js
 *.json
 
 ._daily_refresher.ps1
+restore.zip
+.restore_batches.ps1
